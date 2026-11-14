@@ -35,7 +35,7 @@ data/cache/**/*.nc4
 .cdsapirc
 cookies.txt
 !data/cache/**/*.provenance.json
-# World-map grids committed on purpose (data plan D2: only grids the map uses; rebuild others
+# World-map grids committed on purpose (ADR-006, data plan D2: only grids the map uses; rebuild others
 # with scripts/fetch_grid.py). List each file explicitly so local test grids never slip in.
 !data/cache/grids/merra2_T2M_2deg.nc
 

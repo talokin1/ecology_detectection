@@ -7,7 +7,7 @@ Regional series and grids built from NASA data, with provenance. See `docs/plann
 |---|---|---|
 | `power_zarr/` | NASA POWER series: `<store>_<VARIABLE>_<hash>.csv` (monthly `month,value`; daily `date,value`) | yes |
 | `earthdata/` | Earthdata series: GRACE `grace_lwe_<hash>.csv`, MODIS NDVI `mod13c2_ndvi_<hash>.csv` (`month,value,valid_fraction`) | yes |
-| `grids/` | global monthly grids for the world map (NetCDF): `<store>_<VAR>_<res>deg.nc` | only grids the map uses, listed in `.gitignore` (now: T2M at 2°); rebuild others with `python scripts/fetch_grid.py --variable <VAR> --resolution 2` (~40 s, no login) |
+| `grids/` | global monthly grids for the world map (NetCDF): `<store>_<VAR>_<res>deg.nc` | only grids the map uses, listed in `.gitignore` (ADR-006; now: T2M at 2°, 26.1 MB); rebuild others with `python scripts/fetch_grid.py --variable <VAR> --resolution 2` (~40 s, no login) |
 | `raw/` | whole downloaded files (GRACE mascon NetCDF) | **no**, rebuilt by scripts |
 | `MANIFEST.json` | every committed series with sha256, rows and freeze date | yes |
 
