@@ -405,7 +405,7 @@ def test_no_adjacent_years_suppresses_unestimable_serial_inference():
     index = pd.date_range("1981-01-01", periods=30, freq="YS")
     values = np.arange(30, dtype=float) + np.sin(np.arange(30))
     values[1::2] = np.nan
-    result = trend(pd.Series(values, index=index), Config())
+    result = trend(pd.Series(values, index=index), Config(min_coverage=0.4))
     assert result["status"] == "ok"
     assert not result["inference_available"]
     assert result["mann_kendall"]["p_value"] is None
@@ -465,3 +465,214 @@ def test_monthly_precipitation_totals_keep_aggregate_units():
     assert out["probability_change"]["threshold_units"] == "mm/year"
     assert out["variability"]["sd_units"] == "mm/year"
     assert out["emergence"]["noise_units"] == "mm/year"
+
+
+def test_spei_pwm_matches_independent_lmomco_formula_fixture():
+    from scipy.stats import norm
+    from trend_detective.climate_stats.indices import _glo_cdf, _glo_pwm
+
+    # Exact unbiased PWM: b0=25/8, b1=29/8, b2=575/168; lmomco parglo mapping.
+    sample = np.array([-4, -2, -1, 0, 1, 3, 8, 20], dtype=float)
+    params = _glo_pwm(sample)
+    assert params == pytest.approx(
+        {"xi": 0.2984869231271787, "alpha": 2.8157493540026324, "kappa": -0.46320346320346323}
+    )
+    expected = [
+        -1.5068708947,
+        -0.6311655068,
+        -0.3235519489,
+        -0.0681015202,
+        0.1476078595,
+        0.4920320817,
+        1.0540504439,
+        1.7243245045,
+    ]
+    np.testing.assert_allclose(norm.ppf(_glo_cdf(sample, params)), expected, atol=1e-9)
+    reflected = -sample[::-1]
+    np.testing.assert_allclose(
+        norm.ppf(_glo_cdf(reflected, _glo_pwm(reflected))), -np.array(expected)[::-1], atol=1e-9
+    )
+    symmetric = _glo_pwm(np.arange(-3, 4, dtype=float))
+    assert symmetric == pytest.approx({"xi": 0, "alpha": 4 / 3, "kappa": 0})
+    with pytest.raises(ValueError, match="L-moments"):
+        _glo_pwm(np.array([0.0] * 7 + [1.0]))
+    shifted = _glo_pwm(sample + 1e9)
+    assert shifted["alpha"] == pytest.approx(params["alpha"])
+    assert shifted["kappa"] == pytest.approx(params["kappa"])
+
+
+def test_spei_example_calibration_no_longer_collapses():
+    from trend_detective.climate_stats.indices import drought_indices
+
+    doc = json.loads((ROOT / "examples/climate/input.json").read_text())
+    items = [parse_series(s) for s in doc["series"]]
+    out = drought_indices(items, Config(baseline=(1981, 2010), bootstrap_samples=0))
+    indices = out["sources"]["ukraine_precip"]["indices"]
+    for key in ("spei3", "spei6"):
+        assert indices[key]["status"] == "ok"
+        assert indices[key]["calibration_method"] == "generalized_logistic_unbiased_PWM"
+        for month in indices[key]["calibration"]:
+            d = month["diagnostics"]
+            assert abs(d["calibration_z_median"]) < 0.3
+            assert 0.85 < d["calibration_z_std"] < 1.15
+    assert abs(indices["spei3"]["calibration"][7]["diagnostics"]["calibration_z_median"]) < 0.1
+
+
+def test_firth_separation_matches_saturated_binomial_closed_form():
+    from trend_detective.climate_stats.temporal import _logistic
+
+    t = np.repeat([-0.5, 0.5], 20)
+    events = np.repeat([0.0, 1.0], 20)
+    # Two saturated groups: Jeffreys-adjusted odds are .5/20.5 and 20.5/.5.
+    fit = _logistic(t, events)
+    np.testing.assert_allclose(fit, [0.0, 2 * np.log(41)], atol=1e-5)
+    fit = _logistic(t, np.zeros(40))
+    np.testing.assert_allclose(fit, [-np.log(41), 0.0], atol=1e-5)
+
+
+def test_probability_sparse_events_and_threshold_refit_in_permutations(monkeypatch):
+    from trend_detective.climate_stats import temporal
+
+    annual = pd.Series(np.arange(44, dtype=float), index=pd.date_range("1981", periods=44, freq="YS"))
+    cfg = Config(baseline=(1981, 2010), bootstrap_samples=19)
+    original = temporal._logistic
+    calls = []
+
+    def track(t, event):
+        calls.append(event.copy())
+        return original(t, event)
+
+    monkeypatch.setattr(temporal, "_logistic", track)
+    out = temporal.probability_change(annual, cfg, "test")
+    assert out["tails"]["low"]["logistic"]["inference"]["reason"] == "fewer_than_10_events_or_non_events"
+    high = out["tails"]["high"]["logistic"]
+    assert high["inference"]["status"] == "ok"
+    assert high["inference"]["attempted"] == high["inference"]["successful"] == 19
+    assert high["inference"]["failed"] == 0
+    assert "probability_ratio_ci_percentile" not in high["inference"]
+    # Both original tails then 19 high-tail draws: each recalibrates its first 30 years.
+    assert len(calls) == 21
+    assert all(events[:30].sum() == 3 for events in calls[2:])
+
+
+def test_failed_event_permutation_does_not_condition_on_success(monkeypatch):
+    from trend_detective.climate_stats import temporal
+
+    annual = pd.Series(np.arange(44, dtype=float), index=pd.date_range("1981", periods=44, freq="YS"))
+    cfg = Config(baseline=(1981, 2010), bootstrap_samples=19)
+    original = temporal._logistic
+    call_count = 0
+
+    def fail_once(t, event):
+        nonlocal call_count
+        call_count += 1
+        return None if call_count == 3 else original(t, event)
+
+    monkeypatch.setattr(temporal, "_logistic", fail_once)
+    out = temporal.probability_change(annual, cfg, "test")["tails"]["high"]["logistic"]["inference"]
+    assert out["status"] == "skipped"
+    assert out["failed"] == 1
+    assert "p_value" not in out
+
+
+def test_seasonal_control_recovers_driver_and_zero_adjusted_trend():
+    n = 528
+    rng = np.random.default_rng(2026)
+    t = np.arange(n) / 12
+    season = 15 * np.sin(2 * np.pi * np.arange(n) / 12)
+    anomaly = 0.2 * t + rng.normal(size=n)
+    control = series(values=season + anomaly, n=n, sid="driver", units="1")
+    control.pop("variable_id")
+    doc = payload(series(values=season + 2 * anomaly, n=n), methods=["drivers"])
+    doc["covariates"] = [control]
+    doc["controls"] = [{"series_id": "x", "covariate_ids": ["driver"]}]
+    out = analyze(doc)["drivers"][0]
+    assert out["covariate_coefficients"]["driver"]["estimate"] == pytest.approx(2, abs=1e-9)
+    assert out["adjusted_slope_per_decade"]["estimate"] == pytest.approx(0, abs=1e-9)
+    assert out["adjusted_slope_per_decade"]["test"] == "multiple_OLS_Newey_West_t_approximation"
+
+
+def test_actual_calendar_coverage_and_valid_year_count_gate_inference():
+    idx = pd.date_range("1980", periods=540, freq="MS")
+    values = np.arange(540, dtype=float)
+    values[95:-95] = np.nan
+    data = pd.Series(values, index=idx)
+    for out in (trend(data, Config(), frequency=12), quantile_trends(data, Config(), "gaps")):
+        assert out["reason"] == "insufficient_calendar_coverage"
+        assert out["coverage"] == pytest.approx(190 / 540)
+    short = pd.Series(np.arange(108.0), index=idx[:108])
+    assert trend(short, Config(), frequency=12)["status"] == "skipped"
+
+
+def test_fixed_season_and_opt_in_partial_annual_aggregation():
+    idx = pd.date_range("1981", periods=360, freq="MS")
+    values = 10 * np.sin(idx.month * 2 * np.pi / 12) + (idx.year - 1981) * 0.2
+    complete = pd.Series(values, index=idx)
+    missing = complete.copy()
+    missing.loc[(idx.year > 1990) & (idx.month == 7)] = np.nan
+    cfg = Config(baseline=(1981, 1990), annual_missing_policy="climatology_adjusted")
+    np.testing.assert_allclose(
+        annual_aggregate(missing, cfg), annual_aggregate(complete, Config()), atol=1e-10
+    )
+    assert annual_aggregate(missing, Config()).count() == 10
+    # Incomplete precipitation totals are never reconstructed.
+    assert annual_aggregate(missing, cfg, total=True).count() == 10
+    missing = complete.where(idx.month.isin([4, 5, 6, 7, 8, 9]))
+    assert annual_aggregate(missing, Config(annual_months=(4, 5, 6, 7, 8, 9))).count() == 30
+
+
+def test_daily_coverage_is_independent_and_catalog_status_is_preserved():
+    from trend_detective.climate_stats.core import to_monthly
+
+    values = np.ones(365)
+    values[::2] = np.nan
+    parsed = parse_series(series(values=values, n=365, frequency="daily"))
+    assert to_monthly(parsed, Config()).count() == 0
+    assert to_monthly(parsed, Config(daily_min_coverage=0.4)).count() == 12
+    doc = payload(
+        series("no2_tropospheric_omi", values=[-1e14] * 12, n=12, units="molecules/cm^2"), methods=[]
+    )
+    out = analyze(doc)["series"]["x"]
+    assert "under review" in out["catalog_status"]
+    assert any("under review" in s for s in out["quality"]["warnings"])
+    # Valid negative retrievals are not unconditionally clipped to zero.
+    assert out["descriptive"]["mean"] == -1e14
+
+
+def test_fdr_agreement_does_not_traverse_user_metadata():
+    doc = payload(series(values=sample_values()))
+    doc["metadata"] = {
+        "mann_kendall": "description",
+        "ols": "description",
+        "nested": {"mann_kendall": {"p_value": 0.001}, "ols": {"p_value": 0.001}},
+    }
+    out = analyze(doc)
+    assert out["metadata"] == doc["metadata"]
+    assert out["series"]["x"]["trend"]["conservative_significant_fdr"]
+    assert all(not t["path"].startswith("/metadata") for t in out["insights_audit"]["tests"])
+
+
+def test_djf_month_order_does_not_change_year_assignment():
+    data = pd.Series(np.arange(360.0), index=pd.date_range("1981", periods=360, freq="MS"))
+    pd.testing.assert_series_equal(
+        annual_aggregate(data, Config(annual_months=(12, 1, 2))),
+        annual_aggregate(data, Config(annual_months=(1, 2, 12))),
+    )
+
+
+def test_driver_common_window_and_single_month_hac():
+    rng = np.random.default_rng(9)
+    cov = rng.normal(size=300)
+    values = np.r_[rng.normal(size=228), 2 * cov + rng.normal(scale=0.1, size=300)]
+    driver = series(values=cov, n=300, start="2000-01-01", sid="driver", units="1")
+    driver.pop("variable_id")
+    doc = payload(series(values=values, n=528), methods=["drivers"])
+    doc["covariates"] = [driver]
+    doc["controls"] = [{"series_id": "x", "covariate_ids": ["driver"]}]
+    out = analyze(doc)["drivers"][0]
+    assert out["status"] == "ok" and out["n"] == 300
+    doc["controls"][0]["months"] = [1]
+    out = analyze(doc)["drivers"][0]
+    assert out["status"] == "ok" and out["n"] == 25
+    assert out["hac_lag_unit"] == "year" and out["hac_calendar_lags"] == 3
+    assert out["covariate_coefficients"]["driver"]["estimate"] == pytest.approx(2, abs=0.15)

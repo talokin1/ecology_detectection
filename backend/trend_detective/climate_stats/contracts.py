@@ -41,7 +41,11 @@ class Config:
     min_years: int = 10
     min_climatology_years: int = 5
     min_coverage: float = 0.9
-    bootstrap_samples: int = 199
+    daily_min_coverage: float | None = None
+    annual_months: tuple[int, ...] = tuple(range(1, 13))
+    annual_missing_policy: str = "strict"
+    annual_min_coverage: float = 0.8
+    bootstrap_samples: int = 999
     block_months: int = 12
     block_years: int = 3
     seed: int = 1729
@@ -63,17 +67,26 @@ class Config:
         if unknown:
             raise ValueError(f"Unknown config fields: {sorted(unknown)}")
         data = dict(obj)
-        for name in ("baseline", "drought_scales", "quantiles", "correlation_lags", "methods"):
+        for name in (
+            "baseline",
+            "drought_scales",
+            "quantiles",
+            "correlation_lags",
+            "methods",
+            "annual_months",
+        ):
             if name in data and data[name] is not None:
                 if not isinstance(data[name], (list, tuple)):
                     raise ValueError(f"config.{name} must be an array")
                 data[name] = tuple(data[name])
         cfg = cls(**data)
-        for name in ("alpha", "fdr_q", "min_coverage"):
+        for name in ("alpha", "fdr_q", "min_coverage", "daily_min_coverage", "annual_min_coverage"):
             value = getattr(cfg, name)
+            if name == "daily_min_coverage" and value is None:
+                continue
             upper_ok = (
                 value <= 1
-                if isinstance(value, (int, float)) and name == "min_coverage"
+                if isinstance(value, (int, float)) and name.endswith("coverage")
                 else (value < 1 if isinstance(value, (int, float)) else False)
             )
             if (
@@ -82,7 +95,9 @@ class Config:
                 or not 0 < value
                 or not upper_ok
             ):
-                raise ValueError(f"config.{name} must be in (0, 1), or (0, 1] for min_coverage")
+                raise ValueError(f"config.{name} must be in (0, 1), or (0, 1] for coverage")
+        if cfg.annual_missing_policy not in ("strict", "climatology_adjusted"):
+            raise ValueError("annual_missing_policy must be strict or climatology_adjusted")
         limits = {
             "min_years": (4, 200),
             "min_climatology_years": (2, 100),
@@ -109,7 +124,11 @@ class Config:
             type(cfg.split_year) is not int or not 1800 <= cfg.split_year <= 2200
         ):
             raise ValueError("split_year must be an integer within 1800..2200")
-        for name, lo, hi in (("drought_scales", 1, 24), ("correlation_lags", 0, 36)):
+        for name, lo, hi in (
+            ("drought_scales", 1, 24),
+            ("correlation_lags", 0, 36),
+            ("annual_months", 1, 12),
+        ):
             values = getattr(cfg, name)
             if (
                 not isinstance(values, tuple)

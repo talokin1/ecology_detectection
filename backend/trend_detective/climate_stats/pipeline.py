@@ -59,6 +59,8 @@ def analyze(payload: dict) -> dict:
         series = to_monthly(item, cfg)
         monthly[item.id] = series
         annual_input = item.frequency == "annual"
+        if annual_input and set(cfg.annual_months) != set(range(1, 13)):
+            raise ValueError("annual_months cannot select months from annual input")
         total = item.variable_id == "PRECTOTCORR_SUM"
         ratio_scale = bool(item.entry.get("percent_change_meaningful", False))
         if annual_input:
@@ -69,7 +71,9 @@ def analyze(payload: dict) -> dict:
             anomaly, seasonal_cycle = climatology(series, cfg)
             annual = annual_aggregate(series, cfg, total=total)
         anomalies[item.id] = anomaly
-        annual_units = "mm/year" if total else item.units
+        annual_units = (
+            ("mm/year" if len(cfg.annual_months) == 12 else "mm/selected_months") if total else item.units
+        )
         output = {
             "variable_id": item.variable_id,
             "region_id": item.region_id,
@@ -84,15 +88,33 @@ def analyze(payload: dict) -> dict:
             "source": item.entry.get("source"),
             "how_measured": item.entry.get("how_measured"),
             "quality": quality(item),
+            "catalog_status": item.entry.get("status"),
+            "analysis_quality": {
+                "valid_steps": int(series.count()),
+                "calendar_steps": len(series),
+                "coverage": float(series.count() / len(series)),
+                "valid_annual_aggregates": int(annual.count()),
+            },
             "descriptive": describe(item.data, ratio_scale=ratio_scale),
             "analysis_descriptive": describe(series, ratio_scale=ratio_scale),
             "climatology": seasonal_cycle,
             "annual": {
                 "units": annual_units,
+                "months": list(cfg.annual_months),
+                "year_label": "year_of_January" if set(cfg.annual_months) == {12, 1, 2} else "calendar_year",
+                "missing_policy": "strict" if total else cfg.annual_missing_policy,
+                "minimum_month_coverage": 1.0
+                if total or cfg.annual_missing_policy == "strict"
+                else cfg.annual_min_coverage,
+                "caveat": "Climatology-adjusted partial means assume observed monthly anomalies represent the missing months; totals always require complete months."
+                if cfg.annual_missing_policy == "climatology_adjusted" and not total
+                else None,
                 "aggregation": "sum_of_complete_monthly_totals"
                 if total
                 else "input_annual"
                 if annual_input
+                else "climatology_adjusted_day_weighted_mean"
+                if cfg.annual_missing_policy == "climatology_adjusted"
                 else "day_weighted_mean_of_qualified_months",
                 "descriptive": describe(annual, ratio_scale=ratio_scale),
             },
@@ -154,7 +176,7 @@ def analyze(payload: dict) -> dict:
             derived[region]["drought"] = drought_indices(members, cfg)
     output = {
         "schema_version": "1.0",
-        "pipeline_version": "1.0.0",
+        "pipeline_version": "1.1.0",
         "status": "ok",
         "config": cfg.json(),
         "metadata": payload.get("metadata", {}),
@@ -174,7 +196,7 @@ def analyze(payload: dict) -> dict:
             "No interpolation; calendar gaps remain gaps. No automatic downloading.",
             "Baseline is explicit or the full input record; insufficient baseline months are not substituted.",
             "Trend inference uses an AR(1) approximation; arbitrary long-memory dependence is not guaranteed.",
-            "Bootstrap inference requires complete regular series and is conditional on the chosen baseline/thresholds.",
+            "Bootstrap requires complete regular series; event permutation refits its baseline threshold in every replicate.",
             "All computed p-values form one document-wide BH family, including secondary trend checks.",
             "Statistical associations and SPI/SPEI comparisons do not establish causal attribution.",
         ],
@@ -195,8 +217,7 @@ def analyze(payload: dict) -> dict:
     output["insights_audit"] = apply_fdr(output, cfg)
     for item in output["series"].values():
         toe = item.get("emergence", {})
-        mk = item["annual"].get("trend", {}).get("mann_kendall", {})
-        if toe.get("status") == "ok" and mk.get("significant_fdr"):
+        if toe.get("status") == "ok" and item["annual"].get("trend", {}).get("conservative_significant_fdr"):
             toe["year"] = toe["candidate_year"]
     return json_safe(output)
 
