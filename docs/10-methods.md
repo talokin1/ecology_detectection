@@ -29,6 +29,26 @@ Every number in the app and slides comes from this code.
    | p < 0.10 | weak, suggestive evidence |
    | otherwise | no significant trend yet + "≈ N more years needed" |
 
+## Data-quality checks before any trend (acquisition layer)
+Before a regional series is analysed, `backend/trend_detective/acquire.py::assess` checks whether it
+can be investigated for a trend at all, and tells the user why not in plain language:
+
+| Check | Rule | Why |
+|---|---|---|
+| Long enough | >= 10 years and >= 120 months | Shorter records rarely separate a trend from natural variability |
+| Seasonal cycle estimable | every calendar month present in >= 5 years | Deseasonalising needs a mean for each calendar month (MODIS NDVI loses snowy winters) |
+| Few flat months | < 25% of observations either exactly zero or in calendar months whose year-to-year SD is < 5% of the most variable month's | Near-tied anomalies pull Sen's slope toward zero (Ukraine snow, Sahel dry season; see `docs/planning/2026-11-14-stats-cross-check.md`) |
+| No long gaps | no gap > 12 months | Gaps often mark an instrument change (GRACE to GRACE-FO, 2017-07 to 2018-05) |
+| Not constant | some variation in at least one calendar month | e.g. snow depth in the Sahel: nothing to measure |
+
+Regional means can be **land only**: region presets with `land_only: true` (the case regions) average only cells where MERRA-2 has land (cells with root-zone soil wetness; ocean, lakes and ice sheets excluded); IMERG and SYN1deg cells use the nearest MERRA-2 cell's flag. This is fixed per region before any trend is computed and recorded in each series' provenance.
+
+**Daily inputs and monthly aggregation (plan v2, S2).** Daily MERRA-2 values come from the POWER daily store (`merra2_daily`). Monthly values from daily: mean of valid days for states (temperature), and for per-day fluxes (precipitation) the mean of valid days times the days in the month; a month counts only if >= 80% of its days are present. Check: daily-to-monthly precipitation equals POWER's own monthly `PRECTOTCORR_SUM` to 0.000 mm in all 549 months (southern Ukraine, Ukraine). **Pitfall:** in the POWER *monthly* store, `T2M_MAX`/`T2M_MIN` are the month's single hottest/coldest hour, not mean daily values (southern Ukraine: 21.3 °C vs 15.1 °C on average). Formulas needing mean daily Tmax/Tmin (Hargreaves PET for SPEI, M3) use `acquire.get_monthly_from_daily(..., how="mean")`.
+
+Outcome: `ok`, `caution` (analysis runs, the note is shown next to the result), `too_short` or
+`no_variation` (no trend is reported). Thresholds set on 2026-11-14 from real series; pending
+science-lead review.
+
 ## Trend maps (per grid cell)
 Same steps per cell; significance stippling uses Benjamini–Hochberg false-discovery-rate control
 (q = 0.05) across all cells, because thousands of independent tests at α = 0.05 would flag ~5% of cells
