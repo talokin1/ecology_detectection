@@ -25,7 +25,8 @@ Inputs: monthly values (`obs_per_year=12`, default, deseasonalised automatically
 1. **Seasonality**: always analyse anomalies for sub-annual data. Show raw + anomalies in the chart.
 2. **Primary test**: Mann-Kendall with Yue-Wang AR(1) correction (`method="yue_wang"`). Cross-check with
    `ols_trend(..., adjust_autocorr=True)`. If the two disagree on significance at 0.05, say so and use
-   the more conservative verdict.
+   the more conservative verdict: the card shows the weaker verdict plus a "Two methods disagree"
+   line, and the row does not count as a multiple-testing pass (plan-v2 Verdict section, merge plan v2 Q8).
 3. **Do not use** classic MK or Hamed-Rao as the reported result for autocorrelated data — our Monte-Carlo
    (`scripts/validate_type1.py`) shows 14–33% and 10–21% false positives at φ = 0.3–0.6.
 4. **Units**: slope per decade in the variable's display units; percent change only for ratio-scale
