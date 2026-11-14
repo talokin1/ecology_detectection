@@ -9,7 +9,17 @@ import pandas as pd
 from scipy import stats
 
 from .contracts import Config, InputSeries
-from .core import ar1_inflation, calendar_r1, climatology, describe, detrend, positions, skipped, trend
+from .core import (
+    ar1_inflation,
+    calendar_r1,
+    climatology,
+    describe,
+    detrend,
+    observation_support,
+    positions,
+    skipped,
+    trend,
+)
 
 
 def correlations(items: list[InputSeries], anomalies: dict[str, pd.Series], cfg: Config) -> list[dict]:
@@ -26,7 +36,11 @@ def correlations(items: list[InputSeries], anomalies: dict[str, pd.Series], cfg:
         for lag in cfg.correlation_lags:
             a = residuals[left.id].shift(lag)
             b = residuals[right.id]
-            pair = pd.concat([a.rename("x"), b.rename("y")], axis=1).dropna()
+            aligned = pd.concat([a.rename("x"), b.rename("y")], axis=1)
+            # Evaluate coverage over the common observation window, including its gaps.
+            aligned = aligned.loc[max(a.index.min(), b.index.min()) : min(a.index.max(), b.index.max())]
+            paired_x = aligned.x.where(aligned.y.notna())
+            pair = aligned.dropna()
             result = {
                 "left_series_id": left.id,
                 "right_series_id": right.id,
@@ -36,8 +50,9 @@ def correlations(items: list[InputSeries], anomalies: dict[str, pd.Series], cfg:
                 "n": len(pair),
                 "preprocessing": "remove_calendar_month_climatology_then_each_series_Sen_trend",
             }
-            if len(pair) < max(cfg.min_years * frequency * cfg.min_coverage, 8):
-                out.append({**result, **skipped("insufficient_overlapping_data")})
+            failure = observation_support(paired_x, cfg, frequency)
+            if failure:
+                out.append({**result, **failure})
                 continue
             x, y = pair.x.to_numpy(), pair.y.to_numpy()
             if min(np.std(x), np.std(y)) < 1e-12:
@@ -100,6 +115,21 @@ def region_contrasts(items: list[InputSeries], monthly: dict[str, pd.Series], cf
     return output
 
 
+def _hac_covariance(design: np.ndarray, residual: np.ndarray, pos: np.ndarray, lags: int) -> np.ndarray:
+    """Newey-West sandwich with Bartlett weights and actual calendar lags."""
+    scores = design * residual[:, None]
+    meat = scores.T @ scores
+    for lag in range(1, lags + 1):
+        right = np.searchsorted(pos, pos + lag)
+        left = np.flatnonzero(right < len(pos))
+        left = left[pos[right[left]] == pos[left] + lag]
+        cross = scores[left].T @ scores[right[left]]
+        meat += (1 - lag / (lags + 1)) * (cross + cross.T)
+    bread = np.linalg.inv(design.T @ design)
+    n, k = design.shape
+    return (n / (n - k)) * bread @ meat @ bread
+
+
 def adjusted_drivers(
     controls: list[dict],
     items: list[InputSeries],
@@ -127,16 +157,32 @@ def adjusted_drivers(
             outputs.append({**result, **skipped("target_and_covariate_frequencies_do_not_match")})
             continue
         frame = pd.concat(
-            [anomalies[item.id].rename(item.id)] + [monthly[k].rename(k) for k in controls_ids], axis=1
+            [monthly[item.id].rename(item.id)] + [monthly[k].rename(k) for k in controls_ids], axis=1
         )
+        common_start = max(monthly[k].index.min() for k in names)
+        common_end = min(monthly[k].index.max() for k in names)
+        frame = frame.loc[common_start:common_end]
         if freq == 12:
             frame = frame[frame.index.month.isin(result["months"])]
+        expected = len(frame)
         frame = frame.dropna()
+        if not expected or len(frame) / expected < cfg.min_coverage:
+            outputs.append(
+                {
+                    **result,
+                    **skipped(
+                        "insufficient_aligned_control_coverage",
+                        coverage=len(frame) / expected if expected else 0,
+                    ),
+                }
+            )
+            continue
         if len(frame) < max(cfg.min_years * (len(result["months"]) if freq == 12 else 1), 2 * len(names) + 4):
             outputs.append({**result, **skipped("insufficient_aligned_control_observations")})
             continue
-        pos = positions(frame.index, freq)
-        t = (pos - pos[0]) / freq
+        inference_frequency = 1 if freq == 1 or len(result["months"]) == 1 else 12
+        pos = positions(frame.index, inference_frequency)
+        t = (pos - pos[0]) / inference_frequency
         t = t - t.mean()
         raw_cov = frame[controls_ids].to_numpy()
         scales = np.std(raw_cov, axis=0)
@@ -144,7 +190,13 @@ def adjusted_drivers(
             outputs.append({**result, **skipped("constant_covariate")})
             continue
         standardized = (raw_cov - raw_cov.mean(axis=0)) / scales
-        design = np.column_stack([np.ones(len(t)), t, standardized])
+        # Joint month fixed effects residualize y, time and controls consistently (FWL).
+        month_design = (
+            pd.get_dummies(frame.index.month, drop_first=True, dtype=float).to_numpy()
+            if freq == 12
+            else np.empty((len(t), 0))
+        )
+        design = np.column_stack([np.ones(len(t)), t, standardized, month_design])
         if np.linalg.matrix_rank(design) < design.shape[1] or np.linalg.cond(design) > 1e6:
             outputs.append({**result, **skipped("collinear_time_and_covariates")})
             continue
@@ -152,15 +204,12 @@ def adjusted_drivers(
         coef = np.linalg.lstsq(design, y, rcond=None)[0]
         residual = y - design @ coef
         phi, adjacent = calendar_r1(residual, pos)
-        if adjacent < 4 and np.std(residual) > 1e-10 * max(1, np.std(y)):
-            outputs.append({**result, **skipped("insufficient_adjacent_residual_pairs_for_serial_inference")})
-            continue
-        n_eff = len(y) / ar1_inflation(pos, phi)
-        dof = n_eff - design.shape[1]
+        dof = len(y) - design.shape[1]
         if dof <= 2:
             outputs.append({**result, **skipped("insufficient_effective_degrees_of_freedom")})
             continue
-        covariance = np.sum(residual**2) / dof * np.linalg.inv(design.T @ design)
+        lags = cfg.block_months if inference_frequency == 12 else cfg.block_years
+        covariance = _hac_covariance(design, residual, pos, lags)
         se = np.sqrt(np.maximum(0, np.diag(covariance)))
         critical = stats.t.ppf(1 - cfg.alpha / 2, dof)
 
@@ -172,12 +221,12 @@ def adjusted_drivers(
             )
             return {
                 "estimate": float(coef[i] * multiplier),
-                "test": "multiple_OLS_t_effective_sample_size",
+                "test": "multiple_OLS_Newey_West_t_approximation",
                 "p_value": p,
                 "ci": [(coef[i] - critical * se[i]) * multiplier, (coef[i] + critical * se[i]) * multiplier],
             }
 
-        raw_design = design[:, :2]
+        raw_design = np.column_stack([design[:, :2], month_design])
         raw_slope = np.linalg.lstsq(raw_design, y, rcond=None)[0][1]
         total = np.sum((y - y.mean()) ** 2)
         outputs.append(
@@ -185,7 +234,12 @@ def adjusted_drivers(
                 **result,
                 "status": "ok",
                 "n": len(y),
-                "n_eff": n_eff,
+                "degrees_of_freedom": dof,
+                "hac_calendar_lags": lags,
+                "hac_lag_unit": "month" if inference_frequency == 12 else "year",
+                "seasonality": "calendar_month_fixed_effects_on_common_sample"
+                if freq == 12
+                else "annual_input",
                 "residual_r1": phi,
                 "adjacent_pairs": adjacent,
                 "raw_slope_per_decade": raw_slope * 10,
@@ -196,7 +250,7 @@ def adjusted_drivers(
                 },
                 "r_squared": 1 - np.sum(residual**2) / total if total > 0 else None,
                 "design_condition_number": float(np.linalg.cond(design)),
-                "caveat": "User-supplied covariates only; regional/seasonal relevance and confounding require interpretation.",
+                "caveat": "HAC is asymptotic and bandwidth-dependent; covariate relevance and confounding require interpretation.",
             }
         )
     return outputs

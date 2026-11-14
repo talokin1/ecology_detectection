@@ -25,10 +25,11 @@ python scripts/analyze_climate.py --input examples/climate/daily-input.json --ou
 python scripts/analyze_climate.py --list-variables
 ```
 
-The example uses 39 bootstrap replicates to exercise every method quickly. The normal default is
-199. For finer uncertainty estimates, set `bootstrap_samples` to 999 or more before the substantive
-analysis. The smallest attainable bootstrap p-value is `1 / (successful_replicates + 1)`, which
-matters when many tests enter FDR. Use `bootstrap_samples: 0` to disable resampling; unavailable
+The example and normal default use 999 resampling replicates. A smoke run can explicitly choose
+39, with much coarser uncertainty. The smallest attainable resampling p-value is `1 / (B + 1)`;
+999 is not a guarantee of adequate resolution for every multiple-testing family. The FDR audit
+reports resolution and the replication count needed to reach the rank-one BH threshold.
+Use `bootstrap_samples: 0` to disable resampling; unavailable
 inference is explicitly marked rather than replaced with an independence-based test.
 
 ## Input contract
@@ -43,7 +44,7 @@ Schema: [`climate-input.schema.json`](../schema/climate-input.schema.json).
     "baseline": [1981, 2010],
     "alpha": 0.05,
     "fdr_q": 0.05,
-    "bootstrap_samples": 199,
+    "bootstrap_samples": 999,
     "seed": 1729
   },
   "series": [
@@ -110,10 +111,19 @@ the near-zero anomaly mean, and requires nonnegative values and a positive mean.
 - Each series represents an already aggregated region or point. Gridded input and spatial area
   weighting are upstream responsibilities; the pipeline does not average unrelated regions.
 - Calendar gaps are inserted explicitly as missing values. Nothing is interpolated.
-- Daily state/rate values become monthly means when at least `min_coverage` of the month's actual
-  days are valid (default 90%). Accepted daily means are estimates from observed days.
-- Annual and seasonal means are weighted by the actual days in each month. All 12 annual months
-  or all 3 seasonal months must be present, preventing a changing seasonal mix from mimicking a trend.
+- Daily state/rate values become monthly means when at least `daily_min_coverage` of actual days
+  are valid. If unset, it inherits `min_coverage` (90%). Accepted means estimate the observed-day
+  population; relaxing coverage does not correct cloud/sampling bias.
+- Annual and seasonal means are weighted by days in each month. The default `strict` policy
+  requires every constituent month. `annual_months` selects a fixed set, such as April–September
+  for vegetation; this changes the annual diagnostics, not the main full monthly trend. The set
+  January/February/December always uses DJF years regardless of its input order.
+- Opt-in `annual_missing_policy: "climatology_adjusted"` permits partial state/rate means when
+  `annual_min_coverage` of selected months exists (default 80%). It adds the day-weighted full
+  selected-month climatology to the day-weighted mean of observed anomalies. Every selected month
+  needs a valid baseline normal. This assumes observed anomalies represent missing months; it
+  cannot remove nonrandom missingness and does not propagate climatology-estimation uncertainty.
+  `annual` records the policy, months and caveat. Daily indices remain complete-year diagnostics.
 - `PRECTOTCORR_SUM` is summed, with units mm/year or mm/season for those aggregates. Daily
   precipitation totals used by drought indices require every day of the month; partial sums are
   never presented as complete totals.
@@ -123,10 +133,20 @@ the near-zero anomaly mean, and requires nonnegative values and a positive mean.
   baseline is restricted to its actual overlap; it is never silently replaced. Monthly anomalies
   require at least five baseline observations per calendar month by default. Insufficient months
   remain missing.
-- Trend inference defaults to at least 10 calendar years and sufficient valid observations.
+- Trend/quantile inference requires at least `min_years * observations_per_year` valid observations,
+  at least `min_years` calendar duration, and actual calendar coverage >= `min_coverage`.
+  Monthly coverage uses every calendar month in the input window, including explicit gaps.
   Insufficient adjacent residual pairs suppress AR(1)-based p-values and confidence intervals.
 - Block resampling requires a complete regular analysis series. It reports a skip reason for gaps,
   rather than removing gaps and pretending that distant observations are adjacent.
+
+For satellite records, choose policies explicitly before interpreting results. For example,
+`{"annual_months": [4,5,6,7,8,9], "min_coverage": 0.8}` produces fixed growing-season annual
+diagnostics, while `{"daily_min_coverage": 0.4}` permits sparse daily retrievals to form means.
+These are sensitivity-analysis settings, not universally approved product QA thresholds.
+`analysis_quality` reports retained monthly values and usable annual aggregates. Missing runs
+can still prevent annual trends or block inference. Catalog warnings, including OMI's `under review`,
+are retained in `quality.warnings`; `catalog_status` also exposes the status directly.
 
 ## Computed statistics and insight building blocks
 
@@ -138,12 +158,12 @@ the near-zero anomaly mean, and requires nonnegative values and a positive mean.
 | M1: `monthly_profile`, `seasonal` | `monthly_profile`, `seasonal.DJF/MAM/JJA/SON` | Which calendar months/seasons change most? Each has its own distribution and trend tests. |
 | M2: `indices` | `daily_indices`, `derived.<region>.temperature` | FD, TR, TNn, SU, ID, TXx, TX90p variant, last spring frost, CDD/CWD, Rx1day/Rx5day, R10mm/R20mm, PRCPTOT, SDII, DTR and growing-season length where inputs permit. |
 | M3: `drought` | `derived.<region>.drought` | SPI and SPEI at configured accumulation scales, PET, dry-month frequencies by decade and fixed-end-month annual trends. |
-| M4: `emergence` | `emergence` | When fitted change first exceeds one detrended annual SD. Candidate year is descriptive; visible `year` requires annual MK to pass FDR. |
-| M5: `probability` | `probability_change` | Fixed-baseline low/high annual-event probabilities, logistic log-odds trend, early/late empirical counts, probability ratios and descriptive recurrence intervals. |
+| M4: `emergence` | `emergence` | When fitted change first exceeds one detrended annual SD. Candidate year is descriptive; visible `year` requires both annual MK and OLS to pass FDR. |
+| M5: `probability` | `probability_change` | Baseline low/high event counts, Firth logistic point estimates and eligible block-permutation tests; no logistic confidence interval is claimed. |
 | M6 adaptation: `quantiles` | `quantile_trends` | Slopes of configured quantiles of monthly anomalies or annual values; direct upper-tail-minus-median slope contrast. |
 | M7: `acceleration` | `acceleration` | Sen slopes in two prespecified halves, block CI/test of their difference, and a local-linear smooth curve labeled as visualization. |
 | M8: `variability` | `variability` | Ratio of separately detrended annual SDs; block inference on the log ratio. Brown–Forsythe p is labeled IID-only and excluded from FDR. |
-| M9/general controls: `drivers` | `drivers` | Time trend before/after user-supplied covariates, coefficients and effective-sample-size tests. |
+| M9/general controls: `drivers` | `drivers` | Time trend and covariates jointly adjusted for month effects; Newey–West HAC uncertainty. |
 | M10: `bootstrap` | `bootstrap` | Moving-block residual-bootstrap uncertainty for Sen's slope. |
 | Additional: `change_point` | `change_point` | Pettitt maximum-rank level-shift diagnostic on detrended annual data, calibrated by block resampling. |
 | Additional: `relationships` | `relationships`, `region_contrasts` | Detrended Pearson/Spearman associations at explicit lags; paired difference trends for the same variable in different regions. |
@@ -176,9 +196,29 @@ limit; daily data are first aggregated to months.
 
 Bootstrap intervals for slopes/differences use the basic centered interval. Their approximate
 two-sided p-values compare centered bootstrap deviations with the absolute observed effect,
-including the `+1` finite-resampling correction. Quantile/logistic regressions resample blocks of
-observed pairs while retaining original time coordinates. Probability-ratio intervals are
-percentile intervals. All resampling is reproducible from the seed and a stable per-method key.
+including the `+1` finite-resampling correction. Quantile regression resamples blocks of observed
+pairs while retaining original time coordinates. Failed resamples suppress inference and report
+attempted/successful/failed counts. All resampling uses reproducible per-method seeds.
+
+Trend objects expose `methods_disagree`, `conservative_significant_unadjusted` and, after FDR,
+`conservative_significant_fdr`. The conservative flags require both MK and OLS to pass. The FDR
+audit still counts individual tests rather than claiming independent discoveries. Zero-heavy
+derived indices also receive tied-value/zero-Sen-slope warnings.
+
+### Rare annual events
+
+Logistic point estimates maximize `log L + 0.5 log det(X' W X)` (Firth/Jeffreys adjustment).
+They remain finite under separation and are explicitly descriptive; large probability ratios
+and model-based recurrence intervals are not independently established climate risks.
+
+Inference requires at least 10 events and 10 non-events, a complete annual series, and six
+complete blocks. These are conservative eligibility rules, not guarantees of calibration.
+Full nonoverlapping blocks of raw annual values are permuted; the final short remainder stays
+fixed. Every permutation refits the baseline quantile, event labels and Firth model. The
+two-sided statistic is the absolute time coefficient and p is `(1 + exceedances)/(B + 1)`.
+Any optimization failure suppresses the entire test. This is conditional on exchangeable
+blocks and only approximate for dependence crossing block boundaries. No basic/percentile
+logistic CIs are emitted, avoiding contradictory evidence for the same null effect.
 
 ### Daily indices
 
@@ -202,11 +242,15 @@ sources cause the combined temperature/PET method to skip rather than choose a s
 Annual-only precipitation cannot produce SPI/SPEI.
 
 SPI uses a zero-adjusted gamma distribution fitted by maximum likelihood for each calendar month.
-SPEI uses a three-parameter log-logistic maximum-likelihood fit to accumulated `P - PET`. This is
-an explicit MLE variant, not a claim of numerical identity with an L-moment SPEI implementation.
+SPEI uses unbiased probability-weighted moments of accumulated `P - PET`, mapped to the
+generalized-logistic parameterization in the author package: `xi`, `alpha`, `kappa`. This includes
+the positive-skew log-logistic, reflected negative-skew form and symmetric logistic limit.
+Invalid L-moments or a support boundary excluding baseline observations fail calibration.
 Fits require at least 20 baseline values per calendar month by default and report failures.
 Overlapping accumulation windows are not treated as independent trend observations: trend tests
-use one configured end month per year. Clipped CDF tails prevent infinite standardized values.
+use one configured end month per year. Clipped CDF tails prevent infinite standardized values;
+per-month diagnostics count clipping and actual support violations separately, and report
+baseline standardized medians/SDs. A nonstationary full record need not have median zero or SD one.
 
 PET uses monthly means of daily Tmax/Tmin and monthly mean extraterrestrial radiation. The
 Hargreaves calculation includes **0.408 to convert radiation in MJ/m²/day to equivalent water**,
@@ -231,9 +275,16 @@ structure but omit `variable_id`. Add a control specification:
 }
 ```
 
-The `covariates` array must contain the `nao` record with its actual dates and values. The model
-fits target anomalies on time plus the aligned covariates. Constant/collinear covariates and
-insufficient effective degrees of freedom cause a skip. Selecting an appropriate driver and
+The `covariates` array must contain the `nao` record with its actual dates and values. Within the
+common observation window the model jointly fits raw target values on time, aligned covariates
+and calendar-month fixed effects. This adjusts target, time and controls consistently, including
+seasonal controls; covariates already expressed as anomalies remain supported.
+
+Uncertainty uses the Newey–West sandwich with Bartlett weights at actual calendar distances,
+`n/(n-k)` correction and approximate t inference. Bandwidth is `block_months` for monthly fits
+or `block_years` for annual/one-calendar-month fits; `hac_lag_unit` records the distinction.
+This is asymptotic inference whose sensitivity to bandwidth should be checked. Constant/collinear
+covariates and insufficient observations cause a skip. Selecting an appropriate driver and
 season remains the analyst's responsibility; NAO is not automatically applied to every region.
 
 ## Configuration
@@ -243,11 +294,15 @@ season remains the analyst's responsibility; NAO is not automatically applied to
 | `baseline` | `null` | Full input record, or explicit `[first_year, last_year]`. |
 | `alpha` | `0.05` | Unadjusted test threshold and CI tail probability. |
 | `fdr_q` | `0.05` | Document-wide BH threshold. |
-| `min_years` | `10` | Minimum span and approximate observation count for inference. |
+| `min_years` | `10` | Minimum calendar span and valid observation count divided by frequency. |
 | `min_climatology_years` | `5` | Minimum baseline count per calendar month. |
-| `min_coverage` | `0.9` | Daily-to-monthly coverage and trend observation-count threshold. |
-| `bootstrap_samples` | `199` | Resamples; `0` disables, otherwise at least 19. |
-| `block_months`, `block_years` | `12`, `3` | Moving-block sizes. |
+| `min_coverage` | `0.9` | Actual calendar coverage required for trend/quantile/relationship inference. |
+| `daily_min_coverage` | `null` | Daily-to-monthly coverage; null inherits `min_coverage`. |
+| `annual_months` | `[1,...,12]` | Fixed months for annual summaries and DTR; daily indices unchanged. |
+| `annual_missing_policy` | `strict` | Require all months, or opt into `climatology_adjusted` partial means. |
+| `annual_min_coverage` | `0.8` | Minimum fraction of selected months for adjusted partial means; totals always complete. |
+| `bootstrap_samples` | `999` | Bootstrap/permutation replicates; `0` disables, otherwise at least 19. |
+| `block_months`, `block_years` | `12`, `3` | Resampling block lengths and HAC calendar bandwidths. |
 | `seed` | `1729` | Reproducible resampling seed. |
 | `split_year` | `null` | Last year of first period; default calendar midpoint, not an optimized break. |
 | `drought_scales` | `[3, 6]` | Accumulation windows in months, 1–24. |
@@ -267,7 +322,7 @@ output envelope; method-specific contents are documented above and covered by nu
 schema_version, pipeline_version, status
 config, metadata, provenance, assumptions
 series.<id>
-  quality, descriptive, analysis_descriptive, climatology
+  quality, analysis_quality, catalog_status, descriptive, analysis_descriptive, climatology
   trend, annual, monthly_profile, seasonal
   emergence, probability_change, quantile_trends
   acceleration, variability, bootstrap, change_point, daily_indices
@@ -293,6 +348,10 @@ appropriate positive dependence; it does not establish causation or physical imp
 
 `insights_audit.tests` contains JSON-pointer paths to tested objects. User metadata and provenance
 are excluded from hypothesis collection. No automatic insight prose is produced.
+`resampling_resolution` records minimum attainable p-values and
+`replicates_for_rank_one_resolution` reports `ceil(number_of_tests / fdr_q) - 1`. This is a
+rank-one resolution diagnostic, not a necessary replication count for every BH rejection.
+The family is retained globally rather than split after looking at significant results.
 
 `provenance` records the normalized input hash, catalog hash, reference-engine hash, library
 versions and seed. There is no runtime timestamp, so rerunning identical inputs in the same
@@ -319,6 +378,9 @@ python -m pytest -q backend/tests/test_climate_stats.py .claude/skills/trend-sta
 Tests exercise known trends, serial correction, units, all 31 variable ids, calendar gaps,
 constant/empty series, baseline failures, FDR, daily missingness, leap days, both hemispheres,
 PET units, SPI, quantile optimization, driver adjustment, schemas and atomic JSON writing.
+Review regressions also cover source-derived PWM fixtures, reflected/logistic limits, Firth's
+saturated-binomial closed form, threshold re-estimation inside permutations, solver failures,
+seasonal controls, actual calendar coverage, selected-season aggregation and metadata isolation.
 
 Project method context: [`10-methods.md`](10-methods.md) and
 [the supplied method brief](<../Статистика методи.md>). The implementation distinguishes the brief's
@@ -329,3 +391,13 @@ Brown–Forsythe uses the median-centered implementation documented in
 Quantile regression minimizes pinball loss with
 [SciPy's linear-programming solver](https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.linprog.html).
 The existing reference engine remains the source for Sen/MK/BH formulas.
+
+Additional primary implementation references:
+
+- [SPEI author manual: PWM and distributions](https://sbegueria.r-universe.dev/SPEI/doc/manual.html).
+- [lmomco PWM](https://raw.githubusercontent.com/cran/lmomco/master/R/pwm.R),
+  [parameter mapping](https://raw.githubusercontent.com/cran/lmomco/master/R/parglo.R),
+  [CDF](https://raw.githubusercontent.com/cran/lmomco/master/R/cdfglo.R).
+- [Firth logistic likelihood and inference](https://search.r-project.org/CRAN/refmans/logistf/html/logistf-package.html).
+- [Newey–West covariance reference implementation](https://www.statsmodels.org/stable/_modules/statsmodels/stats/sandwich_covariance.html).
+- [Review fixes and validation](decisions/ADR-007-climate-statistics-review-fixes.md).

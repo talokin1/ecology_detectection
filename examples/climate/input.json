@@ -9,7 +9,7 @@
       1981,
       2010
     ],
-    "bootstrap_samples": 39,
+    "bootstrap_samples": 999,
     "seed": 1729,
     "include_series": true
   },

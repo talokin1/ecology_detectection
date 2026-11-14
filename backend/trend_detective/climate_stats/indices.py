@@ -220,7 +220,15 @@ def temperature_combinations(items: list[InputSeries], cfg: Config) -> dict:
             output["dtr"] = skipped("Tmax_is_below_Tmin_check_input_semantics")
         else:
             annual = annual_aggregate(difference, cfg)
-            output["dtr"] = _package(annual, cfg, "degC", "Annual mean daily temperature range: Tmax - Tmin")
+            output["dtr"] = _package(
+                annual,
+                cfg,
+                "degC",
+                "Mean daily temperature range over the selected months: Tmax - Tmin",
+                months=list(cfg.annual_months),
+                missing_policy=cfg.annual_missing_policy,
+                year_label="year_of_January" if set(cfg.annual_months) == {12, 1, 2} else "calendar_year",
+            )
             if cfg.include_series:
                 output["dtr"]["monthly"] = records(difference)
     else:
@@ -289,6 +297,51 @@ def precipitation_totals(item: InputSeries, cfg: Config) -> pd.Series:
     return pd.Series(dtype=float, index=pd.DatetimeIndex([]))
 
 
+def _glo_pwm(sample: np.ndarray) -> dict:
+    """Unbiased PWM fit used by SPEI/lmomco, including reflected/logistic limits.
+
+    See lmomco pwm, pwm2lmom, parglo and cdfglo; parameters are xi, alpha, kappa.
+    """
+    x = np.sort(np.asarray(sample, dtype=float))
+    n = len(x)
+    if n < 4 or not np.isfinite(x).all() or np.ptp(x) <= 1e-10:
+        raise ValueError("insufficient or constant PWM calibration sample")
+    center = float(np.median(x))
+    x = x - center
+    j = np.arange(n, dtype=float)
+    b0 = np.mean(x)
+    b1 = np.mean(j / (n - 1) * x)
+    b2 = np.mean(j * (j - 1) / ((n - 1) * (n - 2)) * x)
+    l2, l3 = 2 * b1 - b0, 6 * b2 - 6 * b1 + b0
+    if l2 <= 0 or not np.isfinite([b0, l2, l3]).all() or abs(l3 / l2) >= 1:
+        raise ValueError("invalid generalized-logistic L-moments")
+    kappa = -l3 / l2
+    if abs(kappa) <= 1e-6:
+        xi, alpha, kappa = b0, l2, 0.0
+    else:
+        alpha = l2 * np.sinc(kappa)
+        xi = b0 + l2 * (1 - np.sinc(kappa)) / kappa
+    if alpha <= 0 or not np.isfinite([xi, alpha, kappa]).all():
+        raise ValueError("invalid generalized-logistic PWM parameters")
+    if np.any(1 - kappa * (x - xi) / alpha <= 0):
+        raise ValueError("PWM fit excludes calibration observations from its support")
+    return {"xi": float(xi + center), "alpha": float(alpha), "kappa": float(kappa)}
+
+
+def _glo_cdf(values: np.ndarray, params: dict) -> np.ndarray:
+    from scipy.special import expit
+
+    u = (np.asarray(values, dtype=float) - params["xi"]) / params["alpha"]
+    k = params["kappa"]
+    if k == 0:
+        return expit(u)
+    support = 1 - k * u > 0
+    out = np.full(u.shape, 0.0 if k < 0 else 1.0)
+    out[support] = expit(-np.log1p(-k * u[support]) / k)
+    out[~np.isfinite(u)] = np.nan
+    return out
+
+
 def standardized_drought(totals: pd.Series, scale: int, kind: str, cfg: Config) -> dict:
     accumulated = totals.rolling(scale, min_periods=scale).sum()
     output = pd.Series(np.nan, index=totals.index, dtype=float)
@@ -313,11 +366,8 @@ def standardized_drought(totals: pd.Series, scale: int, kind: str, cfg: Config) 
                     probability = pzero + (1 - pzero) * stats.gamma.cdf(values, shape, loc=loc, scale=spread)
                     params = {"shape": shape, "loc": loc, "scale": spread, "probability_zero": pzero}
                 else:
-                    shape, loc, spread = stats.fisk.fit(sample)
-                    if shape <= 0 or spread <= 0 or loc >= np.min(sample):
-                        raise ValueError("invalid log-logistic support")
-                    probability = stats.fisk.cdf(values, shape, loc=loc, scale=spread)
-                    params = {"shape": shape, "loc": loc, "scale": spread}
+                    params = _glo_pwm(sample)
+                    probability = _glo_cdf(values, params)
             if not np.isfinite(list(params.values())).all():
                 raise ValueError("nonfinite fit parameters")
             valid = np.isfinite(values)
@@ -325,7 +375,20 @@ def standardized_drought(totals: pd.Series, scale: int, kind: str, cfg: Config) 
                 raise ValueError("nonfinite fitted probabilities")
             z = stats.norm.ppf(np.clip(probability, 1e-7, 1 - 1e-7))
             output.loc[mask] = np.where(valid, z, np.nan)
-            calibration.append({**details, "status": "ok", "parameters": params})
+            diagnostics = {
+                "cdf_clipped_low": int(np.sum(probability[valid] < 1e-7)),
+                "cdf_clipped_high": int(np.sum(probability[valid] > 1 - 1e-7)),
+            }
+            if kind == "spei":
+                base_z = stats.norm.ppf(np.clip(_glo_cdf(sample, params), 1e-7, 1 - 1e-7))
+                diagnostics.update(
+                    calibration_z_median=float(np.median(base_z)),
+                    calibration_z_std=float(np.std(base_z, ddof=1)),
+                    outside_support=int(
+                        np.sum(1 - params["kappa"] * (values[valid] - params["xi"]) / params["alpha"] <= 0)
+                    ),
+                )
+            calibration.append({**details, "status": "ok", "parameters": params, "diagnostics": diagnostics})
         except (ValueError, FloatingPointError, RuntimeError) as exc:
             calibration.append({**details, **skipped("distribution_fit_failed", detail=str(exc))})
     annual = output[output.index.month == cfg.drought_end_month]
@@ -348,7 +411,14 @@ def standardized_drought(totals: pd.Series, scale: int, kind: str, cfg: Config) 
         "units": "standard_normal_index",
         "calibration_method": "zero_inflated_gamma_MLE"
         if kind == "spi"
-        else "three_parameter_log_logistic_MLE",
+        else "generalized_logistic_unbiased_PWM",
+        "warnings": ["Some evaluation CDF values were clipped; inspect monthly calibration diagnostics."]
+        if any(
+            m.get("diagnostics", {}).get("cdf_clipped_low", 0)
+            or m.get("diagnostics", {}).get("cdf_clipped_high", 0)
+            for m in calibration
+        )
+        else [],
         "baseline": list(cfg.baseline) if cfg.baseline else "full_input_record",
         "calibration": calibration,
         "drought_threshold": -1,

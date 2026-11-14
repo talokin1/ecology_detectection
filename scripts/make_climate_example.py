@@ -10,7 +10,7 @@ import numpy as np
 import pandas as pd
 
 
-def make_payload(*, daily: bool = False, bootstrap_samples: int = 39) -> dict:
+def make_payload(*, daily: bool = False, bootstrap_samples: int = 999) -> dict:
     rng = np.random.default_rng(42)
     index = pd.date_range("1981-01-01", "2024-12-31" if daily else "2024-12-01", freq="D" if daily else "MS")
     t = (index - index[0]).days.to_numpy() / 365.2425
@@ -90,8 +90,8 @@ def main() -> int:
     parser.add_argument(
         "--bootstrap-samples",
         type=int,
-        default=39,
-        help="39 for a quick demo; use 999+ for finer bootstrap p-value resolution",
+        default=999,
+        help="999 by default; 39 is available for a quick smoke check with coarse p-values",
     )
     args = parser.parse_args()
     payload = make_payload(daily=args.daily, bootstrap_samples=args.bootstrap_samples)

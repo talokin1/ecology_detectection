@@ -173,7 +173,8 @@ def to_monthly(item: InputSeries, cfg: Config) -> pd.Series:
         return item.data.copy()
     means = item.data.resample("MS").mean()
     counts = item.data.resample("MS").count()
-    return means.where(counts / means.index.days_in_month >= cfg.min_coverage)
+    threshold = cfg.daily_min_coverage if cfg.daily_min_coverage is not None else cfg.min_coverage
+    return means.where(counts / means.index.days_in_month >= threshold)
 
 
 def climatology(data: pd.Series, cfg: Config) -> tuple[pd.Series, dict]:
@@ -224,11 +225,16 @@ def annual_aggregate(
     monthly: pd.Series, cfg: Config, *, total: bool = False, months: tuple[int, ...] | None = None
 ) -> pd.Series:
     """Day-weighted state/rate mean, or sum of monthly totals. DJF belongs to Jan/Feb's year."""
-    months = months or tuple(range(1, 13))
+    months = months or cfg.annual_months
+    if set(months) == {12, 1, 2}:
+        months = (12, 1, 2)
     selected = monthly[monthly.index.month.isin(months)]
     if selected.empty:
         return pd.Series(dtype=float, index=pd.DatetimeIndex([]))
     years = selected.index.year + ((selected.index.month == 12) if months == (12, 1, 2) else 0)
+    base = monthly[baseline_mask(monthly.index, cfg)]
+    normal = base.groupby(base.index.month).mean()
+    normal = normal.where(base.groupby(base.index.month).count() >= cfg.min_climatology_years)
     result = {}
     for year in range(int(years.min()), int(years.max()) + 1):
         group = selected[years == year]
@@ -238,6 +244,21 @@ def annual_aggregate(
         required = len(months)
         if len(valid) < required:
             value = np.nan
+            if (
+                not total
+                and cfg.annual_missing_policy == "climatology_adjusted"
+                and len(valid) >= np.ceil(required * cfg.annual_min_coverage)
+                and normal.reindex(months).notna().all()
+            ):
+                dates = pd.DatetimeIndex(
+                    [
+                        pd.Timestamp(year=year - int(months == (12, 1, 2) and m == 12), month=m, day=1)
+                        for m in months
+                    ]
+                )
+                full_normal = np.average(normal.reindex(months), weights=dates.days_in_month)
+                observed_anomaly = valid.to_numpy() - normal.reindex(valid.index.month).to_numpy()
+                value = float(full_normal + np.average(observed_anomaly, weights=valid.index.days_in_month))
         elif total:
             value = float(valid.sum())
         else:
@@ -246,12 +267,33 @@ def annual_aggregate(
     return pd.Series(result, dtype=float)
 
 
+def observation_support(data: pd.Series, cfg: Config, frequency: int) -> dict | None:
+    """Separate valid sample size, calendar duration and actual calendar coverage."""
+    if data.empty or data.count() < cfg.min_years * frequency:
+        return skipped(
+            "insufficient_valid_observations", n=int(data.count()), required=cfg.min_years * frequency
+        )
+    pos = positions(data.index, frequency)
+    expected = int(pos[-1] - pos[0] + 1)
+    coverage = float(data.count() / expected)
+    if coverage < cfg.min_coverage:
+        return skipped(
+            "insufficient_calendar_coverage",
+            n=int(data.count()),
+            calendar_steps=expected,
+            coverage=coverage,
+            required_coverage=cfg.min_coverage,
+        )
+    return None
+
+
 def trend(
     data: pd.Series, cfg: Config, *, frequency: int = 1, units: str = "", ratio_scale: bool = False
 ) -> dict:
     valid = data.dropna()
-    if len(valid) < max(4, int(np.ceil(cfg.min_years * frequency * cfg.min_coverage))):
-        return skipped("insufficient_valid_observations_for_trend", n=len(valid), min_years=cfg.min_years)
+    support_failure = observation_support(data, cfg, frequency)
+    if support_failure:
+        return support_failure
     pos = positions(valid.index, frequency)
     span = (pos[-1] - pos[0] + 1) / frequency
     if span < cfg.min_years:
@@ -292,6 +334,15 @@ def trend(
     inference_available = pairs >= 4 or noise <= 1e-10 * max(1.0, np.std(y))
     if not inference_available:
         detectable = np.nan
+    warnings = []
+    if pairs < 4:
+        warnings.append("Fewer than four adjacent residual pairs: serial dependence cannot be estimated.")
+    if np.mean(y == 0) >= 0.25:
+        warnings.append("At least 25% zeros: tied values can yield a zero Sen slope despite a rank trend.")
+    if not constant and sen["slope"] == 0 and p < cfg.alpha:
+        warnings.append(
+            "Zero median pairwise slope with significant rank trend; inspect ties and distribution changes."
+        )
     return {
         "status": "constant" if constant else "ok",
         "n": len(y),
@@ -300,6 +351,10 @@ def trend(
         "time_unit": "year",
         "confidence_level": 1 - cfg.alpha,
         "inference_available": inference_available,
+        "methods_disagree": bool((p <= cfg.alpha) != (ols_p <= cfg.alpha)) if inference_available else None,
+        "conservative_significant_unadjusted": bool(p <= cfg.alpha and ols_p <= cfg.alpha)
+        if inference_available
+        else None,
         "sen": {
             "slope_per_year": sen["slope"],
             "slope_per_decade": 10 * sen["slope"],
@@ -332,9 +387,7 @@ def trend(
             "additional_years": max(0.0, detectable - span) if np.isfinite(detectable) else None,
             "assumption": "AR(1), unchanged trend/noise; 90% power at alpha=0.05",
         },
-        "warnings": ["Fewer than four adjacent residual pairs: serial dependence cannot be estimated."]
-        if pairs < 4
-        else [],
+        "warnings": warnings,
     }
 
 
@@ -359,8 +412,15 @@ def block_indices(n: int, block: int, rng: np.random.Generator) -> np.ndarray:
 def bootstrap_summary(estimates, estimate: float, cfg: Config) -> dict:
     samples = np.asarray(estimates, dtype=float)
     samples = samples[np.isfinite(samples)]
+    counts = {
+        "attempted": cfg.bootstrap_samples,
+        "successful": len(samples),
+        "failed": cfg.bootstrap_samples - len(samples),
+    }
+    if len(samples) != cfg.bootstrap_samples:
+        return skipped("failed_bootstrap_replicates_no_conditional_inference", **counts)
     if len(samples) < max(19, cfg.bootstrap_samples // 2):
-        return skipped("too_few_successful_bootstrap_replicates", successful=len(samples))
+        return skipped("too_few_successful_bootstrap_replicates", **counts)
     lo, hi = np.quantile(samples, [cfg.alpha / 2, 1 - cfg.alpha / 2])
     p = (1 + np.count_nonzero(np.abs(samples - estimate) >= abs(estimate))) / (len(samples) + 1)
     return {
@@ -368,7 +428,7 @@ def bootstrap_summary(estimates, estimate: float, cfg: Config) -> dict:
         "ci": [float(2 * estimate - hi), float(2 * estimate - lo)],
         "p_value": float(p),
         "test": "centered_block_bootstrap",
-        "successful": len(samples),
+        **counts,
         "confidence_level": 1 - cfg.alpha,
         "p_value_resolution": 1 / (len(samples) + 1),
     }
@@ -439,6 +499,28 @@ def apply_fdr(result: dict, cfg: Config) -> dict:
                 "significant_fdr": bool(flag),
             }
         )
+
+    def agreement(node):
+        if isinstance(node, dict):
+            if isinstance(node.get("mann_kendall"), dict) and isinstance(node.get("ols"), dict):
+                a, b = node["mann_kendall"], node["ols"]
+                node["conservative_significant_fdr"] = bool(
+                    a.get("significant_fdr") and b.get("significant_fdr")
+                )
+            for key, child in node.items():
+                if key in {"metadata", "provenance", "config", "insights_audit"}:
+                    continue
+                agreement(child)
+        elif isinstance(node, list):
+            for child in node:
+                agreement(child)
+
+    agreement(result)
+    resolution = [
+        {"path": path, "minimum_p": node["p_value_resolution"]}
+        for path, node in tests
+        if "p_value_resolution" in node
+    ]
     return {
         "method": "Benjamini-Hochberg",
         "family": "all_computed_tests_in_this_input_document",
@@ -446,5 +528,12 @@ def apply_fdr(result: dict, cfg: Config) -> dict:
         "tested": len(tests),
         "significant": int(np.sum(flags)),
         "assumption": "Independent or positively dependent tests; exploratory, not causal attribution.",
+        "resampling_resolution": resolution,
+        "replicates_for_rank_one_resolution": max(0, int(np.ceil(len(tests) / cfg.fdr_q)) - 1),
+        "warnings": [
+            "Finite resampling resolution may limit BH power; a single global family is retained and not selected after seeing significance."
+        ]
+        if resolution
+        else [],
         "tests": audit,
     }

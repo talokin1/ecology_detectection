@@ -14,6 +14,7 @@ from .core import (
     bootstrap_summary,
     describe,
     detrend,
+    observation_support,
     positions,
     records,
     reference,
@@ -73,7 +74,7 @@ def emergence(annual: pd.Series, fitted: dict, cfg: Config) -> dict:
         "noise_std": noise,
         "definition": "Absolute fitted change since first annual observation / detrended annual SD",
         "interpretation": "A typical-noise threshold, not a date of causation or statistical significance.",
-        "visibility_rule": "year is populated only if the annual MK test passes document-wide FDR",
+        "visibility_rule": "year is populated only if both annual MK and OLS pass document-wide FDR",
     }
 
 
@@ -193,25 +194,88 @@ def variability(annual: pd.Series, cfg: Config, key: str) -> dict:
 
 
 def _logistic(t: np.ndarray, event: np.ndarray):
-    if len(np.unique(event)) < 2 or np.ptp(t) == 0:
+    """Firth logistic estimate: maximize log L + 1/2 log det(X' W X)."""
+    if len(t) < 4 or np.ptp(t) == 0:
         return None
     design = np.column_stack([np.ones(len(t)), t])
 
     def objective(beta):
         logits = design @ beta
-        return np.sum(np.logaddexp(0, logits) - event * logits)
+        prob = special.expit(logits)
+        weight = special.expit(logits) * special.expit(-logits)
+        info = design.T @ (weight[:, None] * design)
+        sign, logdet = np.linalg.slogdet(info)
+        if sign <= 0 or not np.isfinite(logdet):
+            return np.inf, np.zeros(2)
+        leverage = weight * np.einsum("ij,ji->i", design, np.linalg.solve(info, design.T))
+        score = design.T @ (event - prob + leverage * (0.5 - prob))
+        value = np.sum(np.logaddexp(0, logits) - event * logits) - 0.5 * logdet
+        return value, -score
 
-    def jac(beta):
-        return design.T @ (special.expit(design @ beta) - event)
-
-    fit = optimize.minimize(objective, np.zeros(2), jac=jac, method="BFGS", options={"gtol": 1e-7})
-    if (
-        not np.isfinite(fit.x).all()
-        or np.max(np.abs(fit.x)) > 30
-        or (not fit.success and np.linalg.norm(jac(fit.x)) > 1e-4)
-    ):
+    fit = optimize.minimize(
+        objective, np.zeros(2), jac=True, method="BFGS", options={"gtol": 1e-7, "maxiter": 500}
+    )
+    value, gradient = objective(fit.x)
+    if not np.isfinite(value) or not np.isfinite(fit.x).all() or np.max(np.abs(gradient)) > 1e-5:
         return None
     return fit.x
+
+
+def _event_inference(
+    t: np.ndarray,
+    events: np.ndarray,
+    beta: np.ndarray,
+    annual: pd.Series,
+    cfg: Config,
+    key: str,
+    quantile: float,
+) -> dict:
+    """Conditional block permutation test, with no incompatible bootstrap intervals."""
+    counts = {"events": int(events.sum()), "non_events": int(len(events) - events.sum())}
+    if min(counts.values()) < 10:
+        return skipped("fewer_than_10_events_or_non_events", **counts)
+    if not cfg.bootstrap_samples:
+        return skipped("resampling_disabled", **counts)
+    if annual.isna().any() or np.any(np.diff(annual.index.year) != 1):
+        return skipped("event_inference_requires_complete_regular_years", **counts)
+    block = cfg.block_years
+    nblocks = len(t) // block
+    if nblocks < 6:
+        return skipped("fewer_than_six_complete_blocks", **counts)
+    blocks = np.arange(nblocks * block).reshape(nblocks, block)
+    remainder = np.arange(nblocks * block, len(t))
+    rng = rng_for(cfg, key)
+    slopes = []
+    base_mask = baseline_mask(annual.index, cfg)
+    for _ in range(cfg.bootstrap_samples):
+        order = np.r_[blocks[rng.permutation(nblocks)].ravel(), remainder]
+        # The baseline threshold is estimated, so it is part of the permuted statistic.
+        values = annual.to_numpy()[order]
+        threshold = np.quantile(values[base_mask], quantile)
+        event_sample = (values < threshold if quantile < 0.5 else values > threshold).astype(float)
+        sample = _logistic(t, event_sample)
+        if sample is not None:
+            slopes.append(float(sample[1]))
+    attempts = {
+        "attempted": cfg.bootstrap_samples,
+        "successful": len(slopes),
+        "failed": cfg.bootstrap_samples - len(slopes),
+    }
+    if len(slopes) != cfg.bootstrap_samples:
+        return skipped("permutation_fit_failed_no_replicates_discarded", **attempts, **counts)
+    return {
+        "status": "ok",
+        "test": "Firth_slope_two_sided_block_permutation",
+        "p_value": float((1 + np.count_nonzero(np.abs(slopes) >= abs(beta[1]) - 1e-12)) / (len(slopes) + 1)),
+        "p_value_resolution": 1 / (len(slopes) + 1),
+        "block_years": block,
+        "blocks": nblocks,
+        "fixed_remainder_years": len(remainder),
+        "null": "Annual value blocks are exchangeable conditional on the fixed remainder; baseline threshold is refitted each time.",
+        "caveat": "Approximate for serial dependence across block boundaries; no confidence interval is claimed.",
+        **attempts,
+        **counts,
+    }
 
 
 def _empirical(events: np.ndarray, alpha: float) -> dict:
@@ -256,29 +320,15 @@ def probability_change(annual: pd.Series, cfg: Config, key: str) -> dict:
             "split_year": split,
         }
         if beta is None:
-            result["logistic"] = skipped("constant_events_or_complete_separation")
+            result["logistic"] = skipped("Firth_solver_failed")
         else:
             p_then, p_now = [float(special.expit(x @ beta)) for x in endpoints]
             ratio = p_now / p_then
-            inference = skipped("bootstrap_disabled_missing_values_or_fewer_than_two_blocks")
-            if cfg.bootstrap_samples and not annual.isna().any() and len(annual) >= 2 * cfg.block_years:
-                rng = rng_for(cfg, key + tail)
-                slopes, ratios = [], []
-                for _ in range(cfg.bootstrap_samples):
-                    idx = block_indices(len(t), cfg.block_years, rng)
-                    sample = _logistic(t[idx], events[idx])
-                    if sample is not None:
-                        slopes.append(sample[1])
-                        probs = [special.expit(x @ sample) for x in endpoints]
-                        ratios.append(probs[1] / probs[0])
-                inference = bootstrap_summary(slopes, float(beta[1]), cfg)
-                if inference["status"] == "ok":
-                    inference["log_odds_slope_ci_per_decade"] = inference.pop("ci")
-                    inference["probability_ratio_ci_percentile"] = np.quantile(
-                        ratios, [cfg.alpha / 2, 1 - cfg.alpha / 2]
-                    )
+            inference = _event_inference(t, events, beta, annual, cfg, key + tail, quantile)
             result["logistic"] = {
                 "status": "ok",
+                "estimator": "Firth_Jeffreys_penalized_logistic",
+                "point_estimates_are_descriptive": True,
                 "log_odds_slope_per_decade": beta[1],
                 "first_year": int(years[0]),
                 "last_year": int(years[-1]),
@@ -311,7 +361,10 @@ def _quantile_fit(t: np.ndarray, y: np.ndarray, tau: float) -> np.ndarray | None
 
 def quantile_trends(data: pd.Series, cfg: Config, key: str, *, frequency: int = 12) -> dict:
     valid = data.dropna()
-    if len(valid) < max(cfg.min_years * frequency * cfg.min_coverage, 20):
+    support_failure = observation_support(data, cfg, frequency)
+    if support_failure:
+        return support_failure
+    if len(valid) < 20:
         return skipped("insufficient_observations_for_quantile_regression")
     if len(valid) > 3000:
         return skipped("quantile_point_limit_exceeded_use_monthly_or_annual")
