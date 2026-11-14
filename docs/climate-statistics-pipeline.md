@@ -321,7 +321,7 @@ constant/empty series, baseline failures, FDR, daily missingness, leap days, bot
 PET units, SPI, quantile optimization, driver adjustment, schemas and atomic JSON writing.
 
 Project method context: [`10-methods.md`](10-methods.md) and
-[the supplied method brief](<../Статистика методи.md>). The implementation distinguishes the brief's
+[the team's method brief](planning/2026-11-14-stats-methods.md). The implementation distinguishes the brief's
 illustrative insights from actual computed evidence.
 
 Brown–Forsythe uses the median-centered implementation documented in
