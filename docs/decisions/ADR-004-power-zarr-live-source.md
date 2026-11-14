@@ -1,4 +1,4 @@
-# ADR-003 — NASA POWER Zarr archive as the primary live data source
+# ADR-004 — NASA POWER Zarr archive as the primary live data source
 
 - Status: Proposed (pending data-engineer and lead approval)
 - Date: 2026-11-14

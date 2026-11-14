@@ -1,6 +1,6 @@
 # ADR-003 — Yue–Wang is the official test for the Ukraine analysis archive
 
-- Status: Accepted
+- Status: Proposed (pending science-lead approval; builds on ADR-002, which is still Proposed)
 - Date: 2026-11-14
 - Deciders: team lead (15:17, via Thinker). Critique's opposite proposal was not adopted.
 - Requirement IDs: R-04, R-05, R-16

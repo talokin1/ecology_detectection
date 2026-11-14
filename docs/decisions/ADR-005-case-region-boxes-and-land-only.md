@@ -1,4 +1,4 @@
-# ADR-004 — Case-region boxes and land-only regional means
+# ADR-005 — Case-region boxes and land-only regional means
 
 - Status: Proposed (pending team approval; data plan decision D1)
 - Date: 2026-11-14

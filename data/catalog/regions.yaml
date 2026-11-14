@@ -1,3 +1,4 @@
+# Case boxes and land_only: docs/decisions/ADR-005-case-region-boxes-and-land-only.md
 # Region presets — Earth System Trend Detective
 # A region is a latitude/longitude box: bbox = [west, south, east, north] in degrees,
 # longitudes -180..180 (west > east means the box crosses the antimeridian).
