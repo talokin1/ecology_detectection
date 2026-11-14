@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 import pytest
-from trend_detective import acquire, grace, modis_ndvi, power_zarr
+from trend_detective import acquire, grace, modis_ndvi, omi_no2, power_zarr
 from trend_detective.earthdata import NotCachedError
 from trend_detective.power_zarr import Region
 
@@ -225,3 +225,17 @@ def test_preset_land_only_flag_is_used(catalog, tmp_path):
     acquire.get_series("temp", "coast", land_only=False)
     acquire.get_series("temp", [10, 40, 20, 50])
     assert [c[3] for c in catalog] == [True, False, False]
+
+
+def test_omi_no2_is_dispatched_offline(monkeypatch):
+    seen = {}
+
+    def fake(region, refresh=False, offline=False):
+        seen.update(region=region.name, offline=offline)
+        raise NotCachedError("not cached")
+
+    monkeypatch.setattr(omi_no2, "region_series", fake)
+    assert acquire.list_variables()["no2_tropospheric_omi"].available
+    with pytest.raises(NotCachedError):
+        acquire.get_series("no2_tropospheric_omi", [30.2, 50.2, 30.9, 50.7])
+    assert seen == {"region": "custom box", "offline": True}

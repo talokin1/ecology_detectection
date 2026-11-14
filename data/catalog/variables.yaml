@@ -318,17 +318,20 @@ variables:
     topic: air
     why_it_trends: Emission controls lower it in many US/European/Chinese cities while growth raises it elsewhere — a classic opposite-trend example.
     source: ges_disc
-    access: {reader: none}  # no reader yet: not offered in the app
+    access: {reader: omi_no2, version: "004", login: earthdata}
     dataset: {short_name: OMNO2d, version: "004", variable: ColumnAmountNO2TropCloudScreened, alt_version: "003"}
     units: molecules/cm^2
     temporal: [daily]   # aggregate to monthly
     period: 2004-10-present
     resolution: 0.25 deg
     percent_change_meaningful: true
-    caveats: OMI row anomaly since 2007 reduces coverage; check for instrument drift.
+    caveats: Clear-sky days only (cloud fraction < 30%), one overpass about 13:30 local time; the OMI row anomaly since 2007 reduces coverage, so Nov-Dec months are often missing. Over Kyiv the winter months come out as low as summer, probably a snow/low-sun retrieval artefact (under review, 2026-11-14), so do not read winter values as clean winter air. Column amount, not surface concentration.
+    status: under review (seasonal cycle check failed for Kyiv; science lead to review before use in a case)
     biomes: [city, industrial]
+    doi: 10.5067/AURA/OMI/DATA3407
+    reader: backend/trend_detective/omi_no2.py
     dataset_verified: true
-    variable_verified: false
+    variable_verified: true  # 2026-11-14: DMR of v004 granule: /HDFEOS/GRIDS/ColumnAmountNO2/Data_Fields/ColumnAmountNO2TropCloudScreened, float32, fill -1.2676506e30, molec/cm2, lat ascending
 
   - id: total_ozone_omi
     name: Total ozone column (OMI)

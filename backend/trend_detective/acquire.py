@@ -26,12 +26,12 @@ import numpy as np
 import pandas as pd
 import yaml
 
-from . import grace, modis_ndvi, power_zarr
+from . import grace, modis_ndvi, omi_no2, power_zarr
 from .earthdata import NotCachedError
 from .power_zarr import REPO_ROOT, Region
 
 CATALOG_DIR = REPO_ROOT / "data" / "catalog"
-READERS = ("power_zarr", "grace", "modis_ndvi")
+READERS = ("power_zarr", "grace", "modis_ndvi", "omi_no2")
 
 # Data-quality guards (R-03). Defaults pending science-lead review; see docs/10-methods.md.
 MIN_YEARS = 10
@@ -165,6 +165,8 @@ def get_series(
         s = grace.region_series(reg, refresh=refresh, offline=offline)
     elif v.reader == "modis_ndvi":
         s = modis_ndvi.region_series(reg, refresh=refresh, offline=offline)
+    elif v.reader == "omi_no2":
+        s = omi_no2.region_series(reg, refresh=refresh, offline=offline)
     else:  # pragma: no cover - guarded by READERS
         raise LookupError(v.reader)
 
