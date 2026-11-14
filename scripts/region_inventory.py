@@ -20,8 +20,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "backend"))
 
-import pandas as pd  # noqa: E402
-from trend_detective import acquire  # noqa: E402
+import pandas as pd
+from trend_detective import acquire
 
 
 def main(argv: list[str] | None = None) -> int:

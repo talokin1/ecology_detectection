@@ -10,11 +10,18 @@ from trend_detective.power_zarr import Region
 
 def test_assign_months_follows_jpl_convention():
     """Real windows from the RL06.3Mv04 file around the two shifted solutions."""
-    tb = np.array([
-        ["2011-10-17", "2011-11-16"], ["2011-12-17", "2012-01-15"], ["2012-01-01", "2012-01-31"],
-        ["2012-03-20", "2012-04-19"],
-        ["2015-04-01", "2015-04-30"], ["2015-04-12", "2015-05-11"], ["2015-06-29", "2015-07-31"],
-    ], dtype="datetime64[ns]")
+    tb = np.array(
+        [
+            ["2011-10-17", "2011-11-16"],
+            ["2011-12-17", "2012-01-15"],
+            ["2012-01-01", "2012-01-31"],
+            ["2012-03-20", "2012-04-19"],
+            ["2015-04-01", "2015-04-30"],
+            ["2015-04-12", "2015-05-11"],
+            ["2015-06-29", "2015-07-31"],
+        ],
+        dtype="datetime64[ns]",
+    )
     months = [str(m) for m in grace.assign_months(tb)]
     assert months == ["2011-11", "2011-12", "2012-01", "2012-04", "2015-04", "2015-05", "2015-07"]
 
@@ -37,8 +44,11 @@ def fake_file(path):
             "time_bounds": (("time", "bounds"), np.stack([starts, ends], axis=1)),
         },
         coords={"time": starts + (ends - starts) / 2, "lat": lat, "lon": lon},
-        attrs={"months_missing": "2003-03", "time_mean_removed": "2004.000 to 2009.999",
-               "date_created": "2026-11-10T07:11:31Z"},
+        attrs={
+            "months_missing": "2003-03",
+            "time_mean_removed": "2004.000 to 2009.999",
+            "date_created": "2026-11-10T07:11:31Z",
+        },
     )
     ds.to_netcdf(path)
     return path

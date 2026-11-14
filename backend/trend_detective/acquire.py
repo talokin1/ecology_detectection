@@ -74,13 +74,20 @@ class Variable:
 
     def summary(self) -> dict:
         return {
-            "id": self.id, "name": self.name, "definition": self.definition,
-            "why_it_trends": self.why_it_trends, "units": self.units, "period": self.period,
+            "id": self.id,
+            "name": self.name,
+            "definition": self.definition,
+            "why_it_trends": self.why_it_trends,
+            "units": self.units,
+            "period": self.period,
             # "live" = no login needed to (re)fetch, i.e. the precompute can refresh it without a
             # token (ADR-004); the static app never reads per request (plan v2 decision 8).
-            "available": self.available, "live": self.available and not self.needs_login,
-            "reader": self.reader, "caveats": self.entry.get("caveats"),
-            "topic": self.entry.get("topic"), "how_measured": self.entry.get("how_measured"),
+            "available": self.available,
+            "live": self.available and not self.needs_login,
+            "reader": self.reader,
+            "caveats": self.entry.get("caveats"),
+            "topic": self.entry.get("topic"),
+            "how_measured": self.entry.get("how_measured"),
             "percent_change_meaningful": self.entry.get("percent_change_meaningful"),
             "biomes": self.entry.get("biomes", []),
         }
@@ -98,9 +105,14 @@ def list_variables(path: Path | None = None, *, available_only: bool = False) ->
     for e in data["variables"]:
         units = str(e.get("units", "")).split("#")[0].strip()
         v = Variable(
-            id=e["id"], name=e["name"], definition=e.get("definition", ""),
-            why_it_trends=e.get("why_it_trends", ""), units=units, period=str(e.get("period", "")),
-            access=dict(e.get("access") or {"reader": "none"}), entry=e,
+            id=e["id"],
+            name=e["name"],
+            definition=e.get("definition", ""),
+            why_it_trends=e.get("why_it_trends", ""),
+            units=units,
+            period=str(e.get("period", "")),
+            access=dict(e.get("access") or {"reader": "none"}),
+            entry=e,
         )
         if v.id in out:
             raise ValueError(f"duplicate variable id {v.id!r} in catalog")
@@ -169,8 +181,9 @@ def get_series(
     offline = v.needs_login and not allow_login_fetch
 
     if v.reader == "power_zarr":
-        s = power_zarr.region_series(v.access["variable"], reg, v.access.get("store", "merra2"),
-                                     refresh=refresh, land_only=land_only)
+        s = power_zarr.region_series(
+            v.access["variable"], reg, v.access.get("store", "merra2"), refresh=refresh, land_only=land_only
+        )
     elif v.reader == "grace":
         s = grace.region_series(reg, refresh=refresh, offline=offline)
     elif v.reader == "modis_ndvi":
@@ -179,14 +192,21 @@ def get_series(
         raise LookupError(v.reader)
 
     reader_units = s.attrs.get("units", "")
-    s.attrs.update({
-        "variable_id": v.id, "catalog": v.summary(), "region": reg.name, "land_only": land_only,
-        "bbox": [reg.lon_min, reg.lat_min, reg.lon_max, reg.lat_max],
-        # B2-11: ``units`` is the catalog unit (what the app labels); ``source_units`` is the
-        # reader's own string (e.g. POWER "C" for degC). ``catalog_units`` kept for callers.
-        "units": v.units or reader_units, "source_units": reader_units, "catalog_units": v.units,
-        "assessment": assess(s),
-    })
+    s.attrs.update(
+        {
+            "variable_id": v.id,
+            "catalog": v.summary(),
+            "region": reg.name,
+            "land_only": land_only,
+            "bbox": [reg.lon_min, reg.lat_min, reg.lon_max, reg.lat_max],
+            # B2-11: ``units`` is the catalog unit (what the app labels); ``source_units`` is the
+            # reader's own string (e.g. POWER "C" for degC). ``catalog_units`` kept for callers.
+            "units": v.units or reader_units,
+            "source_units": reader_units,
+            "catalog_units": v.units,
+            "assessment": assess(s),
+        }
+    )
     return s
 
 
@@ -211,8 +231,9 @@ def get_input_series(
     reg = resolve_region(region)
     lo = _preset_land_only(region, land_only)
     s = power_zarr.region_series(parameter, reg, store, refresh=refresh, land_only=lo)
-    s.attrs.update({"region": reg.name, "land_only": lo,
-                    "bbox": [reg.lon_min, reg.lat_min, reg.lon_max, reg.lat_max]})
+    s.attrs.update(
+        {"region": reg.name, "land_only": lo, "bbox": [reg.lon_min, reg.lat_min, reg.lon_max, reg.lat_max]}
+    )
     return s
 
 
@@ -231,8 +252,7 @@ def get_monthly_from_daily(
     Use this, not the monthly store, for mean daily T2M_MAX / T2M_MIN: the monthly store holds
     the month's single extreme hour instead.
     """
-    daily = get_input_series(parameter, region, store="merra2_daily", land_only=land_only,
-                             refresh=refresh)
+    daily = get_input_series(parameter, region, store="merra2_daily", land_only=land_only, refresh=refresh)
     s = power_zarr.monthly_from_daily(daily, how, min_fraction)
     s.attrs["assessment"] = assess(s)
     return s
@@ -262,11 +282,20 @@ def assess(s: pd.Series) -> dict:
     month_sd = s.groupby(idx.month).std(ddof=0).reindex(range(1, 13))
     ref_sd = float(month_sd.max())
     if not ref_sd > 0:
-        return {"status": "no_variation", "n_months": int(len(s)), "start": str(idx.min()),
-                "end": str(idx.max()), "record_years": round(years, 1),
-                "zero_fraction": round(zero_fraction, 3),
-                "notes": ["The value never changes in this region (for example no snow ever falls), "
-                          "so there is nothing to measure a trend in."]}
+        return {
+            "status": "no_variation",
+            "n_months": len(s),
+            "start": str(idx.min()),
+            "end": str(idx.max()),
+            "record_years": round(years, 1),
+            "zero_fraction": round(zero_fraction, 3),
+            "notes": [
+                (
+                    "The value never changes in this region (for example no snow ever falls), "
+                    "so there is nothing to measure a trend in."
+                )
+            ],
+        }
     flat_months = [int(m) for m in month_sd.index if month_sd[m] < FLAT_MONTH_RELATIVE_SD * ref_sd]
     # Near-ties: observations in flat calendar months, or exactly zero (a few non-zero outliers can
     # give a calendar month enough spread to look non-flat, e.g. rare sea ice in the Sea of Azov).
@@ -281,30 +310,42 @@ def assess(s: pd.Series) -> dict:
     }
     notes = []
     if not checks["long_enough"]:
-        notes.append(f"Only {years:.1f} years / {len(s)} months: at least {MIN_YEARS} years are "
-                     "needed before a trend means much.")
+        notes.append(
+            f"Only {years:.1f} years / {len(s)} months: at least {MIN_YEARS} years are "
+            "needed before a trend means much."
+        )
     if not checks["seasonal_cycle_estimable"]:
-        weak = [pd.Timestamp(2000, m, 1).strftime("%b") for m in range(1, 13)
-                if per_month[m] < MIN_YEARS_PER_CALENDAR_MONTH]
-        notes.append(f"Few values for {', '.join(weak)} (e.g. snow or cloud), so the seasonal "
-                     "cycle is uncertain for those months.")
+        weak = [
+            pd.Timestamp(2000, m, 1).strftime("%b")
+            for m in range(1, 13)
+            if per_month[m] < MIN_YEARS_PER_CALENDAR_MONTH
+        ]
+        notes.append(
+            f"Few values for {', '.join(weak)} (e.g. snow or cloud), so the seasonal "
+            "cycle is uncertain for those months."
+        )
     if not checks["few_flat_months"]:
         if flat_months:
             names = ", ".join(pd.Timestamp(2000, m, 1).strftime("%b") for m in flat_months)
             what = f"{names} hardly change from year to year (e.g. dry season, or no snow in summer)."
         else:
             what = f"{zero_fraction:.0%} of months are exactly zero."
-        notes.append(f"{what} The median-based slope (Sen) can then be pulled toward zero; "
-                     "compare it with the regression slope.")
+        notes.append(
+            f"{what} The median-based slope (Sen) can then be pulled toward zero; "
+            "compare it with the regression slope."
+        )
     if not checks["no_long_gaps"]:
-        notes.append(f"Contains a gap of {max(gaps)} months; the record before and after may "
-                     "come from different instruments.")
+        notes.append(
+            f"Contains a gap of {max(gaps)} months; the record before and after may "
+            "come from different instruments."
+        )
 
     status = "too_short" if not checks["long_enough"] else ("ok" if all(checks.values()) else "caution")
     return {
         "status": status,
-        "n_months": int(len(s)),
-        "start": str(idx.min()), "end": str(idx.max()),
+        "n_months": len(s),
+        "start": str(idx.min()),
+        "end": str(idx.max()),
         "record_years": round(years, 1),
         "coverage": round(float(present.mean()), 3),
         "longest_gap_months": int(max(gaps)),
@@ -322,8 +363,12 @@ def inventory(region: str | Region | Sequence[float], *, allow_login_fetch: bool
     for a trend analysis there. Runs no trend tests (no ranking by significance)."""
     rows = []
     for v in list_variables().values():
-        row = {"id": v.id, "name": v.name, "available": v.available,
-               "live": v.available and not v.needs_login}  # live = refresh needs no login
+        row = {
+            "id": v.id,
+            "name": v.name,
+            "available": v.available,
+            "live": v.available and not v.needs_login,
+        }  # live = refresh needs no login
         if not v.available:
             rows.append(row | {"status": "no reader", "notes": ""})
             continue
@@ -336,7 +381,14 @@ def inventory(region: str | Region | Sequence[float], *, allow_login_fetch: bool
             rows.append(row | {"status": "no data", "notes": str(exc)})
             continue
         a = s.attrs["assessment"]
-        rows.append(row | {"status": a["status"], "period": f"{a['start']}..{a['end']}",
-                           "n_months": a["n_months"], "units": s.attrs["units"],
-                           "notes": " ".join(a["notes"])})
+        rows.append(
+            row
+            | {
+                "status": a["status"],
+                "period": f"{a['start']}..{a['end']}",
+                "n_months": a["n_months"],
+                "units": s.attrs["units"],
+                "notes": " ".join(a["notes"]),
+            }
+        )
     return pd.DataFrame(rows)

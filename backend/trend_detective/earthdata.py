@@ -58,14 +58,21 @@ def _is_nasa_host(url: str) -> bool:
 RETRY_STATUS = {429, 500, 502, 503, 504}
 
 
-def get(url: str, *, params: dict | None = None, timeout: float = 300, retries: int = 4,
-        stream: bool = False) -> requests.Response:
+def get(
+    url: str, *, params: dict | None = None, timeout: float = 300, retries: int = 4, stream: bool = False
+) -> requests.Response:
     """GET with the bearer token; retries connection errors and HTTP 429/5xx with backoff."""
     return _with_retries(lambda: _get_once(url, params=params, timeout=timeout, stream=stream), retries)
 
 
-def get_public(url: str, *, params: dict | None = None, headers: dict | None = None,
-               timeout: float = 60, retries: int = 4) -> requests.Response:
+def get_public(
+    url: str,
+    *,
+    params: dict | None = None,
+    headers: dict | None = None,
+    timeout: float = 60,
+    retries: int = 4,
+) -> requests.Response:
     """GET without credentials (CMR and other public endpoints), with the same retries."""
     return _with_retries(lambda: requests.get(url, params=params, headers=headers, timeout=timeout), retries)
 
@@ -81,12 +88,13 @@ def _with_retries(call, retries: int) -> requests.Response:
             if r.status_code not in RETRY_STATUS or attempt == retries:
                 r.raise_for_status()
                 return r
-        time.sleep(2 ** attempt)
+        time.sleep(2**attempt)
     raise AssertionError("unreachable")
 
 
-def _get_once(url: str, *, params: dict | None, timeout: float, stream: bool,
-              max_hops: int = 8) -> requests.Response:
+def _get_once(
+    url: str, *, params: dict | None, timeout: float, stream: bool, max_hops: int = 8
+) -> requests.Response:
     """One GET with the bearer token, following redirects by hand.
 
     The token is sent only to ``*.nasa.gov`` hosts, never to the signed storage URLs
@@ -95,8 +103,9 @@ def _get_once(url: str, *, params: dict | None, timeout: float, stream: bool,
     session = requests.Session()
     for _ in range(max_hops):
         headers = {"Authorization": f"Bearer {token()}"} if _is_nasa_host(url) else {}
-        r = session.get(url, params=params, headers=headers, timeout=timeout,
-                        allow_redirects=False, stream=stream)
+        r = session.get(
+            url, params=params, headers=headers, timeout=timeout, allow_redirects=False, stream=stream
+        )
         if r.status_code in (301, 302, 303, 307, 308):
             url = urljoin(url, r.headers["Location"])
             params = None  # already encoded in the redirect target
