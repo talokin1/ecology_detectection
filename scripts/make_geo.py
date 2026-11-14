@@ -3,8 +3,10 @@
 Outputs (both committed, both small):
   frontend/public/basemap/land.geojson       coastlines (land polygons, simplified)
   frontend/public/basemap/countries.geojson  country borders, Ukrainian point of view
-  data/regions/regions.geojson               outlines of the prepared regions (shared by stats and viz)
+  data/regions/regions.geojson               outlines of the prepared regions (shared by stats and viz):
+                                             the regions.yaml box, clipped to land when land_only
 
+Country outlines are a visual layer only; region outlines follow data/catalog/regions.yaml.
 Natural Earth is public domain. The country file is the official "point of view" variant for
 Ukraine (ne_10m_admin_0_countries_ukr), so Crimea is drawn as part of Ukraine.
 
@@ -19,6 +21,7 @@ import json
 import urllib.request
 from pathlib import Path
 
+import yaml
 from shapely.geometry import box, mapping, shape
 from shapely.ops import unary_union
 
@@ -29,19 +32,37 @@ REGIONS = ROOT / "data" / "regions"
 NE_URL = "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/{}"
 FILES = {"countries": "ne_10m_admin_0_countries_ukr.geojson", "land": "ne_50m_land.geojson"}
 
-# Prepared regions: (id, name, place type, how the outline is built)
-REGION_SPECS = [
-    ("ukraine", "Ukraine", "farmland", {"countries": ["UKR"]}),
-    ("south_ukraine", "Southern Ukraine", "farmland",
-     {"countries": ["UKR"], "clip": (28.0, 44.0, 40.5, 47.6)}),
-    ("north_europe", "Northern Europe", "forest",
-     {"countries": ["NOR", "SWE", "FIN", "DNK", "EST", "LVA", "LTU"], "clip": (-10.0, 53.0, 35.0, 71.5)}),
-    ("south_europe", "Southern Europe", "coast",
-     {"countries": ["ESP", "PRT", "ITA", "GRC"], "clip": (-10.0, 35.0, 30.0, 46.0)}),
-    ("sahel", "Sahel", "desert", {"land": True, "clip": (-17.0, 12.0, 38.0, 18.0)}),
+CATALOG_REGIONS = ROOT / "data" / "catalog" / "regions.yaml"  # read-only here (owned by data)
+
+# Prepared regions the app offers, in display order. Geometry and bbox come from regions.yaml
+# (merge plan v2, M3): outline = box(bbox) ∩ Natural Earth land if land_only, else box(bbox), and
+# the geojson `bbox` property is the yaml bbox verbatim. `place_type` is a viz-only field.
+# Presets in regions.yaml that are not listed here (test presets such as arctic_cap/nw_india,
+# named alternates such as ukraine_sa_bbox) or that carry `app: false` are skipped.
+APP_REGIONS = {
+    "ukraine": "farmland",
+    "south_ukraine": "farmland",
+    "north_europe": "forest",
+    "south_europe": "coast",
+    "sahel": "desert",
+}
+# OPEN USER DECISION: great_plains has no preset in regions.yaml (data/ADR-005). Until the team
+# either drops it or adds a preset via an ADR-005 addendum, it keeps its old country-clip outline
+# so the app does not lose a region. Its numbers do NOT follow the data pipeline's box.
+LEGACY_REGIONS = [
     ("great_plains", "Great Plains (USA)", "farmland",
      {"countries": ["USA"], "clip": (-104.0, 33.0, -94.0, 45.0)}),
 ]
+
+
+def load_presets() -> dict[str, dict]:
+    doc = yaml.safe_load(CATALOG_REGIONS.read_text(encoding="utf-8"))
+    return {r["id"]: r for r in doc["regions"]}
+
+
+def short_name(name: str) -> str:
+    """'Sahel (West and Central Africa)' -> 'Sahel': the map label stays short."""
+    return name.split(" (")[0].strip()
 
 
 def fetch(name: str) -> dict:
@@ -96,25 +117,47 @@ def main() -> None:
     write(BASEMAP / "land.geojson", land_features)
 
     region_features = []
-    for rid, name, place, spec in REGION_SPECS:
-        if "countries" in spec:
-            geom = unary_union([by_iso[i] for i in spec["countries"]])
-        else:
-            geom = land_union
-        if "clip" in spec:
-            geom = geom.intersection(box(*spec["clip"]))
+
+    def feature(rid, name, place, geom, bbox):
         geom = geom.simplify(0.05, preserve_topology=True)
         if geom.geom_type == "MultiPolygon":  # drop specks (small islands) from the outline
             geom = unary_union([g for g in geom.geoms if g.area > 0.3])
         c = geom.representative_point()
-        w, s, e, n = geom.bounds
-        region_features.append({
+        return {
             "type": "Feature",
             "properties": {"id": rid, "name": name, "place_type": place,
-                           "bbox": [round(w, 2), round(s, 2), round(e, 2), round(n, 2)],
+                           "bbox": [float(x) for x in bbox],
                            "centroid": [round(c.x, 2), round(c.y, 2)]},
             "geometry": rounded(geom),
-        })
+        }
+
+    presets = load_presets()
+    for rid, place in APP_REGIONS.items():
+        r = presets.get(rid)
+        if r is None:
+            raise SystemExit(f"region {rid!r} is missing from {CATALOG_REGIONS.relative_to(ROOT)}")
+        if r.get("app") is False:
+            print(f"skip {rid}: app: false in regions.yaml")
+            continue
+        w, s_, e, n = r["bbox"]
+        if w > e:
+            raise SystemExit(f"region {rid!r} crosses the antimeridian; not supported by the map")
+        geom = box(w, s_, e, n)
+        if r.get("land_only"):
+            geom = geom.intersection(land_union)
+        region_features.append(feature(rid, short_name(r["name"]), place, geom, r["bbox"]))
+    skipped = sorted(set(presets) - set(APP_REGIONS))
+    if skipped:
+        print(f"not in the app (regions.yaml only): {', '.join(skipped)}")
+
+    for rid, name, place, spec in LEGACY_REGIONS:
+        if rid in presets:
+            print(f"WARNING {rid} now has a preset in regions.yaml; move it to APP_REGIONS")
+            continue
+        print(f"WARNING {rid}: no preset in regions.yaml, legacy country-clip outline kept (open decision)")
+        geom = unary_union([by_iso[i] for i in spec["countries"]]).intersection(box(*spec["clip"]))
+        b = geom.bounds
+        region_features.append(feature(rid, name, place, geom, [round(x, 2) for x in b]))
     write(REGIONS / "regions.geojson", region_features)
 
 
