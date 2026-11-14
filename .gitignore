@@ -1,0 +1,39 @@
+# Secrets
+.env
+.env.local
+.env.production
+.netrc
+_netrc
+*.pem
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+.ipynb_checkpoints/
+
+# Node
+node_modules/
+dist/
+.vite/
+.next/
+
+# Data (large raw files are rebuilt by scripts/; small curated outputs may be committed)
+data/cache/raw/
+data/cache/**/*.nc
+data/cache/**/*.zarr/
+data/cache/**/*.hdf
+data/cache/**/*.h5
+!data/cache/**/*.provenance.json
+
+# OS / editors
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Claude Code local overrides
+.claude/settings.local.json
