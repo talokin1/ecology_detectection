@@ -1,0 +1,40 @@
+{
+  "source": "NASA POWER Zarr archive (AWS Open Data)",
+  "source_url": "https://nasa-power.s3.us-west-2.amazonaws.com/syn1deg/temporal/power_syn1deg_monthly_temporal_utc.zarr",
+  "short_name": "power_syn1deg_monthly_temporal_utc.zarr",
+  "version": "POWER Version 10.0.0",
+  "doi": null,
+  "landing_page": "https://power.larc.nasa.gov/",
+  "registry_page": "https://registry.opendata.aws/nasa-power/",
+  "variable": {
+    "variable": "AOD_55_ADJ",
+    "source": "syn1deg",
+    "long_name": "Adjusted Aerosol Optical Depth 55",
+    "units": "dimensionless",
+    "definition": "The adjusted optical thickness at 0.55 um measured vertically; the component of the atmosphere to quantify the removal of radiant energy from an incident beam."
+  },
+  "region_name": "Arctic (north of 70\u00b0N)",
+  "bbox": {
+    "lat_min": 70.0,
+    "lat_max": 90.0,
+    "lon_min": -180.0,
+    "lon_max": 180.0
+  },
+  "frequency": "monthly",
+  "n_months": 308,
+  "time_range": {
+    "start": "2001-01",
+    "end": "2026-08"
+  },
+  "accessed": "2026-11-14T14:19:18Z",
+  "land_only": false,
+  "processing": [
+    "selected grid cells whose centres fall inside the bbox",
+    "masked fill value -999.0",
+    "area mean with cos(latitude) weights, ignoring missing cells",
+    "dropped time steps with no data (the store pre-allocates future dates)",
+    "kept source units"
+  ],
+  "script": "backend/trend_detective/power_zarr.py",
+  "git_commit": "b47dff5"
+}
