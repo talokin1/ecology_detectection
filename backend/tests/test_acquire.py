@@ -225,3 +225,31 @@ def test_preset_land_only_flag_is_used(catalog, tmp_path):
     acquire.get_series("temp", "coast", land_only=False)
     acquire.get_series("temp", [10, 40, 20, 50])
     assert [c[3] for c in catalog] == [True, False, False]
+
+
+def test_internal_inputs_state_their_semantics():
+    """Q3: T2M_MAX/T2M_MIN/PRECTOTCORR_SUM are internal inputs, never user-facing variables."""
+    inputs = acquire.list_inputs()
+    assert {"T2M_MAX", "T2M_MIN", "PRECTOTCORR_SUM"} <= set(inputs)
+    assert not set(inputs) & set(acquire.list_variables())
+    for e in inputs.values():
+        assert e["internal"] is True and e["semantics"] and e["monthly"]["how"] in {"mean", "sum"}, e["id"]
+    assert "hottest hour of the month" in inputs["T2M_MAX"]["semantics"]
+    assert inputs["PRECTOTCORR_SUM"]["units"] == "mm/month"
+
+
+def test_real_catalog_solar_display_conversion():
+    """Q1: cache stays W/m^2; the only conversion is the catalog's convert field."""
+    v = acquire.list_variables()["solar_radiation_power"].entry
+    assert str(v["units"]).split("#")[0].strip() == "W/m^2"
+    assert v["display_units"] == "MJ/m^2/day" and v["convert"] == "x * 0.0864"
+    assert eval(v["convert"], {}, {"x": 1.0}) == pytest.approx(86400 / 1e6)  # noqa: S307
+    imerg = acquire.list_variables()["precipitation_imerg"].entry
+    assert imerg["source"] == "power" and "convert" not in imerg
+
+
+def test_real_ukraine_preset_is_canonical_land_only_box():
+    """Q2: canonical Ukraine = [22.0, 44.0, 40.5, 52.5], land only; SA box is a non-app alternate."""
+    regions = acquire.list_regions()
+    assert regions["ukraine"]["bbox"] == [22.0, 44.0, 40.5, 52.5] and regions["ukraine"]["land_only"] is True
+    assert regions["ukraine_sa_bbox"]["app"] is False

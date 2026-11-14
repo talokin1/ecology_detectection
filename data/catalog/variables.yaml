@@ -87,14 +87,16 @@ variables:
 
   - id: solar_radiation_power
     name: Sunlight reaching the ground
-    definition: Energy from the Sun arriving at the surface per day, after clouds and haze.
+    definition: How much sunlight reaches the ground after clouds and haze, as average power over the day and night (shown as energy per day).
     how_measured: Derived from NASA CERES and other satellite measurements combined with a radiation model.
     topic: sunlight
     why_it_trends: Cleaner air ("brightening") or more clouds/aerosols ("dimming") change it.
     source: power
     access: {reader: power_zarr, store: syn1deg, variable: ALLSKY_SFC_SW_DWN}
     parameter: ALLSKY_SFC_SW_DWN
-    units: W/m^2  # POWER Zarr SYN1deg store; the REST API reports MJ/m^2/day
+    units: W/m^2  # POWER Zarr SYN1deg store (cache keeps source units); the REST API reports MJ/m^2/day
+    display_units: MJ/m^2/day
+    convert: "x * 0.0864"  # Q1: 1 W/m^2 = 86,400 J/day = 0.0864 MJ/m^2/day; applied once, by the JSON builder
     temporal: [daily, monthly]
     period: 2001-present (CERES SYN1deg; GEWEX SRB 1984-2000 is a different product, never joined)
     percent_change_meaningful: true
@@ -297,12 +299,12 @@ variables:
     how_measured: Estimated from microwave and infrared measurements by a constellation of satellites led by NASA's GPM mission, adjusted with rain-gauge data.
     topic: water
     why_it_trends: Same as precipitation; satellite view covers oceans and remote land.
-    source: ges_disc
+    source: power  # B2-06: the series is read from the POWER IMERG Zarr store, not from GES DISC
     access: {reader: power_zarr, store: imerg, variable: IMERG_PRECTOT}
-    dataset: {short_name: GPM_3IMERGM, version: "07", variable: precipitation}
-    units: mm/day  # via POWER IMERG store (GES DISC file is mm/hr)
+    dataset: {short_name: power_imerg_monthly_temporal_utc.zarr, version: POWER Version 10.0.0, variable: IMERG_PRECTOT}
+    upstream: {short_name: GPM_3IMERGM, version: "07", variable: precipitation, units: mm/hr}  # GES DISC product POWER resamples; not read directly
+    units: mm/day  # POWER IMERG store is already mm/day: no convert (the GES DISC file's "x * 24" does not apply)
     display_units: mm/day
-    # convert "x * 24" applies to the GES DISC file only; the POWER store is already mm/day
     temporal: [monthly]
     period: 1998-01-present (POWER IMERG store; GES DISC GPM_3IMERGM ends 2025-09 per CMR)
     resolution: 0.1 deg
@@ -466,7 +468,7 @@ variables:
     why_it_trends: Groundwater pumping and ice loss lower it in some regions while others gain water — strong opposite-sign trends.
     source: podaac
     access: {reader: grace, login: earthdata}
-    dataset: {short_name: TELLUS_GRAC-GRFO_MASCON_CRI_GRID_RL06.3_V4, version: RL06.3Mv04, variable: lwe_thickness}
+    dataset: {short_name: TELLUS_GRAC-GRFO_MASCON_CRI_GRID_RL06.3_V4, version: RL06.3Mv04, variable: lwe_thickness, doi: 10.5067/TEMSC-3JC634}
     units: cm (equivalent water height)
     temporal: [monthly]
     period: 2002-04-present (gap 2017-07 to 2018-05 between missions)
@@ -475,8 +477,6 @@ variables:
     biomes: [aquifer, agriculture, glacier]
     dataset_verified: true
     variable_verified: true  # 2026-11-14: opened GRCTellus.JPL.200204_202609 file; lwe_thickness cm, baseline 2004.000-2009.999, land_mask 0/1, lon 0..360
-    doi: 10.5067/TEMSC-3JC634
-    reader: backend/trend_detective/grace.py
 
   - id: ndvi_modis
     name: Vegetation greenness (NDVI, MODIS)
@@ -486,7 +486,7 @@ variables:
     why_it_trends: Longer growing seasons and CO2 fertilisation "green" some regions; drought and deforestation "brown" others.
     source: lp_daac
     access: {reader: modis_ndvi, login: earthdata}
-    dataset: {short_name: MOD13C2, version: "061", variable: "CMG 0.05 Deg Monthly NDVI"}
+    dataset: {short_name: MOD13C2, version: "061", variable: "CMG 0.05 Deg Monthly NDVI", doi: 10.5067/MODIS/MOD13C2.061}
     units: "1"
     scale_factor: 0.0001
     temporal: [monthly]
@@ -497,8 +497,6 @@ variables:
     caveats: Snowy or cloudy months are dropped (pixel_reliability filter), so cold regions lose winter months.
     dataset_verified: true
     variable_verified: true  # 2026-11-14: int16, _FillValue -3000, HDF4 scale_factor=10000 means divide (do not CF-decode); pixel_reliability 0..4
-    doi: 10.5067/MODIS/MOD13C2.061
-    reader: backend/trend_detective/modis_ndvi.py
 
   - id: land_surface_temperature_modis
     name: Land surface temperature (MODIS, daytime)
@@ -557,3 +555,50 @@ variables:
     biomes: [ocean, estuary, coast]
     dataset_verified: true
     variable_verified: false
+
+# ---------------------------------------------------------------- internal method inputs (Q3, B1-05, B1-09)
+# Not shown to users and not part of the variables list above: daily POWER parameters used as inputs
+# to methods (extreme indices, DTR, monthly totals). Read with acquire.get_input_series() /
+# acquire.get_monthly_from_daily(); listed by acquire.list_inputs(). Semantics decided 2026-11-14 (Q3).
+internal_inputs:
+  - id: T2M_MAX
+    internal: true
+    name: Daily maximum air temperature at 2 m
+    parameter: T2M_MAX
+    source: power
+    access: {reader: power_zarr, store: merra2_daily, variable: T2M_MAX}
+    units: degC
+    monthly: {how: mean, meaning: "Tmax = mean of the daily maxima in the month"}
+    semantics: >-
+      "Tmax" always means the mean daily maximum (acquire.get_monthly_from_daily("T2M_MAX", region, "mean")).
+      The POWER *monthly* store's T2M_MAX is the single hottest hour of the month (5-7 degC higher); it may only
+      be shown labelled "hottest hour of the month".
+    temporal: [daily]
+    period: 1981-present
+  - id: T2M_MIN
+    internal: true
+    name: Daily minimum air temperature at 2 m
+    parameter: T2M_MIN
+    source: power
+    access: {reader: power_zarr, store: merra2_daily, variable: T2M_MIN}
+    units: degC
+    monthly: {how: mean, meaning: "Tmin = mean of the daily minima in the month"}
+    semantics: >-
+      "Tmin" is the mean daily minimum; the monthly store's T2M_MIN is the coldest hour of the month.
+      DTR = mean(Tmax) - mean(Tmin) from these daily inputs, never from the monthly-store extremes
+      (which overstate it by up to 10.6 degC).
+    temporal: [daily]
+    period: 1981-present
+  - id: PRECTOTCORR_SUM
+    internal: true
+    name: Monthly precipitation total (sum of daily PRECTOTCORR)
+    parameter: PRECTOTCORR
+    source: power
+    access: {reader: power_zarr, store: merra2_daily, variable: PRECTOTCORR}
+    units: mm/month
+    monthly: {how: sum, meaning: "sum of the daily totals (mm/day x 1 day) over the month"}
+    semantics: >-
+      Monthly total in mm/month from the daily store (cache files merra2_PRECTOTCORR_SUM_*). The catalog
+      variable precipitation_power stays mm/day (monthly mean of daily rates).
+    temporal: [monthly]
+    period: 1981-present

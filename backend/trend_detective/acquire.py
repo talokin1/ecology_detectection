@@ -106,6 +106,13 @@ def list_variables(path: Path | None = None, *, available_only: bool = False) ->
     return out
 
 
+def list_inputs(path: Path | None = None) -> dict[str, dict]:
+    """Internal method inputs by id (``internal_inputs`` in the catalog: T2M_MAX, T2M_MIN,
+    PRECTOTCORR_SUM). Not shown to users; each entry states its monthly semantics (Q3)."""
+    data = _load_yaml(Path(path) if path else CATALOG_DIR / "variables.yaml")
+    return {e["id"]: e for e in data.get("internal_inputs") or []}
+
+
 def list_regions(path: Path | None = None) -> dict[str, dict]:
     """Region presets by id, each with a ``region`` (``Region``) and its catalog fields."""
     data = _load_yaml(Path(path) if path else CATALOG_DIR / "regions.yaml")
