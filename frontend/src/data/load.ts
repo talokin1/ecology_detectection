@@ -32,18 +32,51 @@ export class DataError extends Error {
 const cache = new Map<string, Promise<unknown>>();
 const DATA_ROOT = `${import.meta.env.BASE_URL}data/`;
 
+const RELOAD_FLAG = 'td-reloaded-for-contract';
+
+/**
+ * GitHub Pages serves every file with max-age=600, so right after a deploy a browser can mix a
+ * cached old file with new code (or old code with new data). Data are always revalidated
+ * (cheap 304 when unchanged); on a contract mismatch we refetch bypassing the cache, and if that
+ * still fails the page itself is stale, so we reload it once.
+ */
+async function fetchValid<T>(file: string, validate: ValidateFunction, mode: RequestCache): Promise<T> {
+  const r = await fetch(DATA_ROOT + file, { cache: mode });
+  if (!r.ok) throw new DataError(file, `${file} is not available (HTTP ${r.status}).`, r.status === 404);
+  const json: unknown = await r.json();
+  if (!validate(json)) {
+    const e = validate.errors?.[0];
+    throw new DataError(file, `${file} does not match the data contract: ${e?.instancePath || '/'} ${e?.message ?? ''}`);
+  }
+  return json as T;
+}
+
+async function reloadStalePageOnce(): Promise<boolean> {
+  try {
+    if (sessionStorage.getItem(RELOAD_FLAG)) return false;
+    sessionStorage.setItem(RELOAD_FLAG, '1');
+    await fetch(window.location.pathname, { cache: 'reload' }); // refresh the cached index.html
+    window.location.reload();
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 function load<T>(file: string, validate: ValidateFunction): Promise<T> {
   const hit = cache.get(file);
   if (hit) return hit as Promise<T>;
-  const p = fetch(DATA_ROOT + file)
-    .then(async (r) => {
-      if (!r.ok) throw new DataError(file, `${file} is not available (HTTP ${r.status}).`, r.status === 404);
-      const json: unknown = await r.json();
-      if (!validate(json)) {
-        const e = validate.errors?.[0];
-        throw new DataError(file, `${file} does not match the data contract: ${e?.instancePath || '/'} ${e?.message ?? ''}`);
+  const p = fetchValid<T>(file, validate, 'no-cache')
+    .catch(async (err) => {
+      if (!(err instanceof DataError) || err.missing) throw err;
+      try {
+        return await fetchValid<T>(file, validate, 'reload');
+      } catch (again) {
+        if (again instanceof DataError && !again.missing && (await reloadStalePageOnce())) {
+          return new Promise<T>(() => {}); // the page is reloading
+        }
+        throw again;
       }
-      return json as T;
     })
     .catch((err) => {
       cache.delete(file);

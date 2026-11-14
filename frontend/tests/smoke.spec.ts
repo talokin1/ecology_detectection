@@ -110,3 +110,18 @@ test('keyboard: the map canvas is focusable and arrow keys read squares (P1-11)'
   await page.keyboard.press('ArrowRight');
   await expect(page.locator('.map-tooltip')).toBeVisible();
 });
+
+test('a stale cached data file right after a deploy is refetched, not shown as an error', async ({ page }) => {
+  let calls = 0;
+  await page.route('**/data/index.json', async (route) => {
+    const res = await route.fetch();
+    const json = await res.json();
+    calls += 1;
+    if (calls === 1) for (const c of json.cases) delete c.answer; // what an old cached copy looks like
+    await route.fulfill({ response: res, json });
+  });
+  await page.goto('/#/case/01');
+  await expect(page.locator('.readout__headline')).toBeVisible({ timeout: 15000 });
+  await expect(page.locator('.state h2')).toHaveCount(0);
+  expect(calls).toBeGreaterThanOrEqual(2);
+});

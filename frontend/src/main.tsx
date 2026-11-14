@@ -12,6 +12,14 @@ import { ErrorState, Loading, RouteError, Shell } from './components/Shell';
 import { S } from './strings/en';
 
 initTheme();
+// a successful start clears the one-time reload guard used after deploys (see data/load.ts)
+window.addEventListener('load', () => setTimeout(() => {
+  try {
+    sessionStorage.removeItem('td-reloaded-for-contract');
+  } catch {
+    /* storage may be blocked */
+  }
+}, 5000));
 
 const MapPage = lazy(() => import('./pages/MapPage').then((m) => ({ default: m.MapPage })));
 const CaseRoute = lazy(() => import('./pages/CasePage').then((m) => ({ default: m.CaseRoute })));
