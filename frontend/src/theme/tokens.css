@@ -2,45 +2,58 @@
 :root {
   --bg: #ffffff;
   --surface: #ffffff;
-  --surface-2: #f6f7f8;
+  --surface-2: #f5f6f7;
   --text: #111418;
-  --text-2: #5e6570;
-  --text-3: #7a818b;
+  --text-2: #4f5661;
+  --text-3: #6b7280;      /* 4.8:1 on white, passes AA for small text */
   --line: #e3e5e8;
-  --line-strong: #c9cdd2;
-  --ink: #111418;          /* active controls, trend line, evidence scale */
-  --ink-contrast: #ffffff; /* text on --ink */
-  --map-ocean: #f1f3f5;
-  --map-land: #e4e7ea;
-  --map-border: rgba(17, 20, 24, 0.28);
-  --map-coast: rgba(17, 20, 24, 0.55);
-  --band: rgba(17, 20, 24, 0.10);
+  --line-strong: #b9bec5;
+  --ink: #111418;         /* active controls, trend line, evidence scale */
+  --ink-contrast: #ffffff;
+  --band: rgba(17, 20, 24, 0.16);
   --focus: #111418;
+
+  /* Maps always sit on a light plate, in both themes, so the palette reads the same. */
+  --map-ocean: #eef0f2;
+  --map-land: #e1e4e8;
+  --map-hatch: rgba(17, 20, 24, 0.28);
+  --map-border: rgba(17, 20, 24, 0.3);
+  --map-coast: rgba(17, 20, 24, 0.55);
+  --map-ink: #111418;
+  --map-halo: #ffffff;
+
   --radius: 6px;
   --font: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  /* type scale: plan v2 sizes + one display size for the single rate number per screen */
+  --fs-display: 48px;
   --fs-h1: 28px;
   --fs-verdict: 22px;
+  --fs-lead: 16px;
   --fs-body: 14px;
   --fs-small: 12.5px;
+  --fs-micro: 12px;
+  --space-section: 32px;
+  --rail: 280px;
   color-scheme: light;
 }
 
 :root[data-theme='dark'] {
   --bg: #0f1114;
   --surface: #14171b;
-  --surface-2: #1a1e23;
+  --surface-2: #1b1f24;
   --text: #eceef0;
-  --text-2: #a3a9b2;
-  --text-3: #8b929c;
-  --line: #262b31;
-  --line-strong: #3a4048;
+  --text-2: #b2b8c0;
+  --text-3: #9aa1ab;
+  --line: #272c33;
+  --line-strong: #4a515b;
   --ink: #eceef0;
   --ink-contrast: #0f1114;
-  --map-ocean: #121519;
-  --map-land: #1d2126;
-  --map-border: rgba(236, 238, 240, 0.25);
-  --map-coast: rgba(236, 238, 240, 0.5);
-  --band: rgba(236, 238, 240, 0.14);
+  --band: rgba(236, 238, 240, 0.2);
   --focus: #eceef0;
   color-scheme: dark;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root { scroll-behavior: auto; }
+  *, *::before, *::after { transition-duration: 0s !important; animation-duration: 0s !important; }
 }

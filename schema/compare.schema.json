@@ -4,26 +4,179 @@
   "title": "Compare",
   "description": "Trend of the difference A minus B over common months (S10). differ is true only when that trend is significant.",
   "type": "object",
-  "required": ["schema_version", "variable_id", "region_a", "region_b", "diff_sen_per_decade", "ci95", "p", "level", "differ", "answer", "sentence", "display", "provenance"],
+  "required": [
+    "schema_version",
+    "variable_id",
+    "region_a",
+    "region_b",
+    "diff_sen_per_decade",
+    "ci95",
+    "p",
+    "level",
+    "differ",
+    "answer",
+    "sentence",
+    "display",
+    "provenance",
+    "headline",
+    "summary",
+    "gap_text",
+    "gap_series"
+  ],
   "properties": {
-    "schema_version": { "type": "string" },
-    "variable_id": { "type": "string" },
-    "region_a": { "type": "string" },
-    "region_b": { "type": "string" },
-    "diff_sen_per_decade": { "type": "number" },
-    "ci95": { "$ref": "common.schema.json#/$defs/Range" },
-    "p": { "type": "number" },
-    "level": { "$ref": "common.schema.json#/$defs/Level" },
-    "differ": { "type": "boolean" },
-    "answer": { "type": "string" },
-    "sentence": { "type": "string" },
+    "schema_version": {
+      "type": "string"
+    },
+    "variable_id": {
+      "type": "string"
+    },
+    "region_a": {
+      "type": "string"
+    },
+    "region_b": {
+      "type": "string"
+    },
+    "diff_sen_per_decade": {
+      "type": "number"
+    },
+    "ci95": {
+      "$ref": "common.schema.json#/$defs/Range"
+    },
+    "p": {
+      "type": "number"
+    },
+    "level": {
+      "$ref": "common.schema.json#/$defs/Level"
+    },
+    "differ": {
+      "type": "boolean"
+    },
+    "answer": {
+      "type": "string"
+    },
+    "sentence": {
+      "type": "string"
+    },
     "display": {
       "type": "object",
-      "required": ["rate", "range"],
-      "properties": { "rate": { "type": "string" }, "range": { "type": "string" } },
+      "required": [
+        "rate",
+        "range",
+        "rate_value",
+        "rate_unit",
+        "gap_label"
+      ],
+      "properties": {
+        "rate": {
+          "type": "string"
+        },
+        "range": {
+          "type": "string"
+        },
+        "rate_value": {
+          "type": "string"
+        },
+        "rate_unit": {
+          "type": "string"
+        },
+        "gap_label": {
+          "type": "string"
+        }
+      },
       "additionalProperties": false
     },
-    "provenance": { "$ref": "common.schema.json#/$defs/Provenance" }
+    "provenance": {
+      "$ref": "common.schema.json#/$defs/Provenance"
+    },
+    "headline": {
+      "type": "string"
+    },
+    "summary": {
+      "type": "string"
+    },
+    "gap_text": {
+      "type": "string",
+      "description": "Which way the gap is taken, e.g. 'Northern Europe minus Southern Europe'."
+    },
+    "gap_series": {
+      "type": "object",
+      "required": [
+        "dates",
+        "diff",
+        "line",
+        "band95",
+        "label"
+      ],
+      "properties": {
+        "dates": {
+          "type": "array",
+          "items": {
+            "$ref": "common.schema.json#/$defs/YearMonth"
+          }
+        },
+        "diff": {
+          "type": "array",
+          "items": {
+            "$ref": "common.schema.json#/$defs/NumOrNull"
+          }
+        },
+        "line": {
+          "type": "object",
+          "required": [
+            "x",
+            "y"
+          ],
+          "properties": {
+            "x": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "y": {
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        "band95": {
+          "type": "object",
+          "required": [
+            "x",
+            "lower",
+            "upper"
+          ],
+          "properties": {
+            "x": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "lower": {
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            },
+            "upper": {
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        "label": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    }
   },
   "additionalProperties": false
 }

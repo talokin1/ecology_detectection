@@ -4,38 +4,124 @@
   "title": "Catalog",
   "description": "All candidate variables from data/catalog/variables.yaml with plain-language text, filters and status.",
   "type": "object",
-  "required": ["schema_version", "topics", "place_types", "variables", "synthetic"],
+  "required": [
+    "schema_version",
+    "topics",
+    "place_types",
+    "variables",
+    "synthetic"
+  ],
   "properties": {
-    "schema_version": { "type": "string" },
-    "synthetic": { "type": "boolean" },
-    "topics": { "type": "array", "items": { "$ref": "#/$defs/Option" } },
-    "place_types": { "type": "array", "items": { "$ref": "#/$defs/Option" } },
-    "variables": { "type": "array", "items": { "$ref": "#/$defs/CatalogVariable" } }
+    "schema_version": {
+      "type": "string"
+    },
+    "synthetic": {
+      "type": "boolean"
+    },
+    "topics": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Option"
+      }
+    },
+    "place_types": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Option"
+      }
+    },
+    "variables": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/CatalogVariable"
+      }
+    }
   },
   "additionalProperties": false,
   "$defs": {
     "Option": {
       "type": "object",
-      "required": ["id", "label"],
-      "properties": { "id": { "type": "string" }, "label": { "type": "string" } },
+      "required": [
+        "id",
+        "label"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "label": {
+          "type": "string"
+        }
+      },
       "additionalProperties": false
     },
     "CatalogVariable": {
       "type": "object",
-      "required": ["id", "name", "definition", "why_it_trends", "source", "period", "resolution", "topic", "place_types", "anywhere", "app_variable_id", "status"],
+      "required": [
+        "id",
+        "name",
+        "definition",
+        "why_it_trends",
+        "source",
+        "period",
+        "resolution",
+        "topic",
+        "place_types",
+        "anywhere",
+        "app_variable_id",
+        "status",
+        "source_short"
+      ],
       "properties": {
-        "id": { "type": "string" },
-        "name": { "type": "string" },
-        "definition": { "type": "string" },
-        "why_it_trends": { "type": "string" },
-        "source": { "type": "string" },
-        "period": { "type": "string" },
-        "resolution": { "type": "string" },
-        "topic": { "type": "string" },
-        "place_types": { "type": "array", "items": { "type": "string" } },
-        "anywhere": { "type": "boolean" },
-        "app_variable_id": { "type": ["string", "null"], "description": "Id used by map/analysis files when status is ready." },
-        "status": { "enum": ["ready", "planned"] }
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "definition": {
+          "type": "string"
+        },
+        "why_it_trends": {
+          "type": "string"
+        },
+        "source": {
+          "type": "string"
+        },
+        "period": {
+          "type": "string"
+        },
+        "resolution": {
+          "type": "string"
+        },
+        "topic": {
+          "type": "string"
+        },
+        "place_types": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "anywhere": {
+          "type": "boolean"
+        },
+        "app_variable_id": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Id used by map/analysis files when status is ready."
+        },
+        "status": {
+          "enum": [
+            "ready",
+            "planned"
+          ]
+        },
+        "source_short": {
+          "type": "string"
+        }
       },
       "additionalProperties": false
     }

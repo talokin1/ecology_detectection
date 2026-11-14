@@ -1,62 +1,70 @@
 import type { MapLayer } from '../data/types.gen';
-import { binEdges, hexToRgb, mix, PALETTES, type PaletteName } from '../theme/palettes';
+import { swatches } from '../theme/encoding';
+import { rgbCss, type PaletteName } from '../theme/palettes';
 import { S } from '../strings/en';
 
-function fmtEdge(v: number): string {
-  const r = Math.round(v * 1000) / 1000;
-  if (r === 0) return '0';
-  return `${r > 0 ? '+' : '−'}${Math.abs(r)}`;
-}
-
-/** Colour bar with words at both ends, plus what full colour, faded colour and grey mean. */
-export function MapLegend({ layer, compact = false }: { layer: MapLayer; compact?: boolean }) {
-  const pal = PALETTES[layer.palette as PaletteName];
-  const edges = binEdges(layer.limit, pal.length);
-  const bg = hexToRgb(getComputedStyle(document.documentElement).getPropertyValue('--bg').trim() || '#ffffff');
-  const faded = pal.map((c) => {
-    const [r, g, b] = mix(hexToRgb(c), bg, 0.62);
-    return `rgb(${r},${g},${b})`;
-  });
-  return (
-    <div className={`legend${compact ? ' legend--compact' : ''}`}>
-      <div className="legend__title">
-        Change <span className="legend__units">{layer.units_label}</span>
+/**
+ * Legend driven by the JSON (labels) and the shared encoding (colours): the full row is "clear
+ * trend", the greyish row is "could be chance", hatching is "not enough data". Every mark on the
+ * map is explained here, including the dots.
+ */
+export function MapLegend({ layer, variant = 'panel', caption }: { layer: MapLayer; variant?: 'panel' | 'strip'; caption?: string }) {
+  const sw = swatches(layer.palette as PaletteName);
+  const lg = layer.legend;
+  const bar = (row: 'full' | 'faded') => (
+    <div className={`legend__bar${row === 'faded' ? ' legend__bar--faded' : ''}`} aria-hidden="true" style={{ gridTemplateColumns: `repeat(${sw.full.length}, 1fr)` }}>
+      {sw[row].map((c, i) => (
+        <span key={i} style={{ background: rgbCss(c) }} title={`${lg.edges_text[i]} to ${lg.edges_text[i + 1]}`} />
+      ))}
+    </div>
+  );
+  if (variant === 'strip') {
+    return (
+      <div className="legend-strip" aria-label={`${lg.title}. ${S.map.keyStrong}. ${S.map.keyFaded}. ${S.map.keyNoData}.`}>
+        <span className="legend-strip__word">← {layer.words.neg}</span>
+        <div className="legend-strip__bars">
+          {bar('full')}
+          {bar('faded')}
+          <div className="legend-strip__ticks" aria-hidden="true">
+            <span>{lg.min_text}</span>
+            <span>0</span>
+            <span>{lg.max_text}</span>
+          </div>
+        </div>
+        <span className="legend-strip__word">{layer.words.pos} →</span>
+        <span className="legend-strip__units">{layer.units_label}</span>
+        <span className="legend-strip__keys">
+          <span><i className="legend__swatch" style={{ background: rgbCss(sw.full[sw.full.length - 3]) }} />{S.map.strong}</span>
+          <span><i className="legend__swatch" style={{ background: rgbCss(sw.faded[sw.full.length - 3]) }} />{S.map.faded}</span>
+          <span><i className="legend__swatch legend__swatch--nodata" />{S.map.noData}</span>
+        </span>
       </div>
+    );
+  }
+  return (
+    <div className="legend">
+      <div className="legend__title">{lg.title}</div>
       <div className="legend__words">
         <span>← {layer.words.neg}</span>
         <span>{layer.words.pos} →</span>
       </div>
-      <div className="legend__bar" aria-hidden="true">
-        {pal.map((c, i) => (
-          <span key={c} style={{ background: c }} title={`${fmtEdge(edges[i])} to ${fmtEdge(edges[i + 1])}`} />
-        ))}
-      </div>
-      <div className="legend__bar legend__bar--faded" aria-hidden="true">
-        {faded.map((c, i) => (
-          <span key={i} style={{ background: c }} />
-        ))}
+      <div className="legend__rows">
+        <span className="legend__rowlabel">{S.map.strong}</span>
+        {bar('full')}
+        <span className="legend__rowlabel">{S.map.faded}</span>
+        {bar('faded')}
       </div>
       <div className="legend__ticks" aria-hidden="true">
-        <span>≤ {fmtEdge(-layer.limit)}</span>
+        <span>{lg.min_text}</span>
         <span>0</span>
-        <span>≥ {fmtEdge(layer.limit)}</span>
+        <span>{lg.max_text}</span>
       </div>
-      {!compact && (
-        <ul className="legend__keys">
-          <li>
-            <span className="legend__swatch" style={{ background: pal[pal.length - 2] }} />
-            {S.map.fullColour}
-          </li>
-          <li>
-            <span className="legend__swatch" style={{ background: faded[pal.length - 2] }} />
-            {S.map.faded}
-          </li>
-          <li>
-            <span className="legend__swatch legend__swatch--nodata" />
-            {S.map.noData}
-          </li>
-        </ul>
-      )}
+      <ul className="legend__keys">
+        <li>{S.map.keyStrong} (q = {layer.fdr_q}).</li>
+        <li>{S.map.keyFaded}.</li>
+        <li><i className="legend__swatch legend__swatch--nodata" />{S.map.keyNoData}.</li>
+      </ul>
+      {caption && <p className="legend__caption">{caption}</p>}
     </div>
   );
 }

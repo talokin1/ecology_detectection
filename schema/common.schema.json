@@ -3,37 +3,133 @@
   "$id": "common.schema.json",
   "title": "Common",
   "$defs": {
-    "YearMonth": { "type": "string", "pattern": "^[0-9]{4}-[0-9]{2}$" },
+    "YearMonth": {
+      "type": "string",
+      "pattern": "^[0-9]{4}-[0-9]{2}$"
+    },
     "Period": {
       "type": "object",
-      "required": ["start", "end"],
-      "properties": { "start": { "$ref": "#/$defs/YearMonth" }, "end": { "$ref": "#/$defs/YearMonth" } },
+      "required": [
+        "start",
+        "end"
+      ],
+      "properties": {
+        "start": {
+          "$ref": "#/$defs/YearMonth"
+        },
+        "end": {
+          "$ref": "#/$defs/YearMonth"
+        }
+      },
       "additionalProperties": false
     },
-    "Range": { "type": "array", "items": { "type": "number" }, "minItems": 2, "maxItems": 2 },
-    "NumOrNull": { "type": ["number", "null"] },
-    "Level": { "enum": ["strong", "moderate", "weak", "none", "insufficient"] },
-    "Palette": { "enum": ["RdBu", "BrBG", "PuOr"] },
+    "Range": {
+      "type": "array",
+      "items": {
+        "type": "number"
+      },
+      "minItems": 2,
+      "maxItems": 2
+    },
+    "NumOrNull": {
+      "type": [
+        "number",
+        "null"
+      ]
+    },
+    "Level": {
+      "enum": [
+        "strong",
+        "moderate",
+        "weak",
+        "none",
+        "insufficient"
+      ]
+    },
+    "Palette": {
+      "enum": [
+        "RdBu",
+        "BrBG",
+        "PuOr"
+      ]
+    },
     "Words": {
       "type": "object",
       "description": "What negative and positive trends mean in plain words, e.g. cooling / warming.",
-      "required": ["neg", "pos"],
-      "properties": { "neg": { "type": "string" }, "pos": { "type": "string" } },
+      "required": [
+        "neg",
+        "pos"
+      ],
+      "properties": {
+        "neg": {
+          "type": "string"
+        },
+        "pos": {
+          "type": "string"
+        }
+      },
       "additionalProperties": false
     },
     "Provenance": {
       "type": "object",
-      "required": ["dataset", "version", "doi", "landing_page", "accessed", "processing", "synthetic"],
+      "required": [
+        "dataset",
+        "version",
+        "doi",
+        "landing_page",
+        "accessed",
+        "processing",
+        "synthetic",
+        "caveat"
+      ],
       "properties": {
-        "dataset": { "type": "string" },
-        "version": { "type": ["string", "null"] },
-        "doi": { "type": ["string", "null"] },
-        "landing_page": { "type": "string" },
-        "accessed": { "type": "string" },
-        "processing": { "type": "array", "items": { "type": "string" } },
-        "synthetic": { "type": "boolean", "description": "true = invented demo data; the app shows a banner" }
+        "dataset": {
+          "type": "string"
+        },
+        "version": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "doi": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "landing_page": {
+          "type": "string"
+        },
+        "accessed": {
+          "type": "string"
+        },
+        "processing": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "synthetic": {
+          "type": "boolean",
+          "description": "true = invented demo data; the app shows a banner"
+        },
+        "caveat": {
+          "type": "string",
+          "description": "One plain sentence on the limits of the data, shown under the verdict."
+        }
       },
       "additionalProperties": false
+    },
+    "RangeOrNull": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "$ref": "#/$defs/Range"
+        }
+      ]
     }
   }
 }

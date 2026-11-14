@@ -1,6 +1,6 @@
 /**
- * Data palettes (trend-viz skill). ColorBrewer 10-class diverging schemes, ordered from the
- * most negative bin to the most positive. Colour-blind safe; never rainbow.
+ * Data palettes (trend-viz skill). ColorBrewer 11-class diverging schemes with a neutral centre,
+ * ordered from the most negative bin to the most positive. Colour-blind safe; never rainbow.
  *  - RdBu: temperature (blue = cooling, red = warming)
  *  - BrBG: water (brown = drier, teal = wetter)
  *  - PuOr: pollution (purple = cleaner, orange = more polluted)
@@ -8,12 +8,12 @@
 export type PaletteName = 'RdBu' | 'BrBG' | 'PuOr';
 
 export const PALETTES: Record<PaletteName, string[]> = {
-  RdBu: ['#053061', '#2166ac', '#4393c3', '#92c5de', '#d1e5f0', '#fddbc7', '#f4a582', '#d6604d', '#b2182b', '#67001f'],
-  BrBG: ['#543005', '#8c510a', '#bf812d', '#dfc27d', '#f6e8c3', '#c7eae5', '#80cdc1', '#35978f', '#01665e', '#003c30'],
-  PuOr: ['#2d004b', '#542788', '#8073ac', '#b2abd2', '#d8daeb', '#fee0b6', '#fdb863', '#e08214', '#b35806', '#7f3b08'],
+  RdBu: ['#053061', '#2166ac', '#4393c3', '#92c5de', '#d1e5f0', '#f7f7f7', '#fddbc7', '#f4a582', '#d6604d', '#b2182b', '#67001f'],
+  BrBG: ['#543005', '#8c510a', '#bf812d', '#dfc27d', '#f6e8c3', '#f5f5f5', '#c7eae5', '#80cdc1', '#35978f', '#01665e', '#003c30'],
+  PuOr: ['#2d004b', '#542788', '#8073ac', '#b2abd2', '#d8daeb', '#f7f7f7', '#fee0b6', '#fdb863', '#e08214', '#b35806', '#7f3b08'],
 };
 
-/** Two-region identity colours (Okabe-Ito blue and vermillion). */
+/** Two-region identity colours (Okabe-Ito blue and vermillion), used for compare trend lines. */
 export const REGION_COLORS = ['#0072B2', '#D55E00'] as const;
 
 /** Bin index (0..bins-1) of a value on a symmetric scale [-limit, +limit]; values beyond clamp. */
@@ -44,12 +44,4 @@ export function hexToRgb(color: string): [number, number, number] {
   return rgb.some(Number.isNaN) ? [255, 255, 255] : rgb;
 }
 
-/** Mix a colour towards a background: amount 0 = colour, 1 = background. */
-export function mix(rgb: [number, number, number], bg: [number, number, number], amount: number): [number, number, number] {
-  return [0, 1, 2].map((i) => Math.round(rgb[i] * (1 - amount) + bg[i] * amount)) as [number, number, number];
-}
-
-/** Bin edges for the legend, e.g. [-0.8, -0.64, ..., 0.8]. */
-export function binEdges(limit: number, bins: number): number[] {
-  return Array.from({ length: bins + 1 }, (_, i) => -limit + (2 * limit * i) / bins);
-}
+export const rgbCss = ([r, g, b]: [number, number, number]) => `rgb(${r},${g},${b})`;

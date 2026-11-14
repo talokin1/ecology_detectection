@@ -4,26 +4,68 @@
   "title": "Validation",
   "description": "Monte-Carlo false-alarm and power table from validate_type1.py (Methods page).",
   "type": "object",
-  "required": ["schema_version", "runs", "alpha", "source", "rows"],
+  "required": [
+    "schema_version",
+    "runs",
+    "alpha",
+    "source",
+    "rows",
+    "summary"
+  ],
   "properties": {
-    "schema_version": { "type": "string" },
-    "runs": { "type": "integer" },
-    "alpha": { "type": "number" },
-    "source": { "type": "string" },
+    "schema_version": {
+      "type": "string"
+    },
+    "runs": {
+      "type": "integer"
+    },
+    "alpha": {
+      "type": "number"
+    },
+    "source": {
+      "type": "string"
+    },
     "rows": {
       "type": "array",
       "items": {
         "type": "object",
-        "required": ["n_months", "phi", "test", "false_alarm_rate", "power"],
+        "required": [
+          "n_months",
+          "phi",
+          "test",
+          "false_alarm_rate",
+          "power",
+          "false_alarm_text",
+          "power_text"
+        ],
         "properties": {
-          "n_months": { "type": "integer" },
-          "phi": { "type": "number" },
-          "test": { "type": "string" },
-          "false_alarm_rate": { "type": "number" },
-          "power": { "type": "number" }
+          "n_months": {
+            "type": "integer"
+          },
+          "phi": {
+            "type": "number"
+          },
+          "test": {
+            "type": "string"
+          },
+          "false_alarm_rate": {
+            "type": "number"
+          },
+          "power": {
+            "type": "number"
+          },
+          "false_alarm_text": {
+            "type": "string"
+          },
+          "power_text": {
+            "type": "string"
+          }
         },
         "additionalProperties": false
       }
+    },
+    "summary": {
+      "type": "string"
     }
   },
   "additionalProperties": false

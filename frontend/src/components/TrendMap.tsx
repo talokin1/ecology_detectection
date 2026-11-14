@@ -5,8 +5,10 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?url';
 import type { MapLayer, Region } from '../data/types.gen';
 import { basemapUrl } from '../data/load';
-import { binIndex, hexToRgb, mix, PALETTES, type PaletteName } from '../theme/palettes';
+import type { PaletteName } from '../theme/palettes';
+import { cellRgb, isDarkBin } from '../theme/encoding';
 import { cellIndex, formatLatLon, latToMercY, MERC_MAX_LAT, mercYToLat, pointInGeometry } from '../lib/geo';
+import { formatCell } from '../lib/format';
 import { useTheme } from '../state/theme';
 import { S } from '../strings/en';
 
@@ -14,32 +16,35 @@ import { S } from '../strings/en';
 setWorkerUrl(workerUrl);
 
 export type CellInfo = { lon: number; lat: number; value: number | null; significant: boolean };
+export type RegionLabel = { line2?: string; muted?: boolean; prefix?: string };
 
 type Props = {
   layer: MapLayer | undefined;
+  /** Regions drawn on this map (outlines). */
   regions: Region[];
   /** Regions drawn with a heavy outline (the current investigation, or both compared regions). */
   activeRegionIds?: string[];
-  /** Outline colour per region id (compare view); default is ink. */
-  regionColors?: Record<string, string>;
-  /** Fade everything outside the active regions (Case view). */
-  focusActive?: boolean;
+  /** Region highlighted from outside (ledger hover). */
+  highlightRegionId?: string | null;
   /** 'world' or a [west, south, east, north] box to fit. */
   fit: 'world' | number[];
-  showLabels?: boolean;
-  /** Text added to each region label, e.g. its verdict. */
-  labelExtra?: Record<string, string>;
+  /** Labels per region id; regions without an entry get no label. */
+  labels?: Record<string, RegionLabel>;
   scrollZoom?: boolean;
+  suppressTooltip?: boolean;
   onRegionClick?: (id: string) => void;
   onEmptyClick?: (cell: CellInfo, point: { x: number; y: number }) => void;
+  onHoverRegion?: (id: string | null) => void;
+  onEscape?: () => void;
   className?: string;
   ariaLabel: string;
 };
 
-const WORLD: [[number, number], [number, number]] = [[-168, -56], [180, 76]];
 const CORNERS: [[number, number], [number, number], [number, number], [number, number]] = [
   [-180, MERC_MAX_LAT], [180, MERC_MAX_LAT], [180, -MERC_MAX_LAT], [-180, -MERC_MAX_LAT],
 ];
+
+const reducedMotion = () => typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
 
 /** Fit the full width of the world (360 degrees) into the container, centred on Europe and Africa. */
 function fitWorld(map: MlMap) {
@@ -52,7 +57,7 @@ function cssVar(name: string): string {
 }
 
 /** Paint the grid into a square Web Mercator canvas (2 px per cell horizontally). */
-function paintGrid(layer: MapLayer, faded: [number, number, number]): HTMLCanvasElement {
+function paintGrid(layer: MapLayer): HTMLCanvasElement {
   const g = layer.grid;
   const W = g.nlon * 2;
   const H = W;
@@ -61,15 +66,13 @@ function paintGrid(layer: MapLayer, faded: [number, number, number]): HTMLCanvas
   canvas.height = H;
   const ctx = canvas.getContext('2d')!;
   const img = ctx.createImageData(W, H);
-  const pal = PALETTES[layer.palette as PaletteName].map(hexToRgb);
-  const palFaded = pal.map((c) => mix(c, faded, 0.62));
+  const palette = layer.palette as PaletteName;
   const n = g.nlat * g.nlon;
   const rgba = new Uint8ClampedArray(n * 4);
   for (let i = 0; i < n; i++) {
     const v = layer.slope_per_decade[i];
     if (v === null) continue;
-    const b = binIndex(v, layer.limit, pal.length);
-    const c = layer.significant[i] ? pal[b] : palFaded[b];
+    const c = cellRgb(v, layer.significant[i] === 1, layer.limit, palette);
     rgba[i * 4] = c[0];
     rgba[i * 4 + 1] = c[1];
     rgba[i * 4 + 2] = c[2];
@@ -100,14 +103,16 @@ function paintGrid(layer: MapLayer, faded: [number, number, number]): HTMLCanvas
 
 function stipplePoints(layer: MapLayer) {
   const g = layer.grid;
+  const palette = layer.palette as PaletteName;
   const features = [];
   for (let r = 0; r < g.nlat; r++) {
     for (let c = 0; c < g.nlon; c++) {
       const i = r * g.nlon + c;
-      if (layer.significant[i] && layer.slope_per_decade[i] !== null) {
+      const v = layer.slope_per_decade[i];
+      if (layer.significant[i] && v !== null) {
         features.push({
           type: 'Feature' as const,
-          properties: {},
+          properties: { dark: isDarkBin(v, layer.limit, palette) ? 1 : 0 },
           geometry: { type: 'Point' as const, coordinates: [g.lon0 + c * g.dlon, g.lat0 + r * g.dlat] },
         });
       }
@@ -116,44 +121,41 @@ function stipplePoints(layer: MapLayer) {
   return { type: 'FeatureCollection' as const, features };
 }
 
-function regionsFC(regions: Region[], active: string[], colors: Record<string, string>, ink: string) {
+function regionsFC(regions: Region[], active: string[], highlight: string | null | undefined) {
   return {
     type: 'FeatureCollection' as const,
     features: regions.map((r) => ({
       type: 'Feature' as const,
-      properties: { id: r.id, active: active.includes(r.id) ? 1 : 0, color: colors[r.id] ?? ink },
-      geometry: r.geometry as unknown as { type: "Polygon"; coordinates: number[][][] },
+      properties: { id: r.id, active: active.includes(r.id) ? 1 : 0, hl: highlight === r.id ? 1 : 0 },
+      geometry: r.geometry as unknown as { type: 'Polygon'; coordinates: number[][][] },
     })),
   };
 }
 
-/** World rectangle with the active regions cut out, used to fade the surroundings. */
-function maskFC(regions: Region[], active: string[]) {
-  const holes: number[][][] = [];
-  regions
-    .filter((r) => active.includes(r.id))
-    .forEach((r) => {
-      const polys = (r.geometry.type === 'Polygon' ? [r.geometry.coordinates] : r.geometry.coordinates) as number[][][][];
-      polys.forEach((p) => holes.push(p[0]));
-    });
-  const outer = [[-180, -86], [180, -86], [180, 86], [-180, 86], [-180, -86]];
-  return {
-    type: 'FeatureCollection' as const,
-    features: holes.length
-      ? [{ type: 'Feature' as const, properties: {}, geometry: { type: 'Polygon' as const, coordinates: [outer, ...holes] } }]
-      : [],
-  };
+/** A small diagonal hatch for land squares without data. */
+function hatchImage(color: string) {
+  const size = 8;
+  const c = document.createElement('canvas');
+  c.width = size;
+  c.height = size;
+  const ctx = c.getContext('2d')!;
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(0, size);
+  ctx.lineTo(size, 0);
+  ctx.stroke();
+  return ctx.getImageData(0, 0, size, size);
 }
 
 function baseStyle(): StyleSpecification {
-  const ink = cssVar('--ink');
+  const ink = cssVar('--map-ink');
   return {
     version: 8,
     sources: {
       land: { type: 'geojson', data: basemapUrl('land'), attribution: 'Basemap: Natural Earth' },
       countries: { type: 'geojson', data: basemapUrl('countries') },
       regions: { type: 'geojson', data: { type: 'FeatureCollection', features: [] } },
-      mask: { type: 'geojson', data: { type: 'FeatureCollection', features: [] } },
       stipple: { type: 'geojson', data: { type: 'FeatureCollection', features: [] } },
     },
     layers: [
@@ -161,33 +163,37 @@ function baseStyle(): StyleSpecification {
       { id: 'land', type: 'fill', source: 'land', paint: { 'fill-color': cssVar('--map-land') } },
       { id: 'borders', type: 'line', source: 'countries', paint: { 'line-color': cssVar('--map-border'), 'line-width': ['interpolate', ['linear'], ['zoom'], 1, 0.4, 5, 0.9] } },
       { id: 'coast', type: 'line', source: 'land', paint: { 'line-color': cssVar('--map-coast'), 'line-width': ['interpolate', ['linear'], ['zoom'], 1, 0.5, 5, 1.1] } },
-      { id: 'mask', type: 'fill', source: 'mask', paint: { 'fill-color': cssVar('--bg'), 'fill-opacity': 0.62 } },
       {
         id: 'stipple', type: 'circle', source: 'stipple', minzoom: 2.6,
         paint: {
-          'circle-radius': ['interpolate', ['linear'], ['zoom'], 2.6, 0.7, 4, 1.3, 7, 2.2],
-          'circle-color': ink, 'circle-opacity': ['interpolate', ['linear'], ['zoom'], 2.6, 0, 3.2, 0.42],
+          'circle-radius': ['interpolate', ['linear'], ['zoom'], 2.6, 0.8, 4, 1.4, 7, 2.3],
+          'circle-color': ['case', ['==', ['get', 'dark'], 1], '#ffffff', ink],
+          'circle-opacity': ['interpolate', ['linear'], ['zoom'], 2.6, 0, 3.2, 0.65],
         },
       },
       { id: 'regions-fill', type: 'fill', source: 'regions', paint: { 'fill-color': ink, 'fill-opacity': 0 } },
-      { id: 'regions-halo', type: 'line', source: 'regions', paint: { 'line-color': cssVar('--bg'), 'line-width': ['case', ['==', ['get', 'active'], 1], 5, 3.2], 'line-opacity': 0.85 } },
-      { id: 'regions-line', type: 'line', source: 'regions', paint: { 'line-color': ['get', 'color'], 'line-width': ['case', ['==', ['get', 'active'], 1], 2.4, 1.3] } },
+      { id: 'regions-halo', type: 'line', source: 'regions', paint: { 'line-color': cssVar('--map-halo'), 'line-width': ['case', ['any', ['==', ['get', 'active'], 1], ['==', ['get', 'hl'], 1]], 6, 3.5], 'line-opacity': 0.9 } },
+      { id: 'regions-line', type: 'line', source: 'regions', paint: { 'line-color': ink, 'line-width': ['case', ['==', ['get', 'hl'], 1], 3.5, ['==', ['get', 'active'], 1], 3, 1.3] } },
     ],
   };
 }
 
 export function TrendMap(props: Props) {
-  const { layer, regions, activeRegionIds = [], regionColors = {}, focusActive, fit, showLabels, labelExtra, scrollZoom = true } = props;
+  const { layer, regions, activeRegionIds = [], highlightRegionId, fit, labels, scrollZoom = true, suppressTooltip } = props;
   const box = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MlMap | null>(null);
   const markers = useRef<Marker[]>([]);
+  const cursor = useRef<{ lon: number; lat: number } | null>(null);
   const [ready, setReady] = useState(false);
+  const [narrow, setNarrow] = useState(false);
   const [hover, setHover] = useState<{ x: number; y: number; cell: CellInfo; region?: string } | null>(null);
   const theme = useTheme();
   const latest = useRef(props);
   latest.current = props;
   const activeKey = activeRegionIds.join(',');
+  const regionKey = regions.map((r) => r.id).join(',');
   const fitKey = Array.isArray(fit) ? fit.join(',') : fit;
+  const stipple = useMemo(() => (layer ? stipplePoints(layer) : null), [layer]);
 
   // create the map once
   useEffect(() => {
@@ -195,11 +201,13 @@ export function TrendMap(props: Props) {
     const map = new MlMap({
       container: box.current,
       style: baseStyle(),
-      bounds: WORLD,
+      center: [12, 22],
+      zoom: 1,
       renderWorldCopies: false,
       attributionControl: false,
       dragRotate: false,
       pitchWithRotate: false,
+      keyboard: false,
       maxPitch: 0,
       minZoom: 0.3,
       maxZoom: 7,
@@ -209,49 +217,89 @@ export function TrendMap(props: Props) {
     map.touchZoomRotate.disableRotation();
     map.addControl(new NavigationControl({ showCompass: false }), 'top-right');
     map.addControl(new AttributionControl({ compact: true }), 'bottom-right');
-    map.on('load', () => setReady(true));
+    map.on('load', () => {
+      map.addImage('hatch', hatchImage(cssVar('--map-hatch')));
+      // hatch = not enough data; shown at world scale, where it marks whole areas (ice sheets), not coastal slivers
+      map.addLayer({ id: 'land-hatch', type: 'fill', source: 'land', maxzoom: 3.5, paint: { 'fill-pattern': 'hatch' } }, 'borders');
+      setReady(true);
+    });
+    const canvas = map.getCanvas();
+    canvas.setAttribute('tabindex', '0');
+
+    const regionAt = (lng: number, lat: number) => latest.current.regions.find((r) => pointInGeometry(lng, lat, r.geometry));
+    const cellAt = (lng: number, lat: number): CellInfo | null => {
+      const l = latest.current.layer;
+      if (!l) return null;
+      const i = cellIndex(l, lng, lat);
+      if (i < 0) return null;
+      return { lon: lng, lat, value: l.slope_per_decade[i], significant: l.significant[i] === 1 };
+    };
+    let lastRegion: string | null = null;
+    const showAt = (lng: number, lat: number, x: number, y: number) => {
+      const region = regionAt(lng, lat);
+      const id = region?.id ?? null;
+      if (id !== lastRegion) {
+        lastRegion = id;
+        latest.current.onHoverRegion?.(id);
+      }
+      canvas.style.cursor = region && latest.current.onRegionClick ? 'pointer' : '';
+      const cell = cellAt(lng, lat);
+      setHover(cell ? { x, y, cell, region: region?.name } : null);
+    };
+    const activate = (lng: number, lat: number, x: number, y: number) => {
+      const p = latest.current;
+      const region = regionAt(lng, lat);
+      if (region && p.onRegionClick) return p.onRegionClick(region.id);
+      const cell = cellAt(lng, lat);
+      if (p.onEmptyClick && cell) p.onEmptyClick(cell, { x, y });
+    };
 
     let raf = 0;
     map.on('mousemove', (e) => {
       cancelAnimationFrame(raf);
-      raf = requestAnimationFrame(() => {
-        const l = latest.current.layer;
-        const { lng, lat } = e.lngLat;
-        const region = latest.current.regions.find((r) => pointInGeometry(lng, lat, r.geometry));
-        map.getCanvas().style.cursor = region && latest.current.onRegionClick ? 'pointer' : '';
-        if (!l) return setHover(null);
-        const i = cellIndex(l, lng, lat);
-        if (i < 0) return setHover(null);
-        setHover({
-          x: e.point.x, y: e.point.y, region: region?.name,
-          cell: { lon: lng, lat, value: l.slope_per_decade[i], significant: l.significant[i] === 1 },
-        });
-      });
+      raf = requestAnimationFrame(() => showAt(e.lngLat.lng, e.lngLat.lat, e.point.x, e.point.y));
     });
-    map.on('mouseout', () => setHover(null));
-    map.on('click', (e) => {
-      const { lng, lat } = e.lngLat;
-      const p = latest.current;
-      const region = p.regions.find((r) => pointInGeometry(lng, lat, r.geometry));
-      if (region && p.onRegionClick) return p.onRegionClick(region.id);
-      if (p.onEmptyClick && p.layer) {
-        const i = cellIndex(p.layer, lng, lat);
-        p.onEmptyClick(
-          { lon: lng, lat, value: i >= 0 ? p.layer.slope_per_decade[i] : null, significant: i >= 0 && p.layer.significant[i] === 1 },
-          { x: e.point.x, y: e.point.y },
-        );
-      }
+    map.on('mouseout', () => {
+      setHover(null);
+      lastRegion = null;
+      latest.current.onHoverRegion?.(null);
     });
+    map.on('click', (e) => activate(e.lngLat.lng, e.lngLat.lat, e.point.x, e.point.y));
+
+    // keyboard: arrows move a square cursor, Enter opens, +/- zoom, Escape closes popups
+    canvas.addEventListener('keydown', (ev) => {
+      const c = cursor.current ?? { lon: map.getCenter().lng, lat: map.getCenter().lat };
+      const moves: Record<string, [number, number]> = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, 1], ArrowDown: [0, -1] };
+      if (moves[ev.key]) {
+        ev.preventDefault();
+        const next = { lon: Math.max(-179.5, Math.min(179.5, c.lon + moves[ev.key][0])), lat: Math.max(-80, Math.min(84, c.lat + moves[ev.key][1])) };
+        cursor.current = next;
+        const pt = map.project([next.lon, next.lat]);
+        const w = canvas.clientWidth;
+        const h = canvas.clientHeight;
+        if (pt.x < 20 || pt.y < 20 || pt.x > w - 20 || pt.y > h - 20) map.jumpTo({ center: [next.lon, next.lat] });
+        const p2 = map.project([next.lon, next.lat]);
+        showAt(next.lon, next.lat, p2.x, p2.y);
+      } else if (ev.key === 'Enter' && cursor.current) {
+        ev.preventDefault();
+        const p2 = map.project([cursor.current.lon, cursor.current.lat]);
+        activate(cursor.current.lon, cursor.current.lat, p2.x, p2.y);
+      } else if (ev.key === '+' || ev.key === '=') map.zoomIn();
+      else if (ev.key === '-') map.zoomOut();
+      else if (ev.key === 'Escape') latest.current.onEscape?.();
+    });
+    canvas.addEventListener('blur', () => setHover(null));
+
     mapRef.current = map;
     // handle for automated smoke tests
     (box.current as HTMLDivElement & { __map?: MlMap }).__map = map;
-    // keep the whole world in view until the user moves the map themselves
     let userMoved = false;
     map.on('movestart', (e) => {
       if ((e as { originalEvent?: Event }).originalEvent) userMoved = true;
     });
     const ro = new ResizeObserver(() => {
       map.resize();
+      setNarrow(map.getContainer().clientWidth < 500);
       if (latest.current.fit === 'world' && !userMoved) fitWorld(map);
     });
     ro.observe(box.current);
@@ -265,90 +313,111 @@ export function TrendMap(props: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // theme colours of the basemap
+  // accessible name on the focusable canvas (not on the container, which holds buttons)
+  useEffect(() => {
+    mapRef.current?.getCanvas().setAttribute('aria-label', `${props.ariaLabel} ${S.map.keyboardHelp}`);
+  }, [props.ariaLabel, ready]);
+
+  // basemap colours (a light plate in both themes)
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !ready) return;
     map.setPaintProperty('ocean', 'background-color', cssVar('--map-ocean'));
     map.setPaintProperty('land', 'fill-color', cssVar('--map-land'));
-    map.setPaintProperty('borders', 'line-color', cssVar('--map-border'));
-    map.setPaintProperty('coast', 'line-color', cssVar('--map-coast'));
-    map.setPaintProperty('mask', 'fill-color', cssVar('--bg'));
-    map.setPaintProperty('regions-halo', 'line-color', cssVar('--bg'));
-    map.setPaintProperty('stipple', 'circle-color', cssVar('--ink'));
   }, [theme, ready]);
 
-  // the trend raster and the stipple dots
+  // the trend raster
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !ready || !layer) return;
-    const canvas = paintGrid(layer, hexToRgb(cssVar('--bg')));
+    const canvas = paintGrid(layer);
     const src = map.getSource('trend') as ImageSource | undefined;
     if (src) src.updateImage({ image: canvas, coordinates: CORNERS });
     else {
       map.addSource('trend', { type: 'image', url: canvas.toDataURL('image/png'), coordinates: CORNERS });
-      map.addLayer(
-        { id: 'trend', type: 'raster', source: 'trend', paint: { 'raster-resampling': 'nearest', 'raster-fade-duration': 0 } },
-        'borders',
-      );
+      map.addLayer({ id: 'trend', type: 'raster', source: 'trend', paint: { 'raster-resampling': 'nearest', 'raster-fade-duration': 0 } }, 'borders');
     }
-    (map.getSource('stipple') as GeoJSONSource).setData(stipplePoints(layer));
-  }, [layer, ready, theme]);
+  }, [layer, ready]);
 
-  // region outlines, focus mask
+  // stipple dots: rebuilt only when the layer changes
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !ready || !stipple) return;
+    (map.getSource('stipple') as GeoJSONSource).setData(stipple);
+  }, [stipple, ready]);
+
+  // region outlines
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !ready) return;
-    (map.getSource('regions') as GeoJSONSource).setData(regionsFC(regions, activeRegionIds, regionColors, cssVar('--ink')));
-    (map.getSource('mask') as GeoJSONSource).setData(focusActive ? maskFC(regions, activeRegionIds) : { type: 'FeatureCollection', features: [] });
+    (map.getSource('regions') as GeoJSONSource).setData(regionsFC(regions, activeRegionIds, highlightRegionId));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [regions, activeKey, ready, focusActive, theme, JSON.stringify(regionColors)]);
+  }, [regionKey, activeKey, ready, highlightRegionId]);
 
   // labels as HTML markers (no glyph server needed)
   useEffect(() => {
     const map = mapRef.current;
     markers.current.forEach((m) => m.remove());
     markers.current = [];
-    if (!map || !ready || !showLabels) return;
+    if (!map || !ready || !labels) return;
     regions.forEach((r) => {
+      const spec = labels[r.id];
+      if (!spec) return;
       const el = document.createElement('button');
       el.type = 'button';
-      el.className = `region-label${activeRegionIds.includes(r.id) ? ' is-active' : ''}`;
-      const extra = labelExtra?.[r.id];
-      el.innerHTML = `<span class="region-label__name"></span>${extra ? '<span class="region-label__extra"></span>' : ''}`;
-      (el.querySelector('.region-label__name') as HTMLElement).textContent = r.name;
-      if (extra) (el.querySelector('.region-label__extra') as HTMLElement).textContent = extra;
+      const active = activeRegionIds.includes(r.id);
+      el.className = `region-label${active ? ' is-active' : ''}${highlightRegionId === r.id ? ' is-hl' : ''}`;
+      const name = document.createElement('span');
+      name.className = 'region-label__name';
+      name.textContent = spec.prefix ? `${spec.prefix} · ${r.name}` : r.name;
+      el.appendChild(name);
+      if (spec.line2) {
+        const extra = document.createElement('span');
+        extra.className = `region-label__extra${spec.muted ? ' is-muted' : ''}`;
+        extra.textContent = spec.line2;
+        el.appendChild(extra);
+      }
       el.addEventListener('click', (ev) => {
         ev.stopPropagation();
         latest.current.onRegionClick?.(r.id);
       });
-      const top: [number, number] = [(r.bbox[0] + r.bbox[2]) / 2, r.bbox[3]];
-      const m = new Marker({ element: el, anchor: 'bottom', offset: [0, -3] }).setLngLat(top).addTo(map);
-      (m as Marker & { priority?: number }).priority = activeRegionIds.includes(r.id) ? 1 : 0;
+      el.addEventListener('mouseenter', () => latest.current.onHoverRegion?.(r.id));
+      el.addEventListener('mouseleave', () => latest.current.onHoverRegion?.(null));
+      // world labels sit above the region; A/B labels sit on it, so they never leave a zoomed map
+      const m = spec.prefix
+        ? new Marker({ element: el, anchor: 'center' }).setLngLat(r.centroid as [number, number]).addTo(map)
+        : new Marker({ element: el, anchor: 'bottom', offset: [0, -4] }).setLngLat([(r.bbox[0] + r.bbox[2]) / 2, r.bbox[3]]).addTo(map);
+      (m as Marker & { priority?: number }).priority = active ? 1 : 0;
       markers.current.push(m);
     });
-    // hide labels that would overlap a label with higher priority
+    // hide labels that overlap a higher-priority label or do not fit inside the map
     const declutter = () => {
-      const placed: DOMRect[] = [];
+      const frame = map.getContainer().getBoundingClientRect();
+      // overlays drawn on top of the map (title, legend) count as already placed
+      const host = box.current?.closest('.stage__map') ?? null;
+      const placed: DOMRect[] = host ? [...host.querySelectorAll('[data-map-overlay] > *, [data-map-overlay]')].map((e) => e.getBoundingClientRect()) : [];
       [...markers.current]
         .sort((p, q) => ((q as Marker & { priority?: number }).priority ?? 0) - ((p as Marker & { priority?: number }).priority ?? 0))
         .forEach((mk) => {
           const el = mk.getElement();
           el.style.visibility = 'visible';
           const b = el.getBoundingClientRect();
+          const outside = b.left < frame.left + 2 || b.right > frame.right - 2 || b.top < frame.top + 2 || b.bottom > frame.bottom - 2;
           const hit = placed.some((o) => b.left < o.right + 4 && b.right > o.left - 4 && b.top < o.bottom + 2 && b.bottom > o.top - 2);
-          if (hit) el.style.visibility = 'hidden';
+          if (hit || outside) el.style.visibility = 'hidden';
           else placed.push(b);
         });
     };
     const raf = requestAnimationFrame(declutter);
     map.on('moveend', declutter);
+    map.on('resize', declutter);
     return () => {
       cancelAnimationFrame(raf);
       map.off('moveend', declutter);
+      map.off('resize', declutter);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [regions, ready, showLabels, activeKey, JSON.stringify(labelExtra)]);
+  }, [regionKey, ready, activeKey, JSON.stringify(labels), highlightRegionId]);
 
   // camera
   useEffect(() => {
@@ -357,30 +426,29 @@ export function TrendMap(props: Props) {
     if (fit === 'world') fitWorld(map);
     else {
       const b = new LngLatBounds([fit[0], fit[1]], [fit[2], fit[3]]);
-      map.fitBounds(b, { padding: 40, duration: 600, maxZoom: 4.6 });
+      map.fitBounds(b, { padding: 24, duration: reducedMotion() ? 0 : 600, maxZoom: 4.6 });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fitKey, ready]);
 
+  const decimals = layer?.value_decimals ?? 2;
   const units = layer?.units_label ?? '';
   const tooltip = useMemo(() => {
-    if (!hover) return null;
+    if (!hover || suppressTooltip) return null;
     const { cell } = hover;
     return (
-      <div className="map-tooltip" style={{ left: hover.x + 14, top: hover.y + 14 }} role="status">
+      <div className="map-tooltip" style={{ left: hover.x + 14, top: hover.y + 14 }}>
         {hover.region && <div className="map-tooltip__region">{hover.region}</div>}
-        <div className="map-tooltip__value">
-          {cell.value === null ? S.map.noData : `${cell.value > 0 ? '+' : cell.value < 0 ? '−' : ''}${Math.abs(cell.value)} ${units}`}
-        </div>
-        {cell.value !== null && <div className="map-tooltip__note">{cell.significant ? S.map.notChance : S.map.chance}</div>}
+        <div className="map-tooltip__value">{cell.value === null ? S.map.noData : `${formatCell(cell.value, decimals)} ${units}`}</div>
+        {cell.value !== null && <div className="map-tooltip__note">{cell.significant ? S.map.passes : S.map.notEnough}</div>}
         <div className="map-tooltip__coords">{formatLatLon(cell.lon, cell.lat)}</div>
       </div>
     );
-  }, [hover, units]);
+  }, [hover, units, decimals, suppressTooltip]);
 
   return (
-    <div className={`trend-map ${props.className ?? ''}`}>
-      <div ref={box} className="trend-map__canvas" role="img" aria-label={props.ariaLabel} />
+    <div className={`trend-map${narrow ? ' is-narrow' : ''} ${props.className ?? ''}`}>
+      <div ref={box} className="trend-map__canvas" />
       {tooltip}
     </div>
   );

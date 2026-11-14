@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
-import { Link, NavLink, Outlet } from 'react-router-dom';
+import { Link, NavLink, Outlet, useRouteError } from 'react-router-dom';
 import { api } from '../data/load';
 import { useData } from '../data/useData';
 import { copyLink } from '../lib/exporters';
@@ -37,9 +37,32 @@ function ThemeButton() {
   const theme = useTheme();
   const next = theme === 'dark' ? 'light' : 'dark';
   return (
-    <button type="button" className="btn btn--ghost" aria-label={`Switch to ${next} theme`} onClick={() => setTheme(next)}>
+    <button type="button" className="btn btn--ghost" aria-label={S.theme.switchTo(next)} onClick={() => setTheme(next)}>
       {theme === 'dark' ? S.theme.light : S.theme.dark}
     </button>
+  );
+}
+
+/** The logo is the evidence glyph: three rising segments. */
+export function Logo() {
+  return (
+    <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" className="logo">
+      <rect x="2" y="14" width="5.5" height="6" rx="1" fill="currentColor" />
+      <rect x="9.25" y="9" width="5.5" height="11" rx="1" fill="currentColor" />
+      <rect x="16.5" y="4" width="5.5" height="16" rx="1" fill="currentColor" />
+    </svg>
+  );
+}
+
+function ContextLine({ context }: { context: Context }) {
+  if (!context) return null;
+  return (
+    <>
+      {context.variable && <span className="ctx__strong">{context.variable}</span>}
+      {context.region && <span>{context.region}</span>}
+      {context.period && <span>{context.period}</span>}
+      {context.source && <span className="ctx__source">{context.source}</span>}
+    </>
   );
 }
 
@@ -50,27 +73,15 @@ export function Shell() {
     <Ctx.Provider value={setContext}>
       <header className="topbar">
         <Link to="/" className="wordmark" aria-label={`${S.appName}, home`}>
-          <svg viewBox="0 0 32 32" width="22" height="22" aria-hidden="true">
-            <rect width="32" height="32" rx="6" fill="currentColor" />
-            <path d="M6 22 L12 17 L17 19 L26 9" stroke="var(--bg)" strokeWidth="2.6" fill="none" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-          {S.appName}
+          <Logo />
+          <span className="wordmark__text">{S.appName}</span>
         </Link>
         <nav className="topbar__nav" aria-label="Main">
           <NavLink to="/" end>{S.nav.map}</NavLink>
           <NavLink to="/catalog">{S.nav.catalog}</NavLink>
           <NavLink to="/methods">{S.nav.methods}</NavLink>
         </nav>
-        <div className="topbar__context" aria-live="polite">
-          {context && (
-            <>
-              {context.variable && <span className="ctx__strong">{context.variable}</span>}
-              {context.region && <span>{context.region}</span>}
-              {context.period && <span>{context.period}</span>}
-              {context.source && <span className="ctx__source">{context.source}</span>}
-            </>
-          )}
-        </div>
+        <div className="topbar__context" aria-live="polite"><ContextLine context={context} /></div>
         <div className="topbar__actions">
           <ShareButton />
           <ThemeButton />
@@ -78,10 +89,10 @@ export function Shell() {
       </header>
       {index.data?.synthetic && (
         <div className="synthetic" role="note">
-          <strong>Synthetic data.</strong> {S.synthetic.banner.replace('Demo data. ', '')}{' '}
-          <Link to="/methods?s=data">{S.synthetic.more}</Link>
+          <strong>{S.synthetic.strong}</strong> {S.synthetic.banner} <Link to="/methods?s=data">{S.synthetic.more}</Link>
         </div>
       )}
+      {context && <div className="context-line" aria-hidden="true"><ContextLine context={context} /></div>}
       <main className="main">
         <Outlet />
       </main>
@@ -100,6 +111,12 @@ export function ErrorState({ error, children }: { error?: Error; children?: Reac
   );
 }
 
-export function Loading() {
-  return <div className="state state--loading" aria-busy="true">{S.loading}</div>;
+/** Route-level error boundary: a crash in one screen never blanks the whole app. */
+export function RouteError() {
+  const err = useRouteError();
+  return <ErrorState error={err instanceof Error ? err : undefined} />;
+}
+
+export function Loading({ height }: { height?: number }) {
+  return <div className="state state--loading" style={height ? { minHeight: height } : undefined} aria-busy="true">{S.loading}</div>;
 }

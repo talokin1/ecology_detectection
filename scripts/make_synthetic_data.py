@@ -47,7 +47,7 @@ SCHEMA_VERSION = "0.1.0"
 Y0, Y1 = 1981, 2024
 BASELINE = ("1981-01-01", "2010-12-31")
 FDR_MAP_Q = 0.05
-FDR_INSIGHT_Q = 0.10
+FDR_INSIGHT_Q = 0.05  # same q as the maps (review P0-5: filter and 95% whiskers must agree)
 MONTH_NAMES = ["January", "February", "March", "April", "May", "June", "July", "August",
                "September", "October", "November", "December"]
 SEASONS = [("DJF", "Winter", [12, 1, 2]), ("MAM", "Spring", [3, 4, 5]),
@@ -60,7 +60,10 @@ VARIABLES = {
     "t2m": {
         "catalog_id": "air_temperature_power", "name": "Air temperature",
         "long_name": "Air temperature near the surface", "parameter": "T2M",
-        "units": "°C", "rate_units": "°C per decade", "axis_label": "Temperature anomaly (°C)",
+        "units": "°C", "rate_units": "°C per decade", "axis_label": "Difference from normal (°C)",
+        "total_unit": "°C", "anomaly_units": "°C",
+        "units_long": "in °C, about 2 m above the ground",
+        "map_title": "Where is the air getting warmer or cooler?",
         "raw_label": "Monthly mean temperature (°C)", "palette": "RdBu",
         "words": {"neg": "cooling", "pos": "warming"},
         "up": "getting warmer", "down": "getting cooler", "noun": "warming", "noun_down": "cooling",
@@ -74,7 +77,10 @@ VARIABLES = {
     "precip": {
         "catalog_id": "precipitation_power", "name": "Precipitation",
         "long_name": "Precipitation (rain and snow)", "parameter": "PRECTOTCORR",
-        "units": "mm/day", "rate_units": "mm/day per decade", "axis_label": "Precipitation anomaly (mm/day)",
+        "units": "mm/day", "rate_units": "mm/day per decade", "axis_label": "Difference from normal (mm/day)",
+        "total_unit": "mm/day", "anomaly_units": "mm/day",
+        "units_long": "rain and snow, in millimetres of water per day",
+        "map_title": "Where is it getting wetter or drier?",
         "raw_label": "Monthly precipitation (mm/day)", "palette": "BrBG",
         "words": {"neg": "drier", "pos": "wetter"},
         "up": "getting wetter", "down": "getting drier", "noun": "wetting", "noun_down": "drying",
@@ -88,7 +94,11 @@ VARIABLES = {
     "soil": {
         "catalog_id": "root_zone_soil_wetness_power", "name": "Soil wetness",
         "long_name": "Root-zone soil wetness", "parameter": "GWETROOT",
-        "units": "%", "rate_units": "points per decade", "axis_label": "Soil wetness anomaly (points)",
+        "units": "%", "rate_units": "percentage points per decade",
+        "axis_label": "Difference from normal (percentage points)",
+        "total_unit": "percentage points", "anomaly_units": "percentage points",
+        "units_long": "in percent of saturation (0% = bone dry, 100% = soaked)",
+        "map_title": "Where is the soil getting drier or wetter?",
         "raw_label": "Root-zone soil wetness (% of saturation)", "palette": "BrBG",
         "words": {"neg": "drier", "pos": "wetter"},
         "up": "getting wetter", "down": "getting drier", "noun": "wetting", "noun_down": "drying",
@@ -114,7 +124,13 @@ CASES = [
      "question": "Is the north of Europe getting wetter while the south dries out?",
      "teaser": "One continent, two directions. Do the trends really differ?",
      "variable_id": "precip", "region_id": "south_europe", "compare_region_id": "north_europe"},
+    # Pre-registered null case (review P1-7): question fixed before computing; shown whatever comes out.
+    {"id": "04", "slug": "only-the-south", "title": "Only the south?",
+     "question": "Is all of Ukraine drying out, or only the south?",
+     "teaser": "We chose this question before running the numbers, and we show the answer whatever it is.",
+     "variable_id": "soil", "region_id": "ukraine"},
 ]
+NAME_IN_SENTENCE = {"sahel": "the Sahel", "great_plains": "the Great Plains (USA)"}
 
 TOPICS = {
     "temperature": ["air_temperature_power", "air_temperature_merra2", "surface_air_temperature_airs",
@@ -345,7 +361,9 @@ def map_layer(world: World, var: str, rng) -> tuple[dict, dict]:
     raw_lim = float(np.percentile(finite, 98))
     nice = [0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.4, 0.5, 0.6, 0.8, 1.0, 1.2, 1.5, 2.0, 2.5, 3.0]
     limit = next(v for v in nice if v >= raw_lim)
-    d = spec["rate_decimals"] + (1 if var == "precip" else 0)
+    d = spec["rate_decimals"] + 1
+    bins = 11
+    edges = [-limit + 2 * limit * i / bins for i in range(bins + 1)]
     layer = {
         "schema_version": SCHEMA_VERSION,
         "variable_id": var,
@@ -356,13 +374,21 @@ def map_layer(world: World, var: str, rng) -> tuple[dict, dict]:
         "significant": [int(v) for v in sig],
         "palette": spec["palette"],
         "limit": limit,
-        "bins": 10,
+        "bins": bins,
+        "value_decimals": d,
+        "legend": {
+            "title": f"Trend · {spec['rate_units']}",
+            "edges_text": [fmt(e, d) for e in edges],
+            "ticks": [{"value": v, "text": "0" if v == 0 else fmt(v, d - 1)} for v in (-limit, -limit / 2, 0, limit / 2, limit)],
+            "min_text": f"≤ {fmt(-limit, d - 1)}", "max_text": f"≥ {fmt(limit, d - 1)}",
+        },
         "units_label": spec["rate_units"],
         "words": spec["words"],
         "fdr_q": FDR_MAP_Q,
         "caption": (f"SYNTHETIC demo field shaped like NASA POWER {spec['parameter']} · {Y0}–{Y1} · "
-                    "Sen's slope of annual means per 1° cell; full colour = trend unlikely to be chance "
-                    f"(Mann-Kendall with autocorrelation correction, false discovery rate q = {FDR_MAP_Q})."),
+                    "Sen's slope of yearly means in each 1° square. Strong colour: passes the map-wide "
+                    f"test for false alarms (Mann-Kendall with memory correction, q = {FDR_MAP_Q}). "
+                    "This map enlarges areas near the poles."),
         "provenance": provenance(spec, "map"),
     }
     cells = {"slope": slope.reshape(world.LAT.shape), "sig": sig.reshape(world.LAT.shape)}
@@ -381,6 +407,8 @@ def provenance(spec: dict, what: str) -> dict:
         ] + (["per-cell annual means, BH FDR across cells"] if what == "map" else
              ["cos(latitude)-weighted regional mean, monthly anomalies"]),
         "synthetic": True,
+        "caveat": ("Data: model-based reanalysis, about 50 km squares (the map is regridded to 1°). "
+                   f"The trend is a straight line through {Y0}–{Y1}; it shows what changed, not why."),
     }
 
 
@@ -454,8 +482,30 @@ def annual_trend(years, values):
     return ts.analyze_series(dates, values, obs_per_year=1, deseasonalize_monthly=False)
 
 
+LEVEL_WORD = {"strong": "Strong evidence", "moderate": "Evidence", "weak": "A hint",
+              "none": "No clear trend yet", "insufficient": "Not enough data"}
+SEASON_VERB = {"warming": ("warming", "warm fastest"), "cooling": ("cooling", "cool fastest"),
+               "drying": ("drying out", "dry out fastest"), "wetting": ("getting wetter", "get wetter fastest")}
+
+
+def range_text(lo: float, hi: float, d: int, prefix: str = "95% range ", suffix: str = "") -> str:
+    """Interval rounded outwards; adds decimals until neither bound prints as a signless zero."""
+    for dd in range(d, d + 4):
+        f = 10 ** dd
+        lo_r, hi_r = math.floor(lo * f) / f, math.ceil(hi * f) / f
+        # outward rounding must not move a bound onto or across zero
+        if not ((hi < 0 <= hi_r) or (lo > 0 >= lo_r)):
+            break
+    return f"{prefix}{fmt(lo_r, dd)}{suffix} to {fmt(hi_r, dd)}{suffix}"
+
+
+def sentence_name(region: dict) -> str:
+    return NAME_IN_SENTENCE.get(region["id"], region["name"])
+
+
 def analyse(world, var, region, cells, rng):
     spec = VARIABLES[var]
+    name_s = sentence_name(region)
     dates, raw = regional_series(world, var, region["mask"], region["centroid"], rng)
     res = ts.analyze_series(dates, raw, units=spec["rate_units"], variable_name=spec["long_name"])
     anom, _ = ts.deseasonalize(dates, raw)
@@ -472,34 +522,51 @@ def analyse(world, var, region, cells, rng):
     ols_level = level_from_p(res["ols"]["p"])
     level = weaker(mk_level, ols_level) if record_years >= 10 else "insufficient"
     disagree = mk_level != ols_level
+    decided_by = "both" if not disagree else ("mk" if weaker(mk_level, ols_level) == mk_level else "ols")
     direction = "up" if per_dec > 0 else "down" if per_dec < 0 else "flat"
 
     rd, td, sd_ = spec["rate_decimals"], spec["total_decimals"], spec["series_decimals"]
+    unit = spec["total_unit"]
     total = sen["slope"] * span
     total_ci = [ci95[0] / 10 * span, ci95[1] / 10 * span]
     mean_level = float(np.nanmean(raw))
     pct_total = 100 * total / mean_level if spec["percent"] else None
+    pct_ci = [100 * c / mean_level for c in total_ci] if spec["percent"] else None
 
-    # --- headline and sentence (templates; the app shows them verbatim)
+    # --- headline, sentence, answer (templates; the app shows them verbatim)
     words = spec["up"] if direction == "up" else spec["down"]
     headline = {
         "strong": f"Strong evidence: {words}", "moderate": f"Evidence: {words}",
         "weak": "A hint, not proof", "none": "No clear trend yet", "insufficient": "Not enough data to judge",
     }[level]
-    unit_word_ = spec["units"] if spec["units"] != "%" else "points"
-    if level in ("strong", "moderate"):
-        moved = "rose" if total > 0 else "dropped"
-        sure = "very unlikely" if level == "strong" else "unlikely"
-        sentence = (f"Since {Y0}, {spec['long_name'].lower()} in {region['name']} {moved} by about "
-                    f"{fmt(abs(total), td, sign=False)} {unit_word_}, and the change is {sure} to be chance.")
+    moved = "rose" if total > 0 else "dropped"
+    total_abs = f"{fmt(abs(total), td, sign=False)} {unit}"
+    if level == "strong":
+        sentence = (f"Since {Y0}, {spec['long_name'].lower()} in {name_s} {moved} by about {total_abs}. "
+                    f"A drift this large would be very rare if nothing were really changing ({p_text(mk['p'])}).")
+    elif level == "moderate":
+        sentence = (f"Since {Y0}, {spec['long_name'].lower()} in {name_s} {moved} by about {total_abs}. "
+                    f"This would be rare if nothing were changing ({p_text(mk['p'])}).")
     elif level == "weak":
-        sentence = (f"{spec['long_name']} in {region['name']} may be {words}, but the evidence is not "
-                    "strong enough to rule out chance.")
+        sentence = (f"{spec['long_name']} in {name_s} may be {words}, but the evidence is not "
+                    "strong enough to rule out ordinary ups and downs.")
     else:
-        sentence = (f"{spec['long_name']} in {region['name']} moves up and down from year to year, "
+        sentence = (f"{spec['long_name']} in {name_s} moves up and down from year to year, "
                     "and so far there is no steady drift we can tell apart from those swings.")
+    rate_txt = f"{fmt(per_dec, rd)} {spec['rate_units']}"
+    if level in ("strong", "moderate"):
+        answer = f"{region['name']} is {words}: about {rate_txt} since {Y0}, {fmt(total, td)} {unit} in total."
+    elif level == "weak":
+        answer = f"Maybe, but not proven: {name_s} shows {rate_txt}, and the evidence is still weak."
+    elif level == "none":
+        answer = f"No clear trend yet in {name_s}: the change so far is within normal year-to-year swings."
+    else:
+        answer = "The record is too short or too patchy to judge a trend."
     how_sure = (f"Mann-Kendall test with a correction for month-to-month memory: {p_text(mk['p'])} · "
                 f"{res['n']} months · second test (regression): {p_text(res['ols']['p'])}")
+    disagree_text = (f"Mann-Kendall: {LEVEL_WORD[mk_level].lower()} ({p_text(mk['p'])}). Regression: "
+                     f"{LEVEL_WORD[ols_level].lower()} ({p_text(res['ols']['p'])}). We report the weaker."
+                     if disagree else None)
 
     # --- trend line and 95% fan in anomaly space
     x0, x1 = str(dates[0])[:7], str(dates[-1])[:7]
@@ -511,7 +578,7 @@ def analyse(world, var, region, cells, rng):
     upper = [max(pivot + lo * (x - tm), pivot + hi * (x - tm)) for x in xs]
     mid_month = np.datetime64(f"{int(tm)}-01") + np.timedelta64(int(round((tm % 1) * 12)), "M")
 
-    # --- years to detection
+    # --- years to detection (shown for none and weak)
     ytd = None
     if level in ("none", "weak"):
         more = res["years_to_detect"] - record_years
@@ -534,26 +601,28 @@ def analyse(world, var, region, cells, rng):
     if level in ("strong", "moderate") and ratio_now and ratio_now > 1:
         emergence = int(math.ceil(Y0 + swing / abs(sen["slope"])))
 
-    # --- seasons (S6) and months (M1)
+    # --- seasons (S6) and months (M1): 95% ranges, filtered at the same q
     family = []
     seasons = []
     for code, label, ms in SEASONS:
         sy, sv = seasonal_series(dates, anom, ms)
         r = annual_trend(sy, sv)
         p = r["mk"]["p"]
+        c95 = r["sen_ci95_per_decade"]
         seasons.append({"season": code, "label": label,
                         "sen_per_decade": round(r["sen_slope_per_decade"], rd + 1),
-                        "ci95": [round(c, rd + 1) for c in r["sen_ci95_per_decade"]],
+                        "ci95": [round(c, rd + 2) for c in c95], "ci_text": range_text(c95[0], c95[1], rd),
                         "p": round(p, 4), "display": fmt(r["sen_slope_per_decade"], rd)})
         family.append(("season", code, p))
     monthly = []
     for m in range(1, 13):
         sy, sv = seasonal_series(dates, anom, [m])
         r = annual_trend(sy, sv)
-        monthly.append({"month": m, "label": MONTH_NAMES[m - 1][:3],
+        c95 = r["sen_ci95_per_decade"]
+        monthly.append({"month": m, "label": MONTH_NAMES[m - 1][:3], "name": MONTH_NAMES[m - 1],
                         "sen_per_decade": round(r["sen_slope_per_decade"], rd + 1),
-                        "ci95": [round(c, rd + 1) for c in r["sen_ci95_per_decade"]],
-                        "p": round(r["mk"]["p"], 4)})
+                        "ci95": [round(c, rd + 2) for c in c95], "ci_text": range_text(c95[0], c95[1], rd),
+                        "display": fmt(r["sen_slope_per_decade"], rd), "p": round(r["mk"]["p"], 4)})
         family.append(("month", m, r["mk"]["p"]))
 
     # --- extremes (S7)
@@ -569,21 +638,27 @@ def analyse(world, var, region, cells, rng):
     extremes = {"kind": ex["kind"], "label": ex["label"], "threshold_text": ex["threshold_text"],
                 "years": yrs.tolist(), "counts": counts.tolist(),
                 "sen_per_decade": round(ex_r["sen_slope_per_decade"], 2), "p": round(ex_r["mk"]["p"], 4),
-                "early": {"label": f"{Y0}–{Y0 + 9}", "mean_per_year": round(early, 1)},
-                "late": {"label": f"{Y1 - 9}–{Y1}", "mean_per_year": round(late, 1)}}
+                "early": {"label": f"{Y0}–{Y0 + 9}", "mean_per_year": round(early, 1), "years": [Y0, Y0 + 9]},
+                "late": {"label": f"{Y1 - 9}–{Y1}", "mean_per_year": round(late, 1), "years": [Y1 - 9, Y1]}}
 
-    # --- FDR across the insight family (M11)
+    # --- FDR across the follow-up checks (M11)
     pv = np.array([p for _, _, p in family])
     sig, qv = ts.fdr_bh(pv, q=FDR_INSIGHT_Q)
     qmap = {(k, key): float(q) for (k, key, _), q in zip(family, qv)}
-    for s in seasons:
-        s["q"] = round(qmap[("season", s["season"])], 4)
-        s["passes_fdr"] = s["q"] <= FDR_INSIGHT_Q
+    for s_ in seasons:
+        s_["q"] = round(qmap[("season", s_["season"])], 4)
+        s_["passes_fdr"] = s_["q"] <= FDR_INSIGHT_Q
     for m in monthly:
         m["q"] = round(qmap[("month", m["month"])], 4)
         m["passes_fdr"] = m["q"] <= FDR_INSIGHT_Q
     extremes["q"] = round(qmap[("extremes", ex["kind"])], 4)
     extremes["passes_fdr"] = extremes["q"] <= FDR_INSIGHT_Q
+    extremes["display"] = {
+        "subtitle": f"Months per year that were {ex['threshold_text']}.",
+        "trend_text": (f"From about {extremes['early']['mean_per_year']:g} a year in {extremes['early']['label']} "
+                       f"to about {extremes['late']['mean_per_year']:g} a year in {extremes['late']['label']}."
+                       if extremes["passes_fdr"] else "The change in this count could still be chance."),
+    }
 
     # --- spatial sign split (S9)
     w = np.cos(np.deg2rad(world.LAT)) * region["mask"] * np.isfinite(cells["slope"])
@@ -592,7 +667,7 @@ def analyse(world, var, region, cells, rng):
     share_opp = float((w * opp).sum() / w.sum()) if w.sum() else 0.0
     share_same = float((w * same).sum() / w.sum()) if w.sum() else 0.0
 
-    unit_word = spec["units"] if spec["units"] != "%" else "points"
+    rng95 = range_text(ci95[0], ci95[1], rd)
     return {
         "schema_version": SCHEMA_VERSION,
         "variable_id": var,
@@ -605,26 +680,29 @@ def analyse(world, var, region, cells, rng):
                    "smooth12": rnd(pd.Series(anom).rolling(12, center=True).mean().to_numpy(), sd_ + 1),
                    "annual": {"years": yrs.tolist(), "anomaly": rnd(ann, sd_ + 1)},
                    "raw_label": spec["raw_label"], "anomaly_label": spec["axis_label"],
-                   "baseline": "anomaly = value minus the average of the same calendar month over the whole record"},
+                   "anomaly_units": spec["anomaly_units"],
+                   "baseline": f"normal = the average of the same calendar month, {Y0}–{Y1}"},
         "trend": {
             "sen_per_decade": round(per_dec, rd + 2),
             "ci90": [round(c, rd + 2) for c in ci90], "ci95": [round(c, rd + 2) for c in ci95],
             "ci99": [round(c, rd + 2) for c in ci99],
             "total_change": round(total, td + 1), "total_change_ci95": [round(c, td + 1) for c in total_ci],
             "percent_change": None if pct_total is None else round(pct_total, 1),
+            "percent_change_ci95": None if pct_ci is None else [round(c, 1) for c in pct_ci],
             "line": {"x": [x0, x1], "y": rnd([sen["intercept"] + sen["slope"] * t.min(),
                                               sen["intercept"] + sen["slope"] * t.max()], sd_ + 2)},
             "band95": {"x": [x0, str(mid_month), x1], "lower": rnd(lower, sd_ + 2), "upper": rnd(upper, sd_ + 2)},
             "display": {
-                "rate": f"{fmt(per_dec, rd)} {spec['rate_units']}",
+                "rate": rate_txt,
                 "rate_value": fmt(per_dec, rd), "rate_unit": spec["rate_units"],
-                "total_value": fmt(total, td), "total_unit": unit_word,
-                "range": f"likely {fmt(ci95[0], rd)} to {fmt(ci95[1], rd)}",
-                "total": f"{fmt(total, td)} {unit_word}",
+                "total_value": fmt(total, td), "total_unit": unit,
+                "range": rng95,
+                "total": f"{fmt(total, td)} {unit}",
                 "total_label": f"Total change {Y0}–{Y1}",
-                "total_range": f"likely {fmt(total_ci[0], td)} to {fmt(total_ci[1], td)}",
+                "total_range": range_text(total_ci[0], total_ci[1], td),
                 "percent": None if pct_total is None else f"{fmt(pct_total, 0)}% of the average",
-                "annotation": f"{fmt(per_dec, rd)} {spec['rate_units']} (likely {fmt(ci95[0], rd)} to {fmt(ci95[1], rd)})",
+                "percent_range": None if pct_ci is None else range_text(pct_ci[0], pct_ci[1], 0, suffix="%"),
+                "annotation": f"{rate_txt} ({rng95})",
             },
         },
         "tests": {
@@ -634,10 +712,13 @@ def analyse(world, var, region, cells, rng):
                     "n_eff": round(res["ols"]["n_eff"], 1), "r1": round(res["ols"]["r1"], 3), "level": ols_level},
         },
         "verdict": {"level": level, "direction": direction, "headline": headline, "sentence": sentence,
-                    "how_sure": how_sure, "methods_disagree": disagree},
+                    "answer": answer, "how_sure": how_sure, "methods_disagree": disagree,
+                    "decided_by": decided_by, "disagree_text": disagree_text},
         "years_to_detect": ytd,
         "emergence": {"year": emergence, "ratio_now": None if ratio_now is None else round(ratio_now, 2),
-                      "swing": round(swing, sd_ + 1)},
+                      "swing": round(swing, sd_ + 1),
+                      "label": (f"Around {emergence}, the change on the trend line became bigger than a normal "
+                                "year-to-year swing." if emergence else None)},
         "seasons": seasons,
         "monthly_profile": monthly,
         "extremes": extremes,
@@ -645,59 +726,78 @@ def analyse(world, var, region, cells, rng):
                     "share_same_significant": round(share_same, 3), "warn": share_opp >= 0.15},
         "neighbour": None,
         "insights": [],
-        "insights_audit": {"tested": len(family), "passed": int(sig.sum()), "shown": 0, "q": FDR_INSIGHT_Q},
+        "insights_audit": {"tested": len(family), "passed": int(sig.sum()), "shown": 0, "q": FDR_INSIGHT_Q, "text": ""},
         "provenance": provenance(spec, "region"),
-        "_internal": {"family": family, "qmap": qmap, "spec": spec, "region": region},
+        "_internal": {"family": family, "qmap": qmap, "spec": spec, "region": region,
+                      "total": total, "pct": pct_total, "unit": unit},
     }
 
 
 # --------------------------------------------------------------------------- insights
+def change_phrase(a: dict) -> str:
+    """'about 19% drier' / 'about 4.4 percentage points drier' / 'about 2.6 °C warmer'."""
+    i, spec = a["_internal"], a["_internal"]["spec"]
+    adj = spec["words"]["pos"] if i["total"] > 0 else spec["words"]["neg"]
+    adj = {"warming": "warmer", "cooling": "cooler"}.get(adj, adj)
+    if i["pct"] is not None:
+        return f"about {fmt(abs(i['pct']), 0, sign=False)}% {adj}"
+    return f"about {fmt(abs(i['total']), spec['total_decimals'], sign=False)} {i['unit']} {adj}"
+
+
 def build_insights(a: dict, regions: dict) -> None:
-    spec, region = a["_internal"]["spec"], a["_internal"]["region"]
+    spec = a["_internal"]["spec"]
     v, tr = a["verdict"], a["trend"]
     level = v["level"]
-    rd = spec["rate_decimals"]
     ins = []
-    unit_word = spec["units"] if spec["units"] != "%" else "points"
     noun = spec["noun"] if v["direction"] == "up" else spec["noun_down"]
 
     if LEVEL_RANK[level] >= 2:
         if spec["percent"] and tr["percent_change"] is not None:
-            text = (f"Since {Y0} it got about {fmt(abs(tr['percent_change']), 0, sign=False)}% "
-                    f"{'wetter' if tr['total_change'] > 0 else 'drier'} "
-                    f"({fmt(tr['total_change'], spec['total_decimals'])} {unit_word}).")
+            text = (f"Since {Y0} it got {change_phrase(a)} "
+                    f"({tr['display']['total_value']} {tr['display']['total_unit']}; {tr['display']['percent_range']}).")
         else:
-            lo, hi = sorted(abs(c) for c in tr["total_change_ci95"])
-            d = spec["total_decimals"]
-            adj = {"t2m": ("warmer", "cooler"), "soil": ("wetter", "drier")}[a["variable_id"]]
             subject = "it" if a["variable_id"] == "t2m" else "the soil"
-            text = (f"Since {Y0} {subject} got about {fmt(abs(tr['total_change']), d, sign=False)} {unit_word} "
-                    f"{adj[0] if tr['total_change'] > 0 else adj[1]} "
-                    f"(likely {fmt(lo, d, sign=False)} to {fmt(hi, d, sign=False)}).")
-        ins.append({"kind": "total_change", "text": text, "evidence_level": level,
+            text = f"Since {Y0} {subject} got {change_phrase(a)} ({tr['display']['total_range']})."
+        ins.append({"kind": "total_change", "text": text, "evidence_level": level, "tested": False,
                     "methods_anchor": "trend-test", "numbers": {"total": tr["total_change"]}})
     if a["emergence"]["year"]:
         ins.append({"kind": "signal_noise",
                     "text": (f"Since about {a['emergence']['year']} the change has been bigger than a normal "
                              "year-to-year swing."),
-                    "evidence_level": "descriptive", "methods_anchor": "signal-noise",
+                    "evidence_level": "descriptive", "tested": False, "methods_anchor": "signal-noise",
                     "numbers": {"year": a["emergence"]["year"], "ratio_now": a["emergence"]["ratio_now"]}})
 
-    # season: fastest significant season vs slowest, CIs must not overlap
-    ss = sorted(a["seasons"], key=lambda s: s["sen_per_decade"] * (1 if v["direction"] == "up" else -1), reverse=True)
-    fast, slow = ss[0], ss[-1]
-    if (LEVEL_RANK[level] >= 2 and fast["passes_fdr"]
-            and (fast["ci95"][0] > slow["ci95"][1] or fast["ci95"][1] < slow["ci95"][0])):
-        r = abs(fast["sen_per_decade"]) / max(abs(slow["sen_per_decade"]), 1e-9)
-        tw = times_word(r) if np.sign(fast["sen_per_decade"]) == np.sign(slow["sen_per_decade"]) else None
-        verb = {"warming": "warming", "cooling": "cooling", "drying": "drying out", "wetting": "getting wetter"}[noun]
-        if tw:
-            text = f"{fast['label']}s are {verb} {tw} {slow['label'].lower()}s."
+    # seasons: always answer "which season?" once the main trend is clear
+    if LEVEL_RANK[level] >= 2:
+        sgn = 1 if v["direction"] == "up" else -1
+        ss = sorted(a["seasons"], key=lambda s_: s_["sen_per_decade"] * sgn, reverse=True)
+        fast, slow = ss[0], ss[-1]
+        apart = fast["ci95"][0] > slow["ci95"][1] or fast["ci95"][1] < slow["ci95"][0]
+        verb, verb_fast = SEASON_VERB[noun]
+        same_sign = np.sign(fast["sen_per_decade"]) == np.sign(slow["sen_per_decade"])
+        units = spec["rate_units"]
+        if fast["passes_fdr"] and apart and slow["passes_fdr"] and same_sign:
+            r = abs(fast["sen_per_decade"]) / max(abs(slow["sen_per_decade"]), 1e-9)
+            tw = times_word(r) or "faster than"
+            ins.append({"kind": "season", "text": f"{fast['label']}s are {verb} {tw} {slow['label'].lower()}s.",
+                        "evidence_level": "moderate", "tested": True, "methods_anchor": "seasons",
+                        "numbers": {"fast": fast["sen_per_decade"], "slow": slow["sen_per_decade"]}, "q": fast["q"]})
+        elif fast["passes_fdr"] and apart:
+            ins.append({"kind": "season",
+                        "text": (f"{fast['label']}s {verb_fast} ({fast['display']} {units}); "
+                                 f"{slow['label'].lower()}s show no clear change."),
+                        "evidence_level": "moderate", "tested": True, "methods_anchor": "seasons",
+                        "numbers": {"fast": fast["sen_per_decade"], "slow": slow["sen_per_decade"]}, "q": fast["q"]})
         else:
-            text = f"{fast['label']}s change the most; {slow['label'].lower()}s show no clear change."
-        ins.append({"kind": "season", "text": text, "evidence_level": "moderate", "methods_anchor": "seasons",
-                    "numbers": {"fast": fast["sen_per_decade"], "slow": slow["sen_per_decade"]},
-                    "q": fast["q"]})
+            others = [s_["sen_per_decade"] for s_ in ss[1:]]
+            o_lo, o_hi = min(others), max(others)
+            ins.append({"kind": "season_unresolved",
+                        "text": (f"{fast['label']} shows the fastest {noun} ({fast['display']} {units}; the other "
+                                 f"seasons {fmt(o_lo, spec['rate_decimals'])} to {fmt(o_hi, spec['rate_decimals'])}), "
+                                 f"but the ranges still overlap, so we cannot yet say {fast['label'].lower()} "
+                                 "is truly different."),
+                        "evidence_level": "descriptive", "tested": False, "methods_anchor": "seasons",
+                        "numbers": {"fast": fast["sen_per_decade"]}})
     # months (M1)
     passing = [m for m in a["monthly_profile"]
                if m["passes_fdr"] and np.sign(m["sen_per_decade"]) == np.sign(tr["sen_per_decade"])]
@@ -706,7 +806,7 @@ def build_insights(a: dict, regions: dict) -> None:
         top = sorted(top, key=lambda m: m["month"])
         names = " and ".join(MONTH_NAMES[m["month"] - 1] for m in top)
         ins.append({"kind": "months", "text": f"Most of the {noun} happens in {names}.",
-                    "evidence_level": "moderate", "methods_anchor": "months",
+                    "evidence_level": "moderate", "tested": True, "methods_anchor": "months",
                     "numbers": {"months": [m["month"] for m in top]}, "q": min(m["q"] for m in top)})
     # extremes (S7)
     ex = a["extremes"]
@@ -714,35 +814,45 @@ def build_insights(a: dict, regions: dict) -> None:
         ins.append({"kind": "extremes",
                     "text": (f"{ex['label']}: about {ex['early']['mean_per_year']:g} a year in {ex['early']['label']}, "
                              f"about {ex['late']['mean_per_year']:g} a year in {ex['late']['label']}."),
-                    "evidence_level": "moderate", "methods_anchor": "extremes",
+                    "evidence_level": "moderate", "tested": True, "methods_anchor": "extremes",
                     "numbers": {"early": ex["early"]["mean_per_year"], "late": ex["late"]["mean_per_year"]},
                     "q": ex["q"]})
     # neighbour (S11)
     nb = a["neighbour"]
     if nb:
         ins.append({"kind": "neighbour",
-                    "text": f"{nb['distance_text']} {nb['bearing']}, {nb['name']} is {nb['words']}.",
-                    "evidence_level": "descriptive", "methods_anchor": "neighbour",
+                    "text": f"{nb['distance_text']} {nb['bearing']}, {nb['name_in_sentence']} is {nb['words']}.",
+                    "evidence_level": "descriptive", "tested": False, "methods_anchor": "neighbour",
                     "numbers": {"distance_km": nb["distance_km"]}})
     # heterogeneity (S9)
     if a["spatial"]["warn"]:
         ins.append({"kind": "heterogeneity",
                     "text": (f"The regional average hides a contrast: about "
                              f"{round(100 * a['spatial']['share_opposite_significant'])}% of the area moves the other way."),
-                    "evidence_level": "descriptive", "methods_anchor": "sign-split",
+                    "evidence_level": "descriptive", "tested": False, "methods_anchor": "sign-split",
                     "numbers": {"share": a["spatial"]["share_opposite_significant"]}})
-    # not visible yet
-    if level in ("none", "weak") and a["years_to_detect"]:
+    # not visible yet: only for "No clear trend yet" (plan v2)
+    if level == "none" and a["years_to_detect"]:
         ins.append({"kind": "not_yet", "text": "Too noisy to tell yet. " + a["years_to_detect"]["text"],
-                    "evidence_level": "descriptive", "methods_anchor": "years-to-detect",
+                    "evidence_level": "descriptive", "tested": False, "methods_anchor": "years-to-detect",
                     "numbers": {"years": a["years_to_detect"]["value"]}})
-    # caveat
-    if v["methods_disagree"]:
-        ins.append({"kind": "caveat",
-                    "text": "Our two tests disagree on how sure we can be, so we report the weaker verdict.",
-                    "evidence_level": "descriptive", "methods_anchor": "two-tests", "numbers": {}})
     a["insights"] = ins
-    a["insights_audit"]["shown"] = sum(1 for i in ins if "q" in i)
+    au = a["insights_audit"]
+    au["shown"] = sum(1 for i in ins if i["tested"])
+    if au["passed"] and au["shown"] == 0 and LEVEL_RANK[level] < 2:
+        au["text"] = (f"Besides the main test, we ran {au['tested']} follow-up checks (12 months, 4 seasons, "
+                      f"extreme months). {au['passed']} held up after correcting for running many tests at once "
+                      f"(q = {au['q']}), but we do not report them as findings while the main trend itself is not "
+                      "clear.")
+    elif au["passed"]:
+        au["text"] = (f"Besides the main test, we ran {au['tested']} follow-up checks (12 months, 4 seasons, "
+                      f"extreme months). {au['passed']} held up after correcting for running many tests at once "
+                      f"(false discovery rate q = {au['q']}); most of them repeat the main trend month by month. "
+                      "Findings marked “follow-up check” come from these checks.")
+    else:
+        au["text"] = (f"Besides the main test, we ran {au['tested']} follow-up checks (12 months, 4 seasons, "
+                      "extreme months). None held up after correcting for running many tests at once "
+                      f"(q = {au['q']}). That is a result too: no month or season stands out.")
 
 
 def attach_neighbours(results: dict, regions: dict) -> None:
@@ -764,38 +874,127 @@ def attach_neighbours(results: dict, regions: dict) -> None:
             spec = VARIABLES[var]
             words = spec["up"] if results[(oid, var)]["verdict"]["direction"] == "up" else spec["down"]
             rounded = int(round(km, -2))
-            a["neighbour"] = {"region_id": oid, "name": regions[oid]["name"], "distance_km": rounded,
+            a["neighbour"] = {"region_id": oid, "name": regions[oid]["name"],
+                              "name_in_sentence": sentence_name(regions[oid]), "distance_km": rounded,
                               "distance_text": f"{rounded:,} km", "bearing": bearing, "words": words}
 
 
 # --------------------------------------------------------------------------- compare
 def compare(a: dict, b: dict, var: str) -> dict:
     spec = VARIABLES[var]
+    rd, sd_ = spec["rate_decimals"], spec["series_decimals"]
     ya = np.array([np.nan if v is None else v for v in a["series"]["anomaly"]])
     yb = np.array([np.nan if v is None else v for v in b["series"]["anomaly"]])
     dates = np.array([np.datetime64(d + "-01") for d in a["series"]["dates"]])
-    r = ts.analyze_series(dates, ya - yb, deseasonalize_monthly=False, obs_per_year=12)
+    diff = ya - yb
+    r = ts.analyze_series(dates, diff, deseasonalize_monthly=False, obs_per_year=12)
+    t = ts.decimal_years(dates)
+    mk = ts.mann_kendall(t, diff)
+    sen = ts.sens_slope(t, diff, var_s=mk["var_s"])
     lvl = level_from_p(r["mk"]["p"])
     differ = LEVEL_RANK[lvl] >= 2
-    rd = spec["rate_decimals"]
-    na, nb = a["_internal"]["region"]["name"], b["_internal"]["region"]["name"]
-    if differ:
-        answer = "Yes, the two trends really differ."
-        sentence = (f"The gap between {na} and {nb} changes by {fmt(r['sen_slope_per_decade'], rd)} "
-                    f"{spec['rate_units']} ({p_text(r['mk']['p'])}), more than chance would explain.")
+    ra, rb = a["_internal"]["region"], b["_internal"]["region"]
+    na, nb = ra["name"], rb["name"]
+    va, vb = a["verdict"], b["verdict"]
+    sa, sb = np.sign(a["trend"]["sen_per_decade"]), np.sign(b["trend"]["sen_per_decade"])
+    wa = spec["up"] if va["direction"] == "up" else spec["down"]
+    wb = spec["up"] if vb["direction"] == "up" else spec["down"]
+    adj = lambda s_: spec["words"]["pos"] if s_ > 0 else spec["words"]["neg"]  # noqa: E731
+    faster = na if abs(a["trend"]["sen_per_decade"]) > abs(b["trend"]["sen_per_decade"]) else nb
+    if differ and sa != sb:
+        headline = f"{na} {adj(sa)}, {nb} {adj(sb)}: the gap is growing"
+        answer = f"They move in opposite directions: {sentence_name(ra)} is {wa}, {sentence_name(rb)} {wb}."
+    elif differ:
+        headline = f"Both {wa}, {faster} faster"
+        answer = (f"Both are {wa}, but {faster} is changing faster, and the difference is bigger than chance "
+                  "would usually produce.")
     else:
-        answer = "Not clearly. The difference could still be chance."
-        sentence = (f"The gap between {na} and {nb} changes by {fmt(r['sen_slope_per_decade'], rd)} "
-                    f"{spec['rate_units']}, but that is within what natural swings produce ({p_text(r['mk']['p'])}).")
+        headline = "No clear difference yet"
+        answer = (f"Not clearly: we cannot yet tell the difference apart from natural swings ({p_text(r['mk']['p'])}).")
+    c95 = r["sen_ci95_per_decade"]
+    sentence = (f"The gap ({na} minus {nb}) changes by {fmt(r['sen_slope_per_decade'], rd)} {spec['rate_units']} "
+                f"({p_text(r['mk']['p'])}).")
+    summary = (f"{na}: {change_phrase(a)} ({LEVEL_WORD[va['level']].lower()}) · "
+               f"{nb}: {change_phrase(b)} ({LEVEL_WORD[vb['level']].lower()})")
+    x0, x1 = a["series"]["dates"][0], a["series"]["dates"][-1]
+    tm = float(np.median(t))
+    pivot = sen["intercept"] + sen["slope"] * tm
+    lo, hi = c95[0] / 10, c95[1] / 10
+    xs = [t.min(), tm, t.max()]
+    mid_month = np.datetime64(f"{int(tm)}-01") + np.timedelta64(int(round((tm % 1) * 12)), "M")
     return {"schema_version": SCHEMA_VERSION, "variable_id": var,
             "region_a": a["region_id"], "region_b": b["region_id"],
             "diff_sen_per_decade": round(r["sen_slope_per_decade"], rd + 2),
-            "ci95": [round(c, rd + 2) for c in r["sen_ci95_per_decade"]],
+            "ci95": [round(c, rd + 2) for c in c95],
             "p": round(r["mk"]["p"], 6), "level": lvl, "differ": differ,
-            "answer": answer, "sentence": sentence,
+            "headline": headline, "answer": answer, "sentence": sentence, "summary": summary,
+            "gap_text": f"{na} minus {nb}",
             "display": {"rate": f"{fmt(r['sen_slope_per_decade'], rd)} {spec['rate_units']}",
-                        "range": f"likely {fmt(r['sen_ci95_per_decade'][0], rd)} to {fmt(r['sen_ci95_per_decade'][1], rd)}"},
+                        "rate_value": fmt(r["sen_slope_per_decade"], rd), "rate_unit": spec["rate_units"],
+                        "range": range_text(c95[0], c95[1], rd),
+                        "gap_label": "How fast the gap grows"},
+            "gap_series": {
+                "dates": a["series"]["dates"], "diff": rnd(diff, sd_ + 1),
+                "line": {"x": [x0, x1], "y": rnd([sen["intercept"] + sen["slope"] * t.min(),
+                                                  sen["intercept"] + sen["slope"] * t.max()], sd_ + 2)},
+                "band95": {"x": [x0, str(mid_month), x1],
+                           "lower": rnd([min(pivot + lo * (x - tm), pivot + hi * (x - tm)) for x in xs], sd_ + 2),
+                           "upper": rnd([max(pivot + lo * (x - tm), pivot + hi * (x - tm)) for x in xs], sd_ + 2)},
+                "label": f"Gap: {na} minus {nb} ({spec['anomaly_units']})",
+            },
             "provenance": provenance(spec, "region")}
+
+
+# --------------------------------------------------------------------------- case answers
+def case_answer(c: dict, results: dict, compares: dict) -> tuple[str, str, str]:
+    """(answer, headline, level) for one case. Conditional templates: safe for any data."""
+    a = results[(c["region_id"], c["variable_id"])]
+    v = a["verdict"]
+    if c.get("compare_region_id"):
+        cmp_ = compares[frozenset((c["region_id"], c["compare_region_id"], c["variable_id"]))]
+        b = results[(c["compare_region_id"], c["variable_id"])]
+        sa, sb = np.sign(a["trend"]["sen_per_decade"]), np.sign(b["trend"]["sen_per_decade"])
+        if cmp_["differ"] and sa != sb:
+            ans = (f"Yes, in opposite directions: {b['_internal']['region']['name']} got {change_phrase(b)}, "
+                   f"{a['_internal']['region']['name']} {change_phrase(a)}, and the gap between them is growing.")
+        else:
+            ans = cmp_["answer"]
+        return ans, cmp_["headline"], cmp_["level"]
+    if c["id"] == "01":
+        if LEVEL_RANK[v["level"]] >= 2 and v["direction"] == "down":
+            ans = f"Yes, the record backs Grandma: since {Y0} the soil has become {change_phrase(a)}"
+            ex = a["extremes"]
+            if ex and ex["passes_fdr"]:
+                ans += (f", and very dry months went from about {ex['early']['mean_per_year']:g} "
+                        f"to about {ex['late']['mean_per_year']:g} a year")
+            return ans + ".", v["headline"], v["level"]
+        if v["direction"] == "up" and LEVEL_RANK[v["level"]] >= 2:
+            return "No: the record shows the soil getting wetter, not drier.", v["headline"], v["level"]
+        return "Not proven: " + v["answer"][0].lower() + v["answer"][1:], v["headline"], v["level"]
+    if c["id"] == "02":
+        if LEVEL_RANK[v["level"]] >= 2:
+            ans = f"Yes. {a['_internal']['region']['name']} is {change_phrase(a)} than in {Y0}."
+            season = next((i for i in a["insights"] if i["kind"] in ("season", "season_unresolved")), None)
+            if season and season["kind"] == "season":
+                ans += " " + season["text"]
+            elif season:
+                fast = sorted(a["seasons"], key=lambda s_: abs(s_["sen_per_decade"]), reverse=True)[0]
+                ans += f" {fast['label']} looks fastest, but we cannot yet tell it apart from the other seasons."
+            return ans, v["headline"], v["level"]
+        return v["answer"], v["headline"], v["level"]
+    if c["id"] == "04":
+        south = results[("south_ukraine", c["variable_id"])]
+        sv = south["verdict"]
+        if LEVEL_RANK[sv["level"]] >= 2 and LEVEL_RANK[v["level"]] < 2:
+            ans = (f"Only the south is clear. Across all of Ukraine the soil may be drying "
+                   f"({a['trend']['display']['rate']}), but the evidence is still weak")
+            if a["years_to_detect"] and a["years_to_detect"]["value"]:
+                ans += f"; about {a['years_to_detect']['value']} more years of data would settle it"
+            return ans + ".", v["headline"], v["level"]
+        if LEVEL_RANK[sv["level"]] >= 2 and LEVEL_RANK[v["level"]] >= 2:
+            return "Both: the whole country and the south show a clear trend.", v["headline"], v["level"]
+        return v["answer"], v["headline"], v["level"]
+    return v["answer"], v["headline"], v["level"]
 
 
 # --------------------------------------------------------------------------- validation (Methods page)
@@ -809,14 +1008,24 @@ def validation_table(runs: int) -> dict:
     for line in buf.getvalue().splitlines():
         parts = [p.strip() for p in line.strip().strip("|").split("|")]
         if len(parts) == 5 and parts[0].isdigit():
+            fa, pw = float(parts[3]), float(parts[4])
             rows.append({"n_months": int(parts[0]), "phi": float(parts[1]), "test": parts[2],
-                         "false_alarm_rate": float(parts[3]), "power": float(parts[4])})
+                         "false_alarm_rate": fa, "power": pw,
+                         "false_alarm_text": f"{100 * fa:.1f}%", "power_text": f"{100 * pw:.0f}%"})
+    orig = [r_["false_alarm_rate"] for r_ in rows if r_["test"] == "MK original"]
+    ours = [r_["false_alarm_rate"] for r_ in rows if r_["test"].startswith("MK Yue-Wang")]
+    summary = (f"The classic test raised false alarms in up to {100 * max(orig):.0f}% of trend-free series; "
+               f"ours stayed between {100 * min(ours):.0f}% and {100 * max(ours):.0f}%.")
     return {"schema_version": SCHEMA_VERSION, "runs": runs, "alpha": 0.05,
             "source": "validate_type1.py (Monte-Carlo, AR(1) noise); real simulation, not synthetic data",
-            "rows": rows}
+            "summary": summary, "rows": rows}
 
 
 # --------------------------------------------------------------------------- catalog
+SOURCE_SHORT = {"power": "NASA POWER", "ges_disc": "NASA GES DISC", "lp_daac": "NASA LP DAAC",
+                "nsidc": "NSIDC DAAC", "podaac": "NASA PO.DAAC"}
+
+
 def catalog(variables_ready: dict) -> dict:
     cat = yaml.safe_load((ROOT / "data/catalog/variables.yaml").read_text(encoding="utf-8"))
     src = cat["sources"]
@@ -829,13 +1038,15 @@ def catalog(variables_ready: dict) -> dict:
         out.append({"id": v["id"], "name": v["name"], "definition": v["definition"],
                     "why_it_trends": v.get("why_it_trends", ""),
                     "source": src.get(v.get("source"), {}).get("name", v.get("source")),
+                    "source_short": SOURCE_SHORT.get(v.get("source"), v.get("source")),
                     "period": str(v.get("period", "")), "resolution": str(v.get("resolution", "")),
                     "topic": topic_of.get(v["id"], "other"),
                     "place_types": places, "anywhere": "any" in biomes,
                     "app_variable_id": ready.get(v["id"]),
                     "status": "ready" if v["id"] in ready else "planned"})
+    labels = {**TOPIC_LABELS, "other": "Other"}
     return {"schema_version": SCHEMA_VERSION,
-            "topics": [{"id": k, "label": lbl} for k, lbl in TOPIC_LABELS.items()],
+            "topics": [{"id": k, "label": lbl} for k, lbl in labels.items()],
             "place_types": [{"id": k, "label": lbl} for k, (lbl, _) in PLACE_TYPES.items()],
             "variables": out, "synthetic": True}
 
@@ -866,35 +1077,47 @@ def main(seed: int, runs: int) -> None:
     for a in results.values():
         build_insights(a, regions)
 
-    for (rid, var), a in results.items():
-        internal = a.pop("_internal")
-        print(f"{rid:13s} {var:6s} {a['verdict']['level']:9s} {a['trend']['display']['rate']:28s} "
-              f"insights={len(a['insights'])} tested={a['insights_audit']['tested']} passed={a['insights_audit']['passed']}")
-        write_json(OUT / "analysis" / f"{rid}__{var}.json", a)
-        a["_internal"] = internal
-
+    compares = {}
     ids = list(regions)
     for var in VARIABLES:
         for i, ra in enumerate(ids):
             for rb in ids[i + 1:]:
                 c = compare(results[(ra, var)], results[(rb, var)], var)
+                compares[frozenset((ra, rb, var))] = c
                 write_json(OUT / "compare" / f"{ra}__{rb}__{var}.json", c)
+
+    cases = []
+    for c in CASES:
+        ans, head, lvl = case_answer(c, results, compares)
+        cases.append({**c, "answer": ans, "headline": head, "level": lvl})
+
+    for (rid, var), a in results.items():
+        internal = a.pop("_internal")
+        print(f"{rid:13s} {var:6s} {a['verdict']['level']:9s} {a['trend']['display']['rate']:36s} "
+              f"insights={len(a['insights'])} passed={a['insights_audit']['passed']} shown={a['insights_audit']['shown']}")
+        write_json(OUT / "analysis" / f"{rid}__{var}.json", a)
+        a["_internal"] = internal
 
     index = {
         "schema_version": SCHEMA_VERSION, "synthetic": True,
         "generated": dt.date.today().isoformat(),
         "default_case": "01",
-        "cases": CASES,
-        "regions": [{k: r[k] for k in ("id", "name", "place_type", "bbox", "centroid", "geometry")}
-                    for r in regions.values()],
+        "cases": cases,
+        "regions": [{**{k: r[k] for k in ("id", "name", "place_type", "bbox", "centroid", "geometry")},
+                     "name_in_sentence": sentence_name(r)} for r in regions.values()],
         "variables": [{"id": k, "catalog_id": v["catalog_id"], "name": v["name"], "long_name": v["long_name"],
-                       "units": v["units"], "rate_units": v["rate_units"], "palette": v["palette"],
+                       "units": v["units"], "units_long": v["units_long"], "rate_units": v["rate_units"],
+                       "anomaly_units": v["anomaly_units"], "map_title": v["map_title"], "palette": v["palette"],
                        "words": v["words"], "topic": v["topic"], "land_only": v["land_only"],
                        "source": "NASA POWER (MERRA-2)", "parameter": v["parameter"],
                        "period": f"{Y0}–{Y1}"} for k, v in VARIABLES.items()],
-        "verdicts": {f"{rid}__{var}": {"level": a["verdict"]["level"], "direction": a["verdict"]["direction"],
-                                        "headline": a["verdict"]["headline"], "rate": a["trend"]["display"]["rate"]}
-                     for (rid, var), a in results.items()},
+        "verdicts": {f"{rid}__{var}": {
+            "level": a["verdict"]["level"], "level_word": LEVEL_WORD[a["verdict"]["level"]],
+            "direction": a["verdict"]["direction"], "headline": a["verdict"]["headline"],
+            "rate": a["trend"]["display"]["rate"], "rate_text": a["trend"]["display"]["rate_value"],
+            "rate_value": a["trend"]["sen_per_decade"], "ci95": a["trend"]["ci95"],
+            "range_text": a["trend"]["display"]["range"]}
+            for (rid, var), a in results.items()},
     }
     write_json(OUT / "index.json", index)
     write_json(OUT / "catalog.json", catalog(VARIABLES))

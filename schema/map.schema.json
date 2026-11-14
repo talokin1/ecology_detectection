@@ -4,39 +4,167 @@
   "title": "MapLayer",
   "description": "Global per-cell trend of one variable. Arrays are flat, row-major from south to north, west to east (index = row * nlon + col).",
   "type": "object",
-  "required": ["schema_version", "variable_id", "period", "grid", "slope_per_decade", "significant", "palette", "limit", "bins", "units_label", "words", "fdr_q", "caption", "provenance"],
+  "required": [
+    "schema_version",
+    "variable_id",
+    "period",
+    "grid",
+    "slope_per_decade",
+    "significant",
+    "palette",
+    "limit",
+    "bins",
+    "units_label",
+    "words",
+    "fdr_q",
+    "caption",
+    "provenance",
+    "value_decimals",
+    "legend"
+  ],
   "properties": {
-    "schema_version": { "type": "string" },
-    "variable_id": { "type": "string" },
-    "period": { "$ref": "common.schema.json#/$defs/Period" },
+    "schema_version": {
+      "type": "string"
+    },
+    "variable_id": {
+      "type": "string"
+    },
+    "period": {
+      "$ref": "common.schema.json#/$defs/Period"
+    },
     "grid": {
       "type": "object",
-      "required": ["lat0", "lon0", "dlat", "dlon", "nlat", "nlon", "order"],
+      "required": [
+        "lat0",
+        "lon0",
+        "dlat",
+        "dlon",
+        "nlat",
+        "nlon",
+        "order"
+      ],
       "properties": {
-        "lat0": { "type": "number", "description": "Centre latitude of the first (southern) row." },
-        "lon0": { "type": "number", "description": "Centre longitude of the first (western) column." },
-        "dlat": { "type": "number" },
-        "dlon": { "type": "number" },
-        "nlat": { "type": "integer" },
-        "nlon": { "type": "integer" },
-        "order": { "type": "string" }
+        "lat0": {
+          "type": "number",
+          "description": "Centre latitude of the first (southern) row."
+        },
+        "lon0": {
+          "type": "number",
+          "description": "Centre longitude of the first (western) column."
+        },
+        "dlat": {
+          "type": "number"
+        },
+        "dlon": {
+          "type": "number"
+        },
+        "nlat": {
+          "type": "integer"
+        },
+        "nlon": {
+          "type": "integer"
+        },
+        "order": {
+          "type": "string"
+        }
       },
       "additionalProperties": false
     },
     "slope_per_decade": {
       "type": "array",
-      "items": { "$ref": "common.schema.json#/$defs/NumOrNull" },
+      "items": {
+        "$ref": "common.schema.json#/$defs/NumOrNull"
+      },
       "description": "null = no data or not enough data (e.g. ocean for land-only variables)."
     },
-    "significant": { "type": "array", "items": { "enum": [0, 1] }, "description": "1 = passes Benjamini-Hochberg FDR at fdr_q." },
-    "palette": { "$ref": "common.schema.json#/$defs/Palette" },
-    "limit": { "type": "number", "exclusiveMinimum": 0, "description": "Symmetric colour limit, units per decade." },
-    "bins": { "type": "integer", "minimum": 2 },
-    "units_label": { "type": "string" },
-    "words": { "$ref": "common.schema.json#/$defs/Words" },
-    "fdr_q": { "type": "number" },
-    "caption": { "type": "string" },
-    "provenance": { "$ref": "common.schema.json#/$defs/Provenance" }
+    "significant": {
+      "type": "array",
+      "items": {
+        "enum": [
+          0,
+          1
+        ]
+      },
+      "description": "1 = passes Benjamini-Hochberg FDR at fdr_q."
+    },
+    "palette": {
+      "$ref": "common.schema.json#/$defs/Palette"
+    },
+    "limit": {
+      "type": "number",
+      "exclusiveMinimum": 0,
+      "description": "Symmetric colour limit, units per decade."
+    },
+    "bins": {
+      "type": "integer",
+      "minimum": 2
+    },
+    "units_label": {
+      "type": "string"
+    },
+    "words": {
+      "$ref": "common.schema.json#/$defs/Words"
+    },
+    "fdr_q": {
+      "type": "number"
+    },
+    "caption": {
+      "type": "string"
+    },
+    "provenance": {
+      "$ref": "common.schema.json#/$defs/Provenance"
+    },
+    "value_decimals": {
+      "type": "integer",
+      "description": "Values are pre-rounded to this many decimals."
+    },
+    "legend": {
+      "type": "object",
+      "required": [
+        "title",
+        "edges_text",
+        "ticks",
+        "min_text",
+        "max_text"
+      ],
+      "properties": {
+        "title": {
+          "type": "string"
+        },
+        "edges_text": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "ticks": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "value",
+              "text"
+            ],
+            "properties": {
+              "value": {
+                "type": "number"
+              },
+              "text": {
+                "type": "string"
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "min_text": {
+          "type": "string"
+        },
+        "max_text": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    }
   },
   "additionalProperties": false
 }
