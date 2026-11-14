@@ -1101,7 +1101,7 @@ def main(seed: int, runs: int) -> None:
     index = {
         "schema_version": SCHEMA_VERSION, "synthetic": True,
         "generated": dt.date.today().isoformat(),
-        "default_case": "01",
+        "default_case": "02",  # D7: air temperature reads fastest on a bare map
         "cases": cases,
         "regions": [{**{k: r[k] for k in ("id", "name", "place_type", "bbox", "centroid", "geometry")},
                      "name_in_sentence": sentence_name(r)} for r in regions.values()],

@@ -18,8 +18,8 @@ Priority: **M** = mandatory by challenge/rules · **S** = strongly scored (judgi
 | ID | Requirement | Pri | Acceptance criteria | Owner | Status | Evidence |
 |---|---|---|---|---|---|---|
 | R-10 | Simple definitions of variables | S | Each catalog entry has ≤ 2-sentence definition + "why it might trend" | | doing | Catalog shows definition + why it might trend for every variable |
-| R-11 | Question-driven search (what / where) | S | Wizard of ≤ 4 questions returns ranked variable suggestions | | todo | Replaced by catalog filters (plan v2, Q8); propose `dropped` |
-| R-12 | Demonstration examples users can watch | S | ≥ 2 guided "case files" playable end-to-end | | doing | 3 cases playable end to end (`#/case/01..03`) on synthetic data |
+| R-11 | Question-driven search (what / where) | S | Wizard of ≤ 4 questions returns ranked variable suggestions | | doing | Search in the top bar: “What are you curious about? / Where?” plus places, variables and questions (production UX plan B2) |
+| R-12 | Demonstration examples users can watch | S | ≥ 2 guided "case files" playable end-to-end | | doing | 4 questions as hints on the map + 25-second guided tour; old links `#/case/01..04` open the full analysis (synthetic data) |
 | R-13 | SI suggests variables from region type / literature | C | Suggestions grounded in catalog; sources/rationale shown; disclosed as SI | | todo | |
 | R-14 | Non-significant trends still informative | S | "Years until detectable" estimate + explanation | | doing | 'Years to detection' sentence on none/weak verdicts |
 | R-15 | Regional opposite-sign trends ("where") | S | Per-pixel trend map with significance stippling, or two-region comparison | | doing | World trend map with FDR significance + Compare screen |

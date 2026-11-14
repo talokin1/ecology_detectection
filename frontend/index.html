@@ -3,11 +3,21 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="Pick an Earth-science variable and a region, see how it changed since 1981, and find out whether the change is real." />
-    <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
     <title>Trend Detective</title>
+    <meta name="description" content="Pick an Earth-science variable and a place, see how it changed since 1981, and find out whether the change is real. Built on NASA Earth-observation data." />
+    <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#0f1114" media="(prefers-color-scheme: dark)" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Trend Detective" />
+    <meta property="og:description" content="What is changing on Earth, where, by how much, and how sure can we be? A student tool built on NASA Earth-observation data." />
+    <meta property="og:image" content="https://talokin1.github.io/ecology_detectection/og.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
   </head>
   <body>
+    <noscript>Trend Detective needs JavaScript to draw its maps and charts.</noscript>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

@@ -1,15 +1,18 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
-import { Link, NavLink, Outlet, useRouteError } from 'react-router-dom';
+import { Link, NavLink, Outlet, useNavigate, useRouteError } from 'react-router-dom';
 import { api } from '../data/load';
 import { useData } from '../data/useData';
 import { copyLink } from '../lib/exporters';
 import { setTheme, useTheme } from '../state/theme';
+import { Menu } from './Panel';
+import { Search } from './Search';
+import { CloseIcon } from './Icons';
 import { S } from '../strings/en';
 
 export type Context = { variable?: string; region?: string; period?: string; source?: string } | null;
 const Ctx = createContext<(c: Context) => void>(() => {});
 
-/** Pages announce what is on screen; the top bar shows it (variable · region · period · source). */
+/** Pages announce what is on screen; it becomes the document title (plan B6). */
 export function useScreenContext(c: Context, deps: unknown[]) {
   const set = useContext(Ctx);
   useEffect(() => {
@@ -17,30 +20,6 @@ export function useScreenContext(c: Context, deps: unknown[]) {
     return () => set(null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, deps);
-}
-
-function ShareButton() {
-  const [done, setDone] = useState(false);
-  return (
-    <button type="button" className="btn btn--ghost" onClick={async () => {
-      if (await copyLink()) {
-        setDone(true);
-        setTimeout(() => setDone(false), 1800);
-      }
-    }}>
-      {done ? S.shared : S.share}
-    </button>
-  );
-}
-
-function ThemeButton() {
-  const theme = useTheme();
-  const next = theme === 'dark' ? 'light' : 'dark';
-  return (
-    <button type="button" className="btn btn--ghost" aria-label={S.theme.switchTo(next)} onClick={() => setTheme(next)}>
-      {theme === 'dark' ? S.theme.light : S.theme.dark}
-    </button>
-  );
 }
 
 /** The logo is the evidence glyph: three rising segments. */
@@ -54,21 +33,28 @@ export function Logo() {
   );
 }
 
-function ContextLine({ context }: { context: Context }) {
-  if (!context) return null;
-  return (
-    <>
-      {context.variable && <span className="ctx__strong">{context.variable}</span>}
-      {context.region && <span>{context.region}</span>}
-      {context.period && <span>{context.period}</span>}
-      {context.source && <span className="ctx__source">{context.source}</span>}
-    </>
-  );
-}
+const BANNER_OFF = 'td-banner-off';
+const readFlag = (k: string) => { try { return localStorage.getItem(k) === '1'; } catch { return false; } };
 
 export function Shell() {
   const [context, setContext] = useState<Context>(null);
+  const [bannerOff, setBannerOff] = useState(() => readFlag(BANNER_OFF));
+  const [toast, setToast] = useState<string | null>(null);
   const index = useData(api.index, 'index');
+  const theme = useTheme();
+  const navigate = useNavigate();
+  const synthetic = !!index.data?.synthetic;
+
+  useEffect(() => {
+    const parts = [context?.region && context.region !== 'World' ? context.region : null, context?.variable].filter(Boolean);
+    document.title = parts.length ? `${parts.join(' · ')} · ${S.appName}` : S.appName;
+  }, [context]);
+
+  const say = (t: string) => {
+    setToast(t);
+    setTimeout(() => setToast(null), 1800);
+  };
+
   return (
     <Ctx.Provider value={setContext}>
       <header className="topbar">
@@ -81,21 +67,33 @@ export function Shell() {
           <NavLink to="/catalog">{S.nav.catalog}</NavLink>
           <NavLink to="/methods">{S.nav.methods}</NavLink>
         </nav>
-        <div className="topbar__context" aria-live="polite"><ContextLine context={context} /></div>
-        <div className="topbar__actions">
-          <ShareButton />
-          <ThemeButton />
-        </div>
+        <div className="topbar__spacer" />
+        <Search />
+        {synthetic && (
+          <Link to="/about?s=data" className="tag" aria-label={S.synthetic.tagAria}>
+            <span className="tag__long">{S.synthetic.tag}</span><span className="tag__short" aria-hidden="true">Synthetic</span>
+          </Link>
+        )}
+        <Menu label={S.shell.menu} items={[
+          { label: S.share, onSelect: async () => { if (await copyLink()) say(S.shell.copied); } },
+          { label: theme === 'dark' ? S.theme.light : S.theme.dark, onSelect: () => setTheme(theme === 'dark' ? 'light' : 'dark') },
+          { label: S.shell.tour, onSelect: () => navigate('/?tour=1') },
+          { label: S.shell.about, onSelect: () => navigate('/about') },
+        ]} />
       </header>
-      {index.data?.synthetic && (
+      {synthetic && !bannerOff && (
         <div className="synthetic" role="note">
-          <strong>{S.synthetic.strong}</strong> {S.synthetic.banner} <Link to="/methods?s=data">{S.synthetic.more}</Link>
+          <span><strong>{S.synthetic.strong}</strong> {S.synthetic.banner} <Link to="/about?s=data">{S.synthetic.more}</Link></span>
+          <button type="button" className="icon-btn icon-btn--sm synthetic__close" aria-label={S.synthetic.dismiss}
+            onClick={() => { setBannerOff(true); try { localStorage.setItem(BANNER_OFF, '1'); } catch { /* ignore */ } }}>
+            <CloseIcon size={14} />
+          </button>
         </div>
       )}
-      {context && <div className="context-line" aria-hidden="true"><ContextLine context={context} /></div>}
       <main className="main">
         <Outlet />
       </main>
+      <div className="toast" role="status" aria-live="polite">{toast}</div>
     </Ctx.Provider>
   );
 }
@@ -106,7 +104,10 @@ export function ErrorState({ error, children }: { error?: Error; children?: Reac
       <h2>{S.errors.title}</h2>
       <p>{children ?? S.errors.body}</p>
       {error && <p className="state__detail">{error.message}</p>}
-      <Link className="btn" to="/">{S.errors.back}</Link>
+      <div className="state__actions">
+        {error && <button type="button" className="btn" onClick={() => window.location.reload()}>{S.errors.retry}</button>}
+        <Link className="btn btn--primary" to="/">{S.errors.back}</Link>
+      </div>
     </div>
   );
 }
@@ -118,5 +119,10 @@ export function RouteError() {
 }
 
 export function Loading({ height }: { height?: number }) {
-  return <div className="state state--loading" style={height ? { minHeight: height } : undefined} aria-busy="true">{S.loading}</div>;
+  return (
+    <div className="state state--loading" style={height ? { minHeight: height } : undefined} aria-busy="true">
+      <span className="spinner" aria-hidden="true" />
+      <span>{S.loading}</span>
+    </div>
+  );
 }

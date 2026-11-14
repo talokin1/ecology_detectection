@@ -9,6 +9,7 @@ import type { PaletteName } from '../theme/palettes';
 import { cellRgb, isDarkBin } from '../theme/encoding';
 import { cellIndex, formatLatLon, latToMercY, MERC_MAX_LAT, mercYToLat, pointInGeometry } from '../lib/geo';
 import { formatCell } from '../lib/format';
+import { cellVisible, type ShowFilter } from '../lib/filter';
 import { useTheme } from '../state/theme';
 import { S } from '../strings/en';
 
@@ -36,6 +37,10 @@ type Props = {
   onEmptyClick?: (cell: CellInfo, point: { x: number; y: number }) => void;
   onHoverRegion?: (id: string | null) => void;
   onEscape?: () => void;
+  /** Hide squares that do not match (plan A3). */
+  show?: ShowFilter;
+  /** MapLibre attribution control; the credit also lives in the legend and on About. */
+  attribution?: boolean;
   className?: string;
   ariaLabel: string;
 };
@@ -57,7 +62,7 @@ function cssVar(name: string): string {
 }
 
 /** Paint the grid into a square Web Mercator canvas (2 px per cell horizontally). */
-function paintGrid(layer: MapLayer): HTMLCanvasElement {
+function paintGrid(layer: MapLayer, show: ShowFilter): HTMLCanvasElement {
   const g = layer.grid;
   const W = g.nlon * 2;
   const H = W;
@@ -71,7 +76,7 @@ function paintGrid(layer: MapLayer): HTMLCanvasElement {
   const rgba = new Uint8ClampedArray(n * 4);
   for (let i = 0; i < n; i++) {
     const v = layer.slope_per_decade[i];
-    if (v === null) continue;
+    if (v === null || !cellVisible(v, layer.significant[i], show)) continue;
     const c = cellRgb(v, layer.significant[i] === 1, layer.limit, palette);
     rgba[i * 4] = c[0];
     rgba[i * 4 + 1] = c[1];
@@ -101,7 +106,7 @@ function paintGrid(layer: MapLayer): HTMLCanvasElement {
   return canvas;
 }
 
-function stipplePoints(layer: MapLayer) {
+function stipplePoints(layer: MapLayer, show: ShowFilter) {
   const g = layer.grid;
   const palette = layer.palette as PaletteName;
   const features = [];
@@ -109,7 +114,7 @@ function stipplePoints(layer: MapLayer) {
     for (let c = 0; c < g.nlon; c++) {
       const i = r * g.nlon + c;
       const v = layer.slope_per_decade[i];
-      if (layer.significant[i] && v !== null) {
+      if (layer.significant[i] && v !== null && cellVisible(v, 1, show)) {
         features.push({
           type: 'Feature' as const,
           properties: { dark: isDarkBin(v, layer.limit, palette) ? 1 : 0 },
@@ -179,7 +184,7 @@ function baseStyle(): StyleSpecification {
 }
 
 export function TrendMap(props: Props) {
-  const { layer, regions, activeRegionIds = [], highlightRegionId, fit, labels, scrollZoom = true, suppressTooltip } = props;
+  const { layer, regions, activeRegionIds = [], highlightRegionId, fit, labels, scrollZoom = true, suppressTooltip, show = 'all', attribution = true } = props;
   const box = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MlMap | null>(null);
   const markers = useRef<Marker[]>([]);
@@ -193,7 +198,7 @@ export function TrendMap(props: Props) {
   const activeKey = activeRegionIds.join(',');
   const regionKey = regions.map((r) => r.id).join(',');
   const fitKey = Array.isArray(fit) ? fit.join(',') : fit;
-  const stipple = useMemo(() => (layer ? stipplePoints(layer) : null), [layer]);
+  const stipple = useMemo(() => (layer ? stipplePoints(layer, show) : null), [layer, show]);
 
   // create the map once
   useEffect(() => {
@@ -216,7 +221,7 @@ export function TrendMap(props: Props) {
     });
     map.touchZoomRotate.disableRotation();
     map.addControl(new NavigationControl({ showCompass: false }), 'top-right');
-    map.addControl(new AttributionControl({ compact: true }), 'bottom-right');
+    if (attribution) map.addControl(new AttributionControl({ compact: true }), 'bottom-right');
     map.on('load', () => {
       map.addImage('hatch', hatchImage(cssVar('--map-hatch')));
       // hatch = not enough data; shown at world scale, where it marks whole areas (ice sheets), not coastal slivers
@@ -330,14 +335,19 @@ export function TrendMap(props: Props) {
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !ready || !layer) return;
-    const canvas = paintGrid(layer);
+    const canvas = paintGrid(layer, show);
     const src = map.getSource('trend') as ImageSource | undefined;
     if (src) src.updateImage({ image: canvas, coordinates: CORNERS });
     else {
       map.addSource('trend', { type: 'image', url: canvas.toDataURL('image/png'), coordinates: CORNERS });
-      map.addLayer({ id: 'trend', type: 'raster', source: 'trend', paint: { 'raster-resampling': 'nearest', 'raster-fade-duration': 0 } }, 'borders');
+      // the grid fades in over the land outline instead of popping (plan B5)
+      map.addLayer({
+        id: 'trend', type: 'raster', source: 'trend',
+        paint: { 'raster-resampling': 'nearest', 'raster-fade-duration': 0, 'raster-opacity': 0, 'raster-opacity-transition': { duration: reducedMotion() ? 0 : 350, delay: 0 } },
+      }, 'borders');
+      requestAnimationFrame(() => map.setPaintProperty('trend', 'raster-opacity', 1));
     }
-  }, [layer, ready]);
+  }, [layer, ready, show]);
 
   // stipple dots: rebuilt only when the layer changes
   useEffect(() => {

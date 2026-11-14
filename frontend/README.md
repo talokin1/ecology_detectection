@@ -30,12 +30,17 @@ npm run lint
 
 | Route | Screen |
 |---|---|
-| `#/` | World trend map, case 01 open on top (`?var=t2m&case=02`) |
-| `#/case/01` | Case: question → where → over time → verdict → what we found |
-| `#/region/<id>?var=<var>` | Same layout for any prepared region |
-| `#/compare/<a>/<b>?var=<var>` | Two regions, two verdicts, "do the trends really differ?" |
+| `#/` | Explore: full-screen map, filter bar, legend chip, one suggested question |
+| `#/?var=precip&show=clear&panel=quick&region=sahel` | URL state: variable, filter (`all`, `clear`, `clear_pos`, `clear_neg`), open panel (`quick` or `regions`), region, question (`q`) |
+| `#/?tour=1` | Starts the 25-second guided tour |
+| `#/case/01`, `#/region/<id>?var=<var>` | Full analysis: answer strip, chart, map, findings; secondary sections collapsed |
+| `#/compare/<a>/<b>?var=<var>` | Two regions and the trend of the gap between them |
 | `#/catalog?topic=&place=` | All catalog variables with filters |
-| `#/methods?s=<section>` | Methods; `s` scrolls to the section behind a "How do we know?" link |
+| `#/methods?s=<section>` | Methods; `s` scrolls to a section |
+| `#/about` | What the tool is, data sources, AI disclosure, code |
+
+Every overlay is a closable panel (`components/Panel.tsx`): close button, Escape, focus returns to
+the opener. The noise budget of the Explore view is a test in `tests/smoke.spec.ts`.
 
 ## Where things live
 

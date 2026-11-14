@@ -1,14 +1,14 @@
-import { lazy, Suspense, useMemo } from 'react';
+import { lazy, Suspense, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { api } from '../data/load';
 import { useData } from '../data/useData';
 import type { AnalysisResult, Case, Compare, Index, MapLayer, Region, VariableRef } from '../data/types.gen';
-import { MapLegend } from '../components/MapLegend';
+import { LegendChip } from '../components/MapLegend';
 import { EvidenceScale, Readout } from '../components/VerdictCard';
 import { InsightList } from '../components/InsightList';
 import { TrendChart } from '../components/SeriesChart';
 import { ErrorState, Loading, useScreenContext } from '../components/Shell';
-import { Kicker } from './CasePage';
+import { Breadcrumb, Kicker } from './CasePage';
 import { REGION_COLORS } from '../theme/palettes';
 import { S } from '../strings/en';
 
@@ -55,6 +55,7 @@ function CompareBody({ index, ra, rb, variable, A, B, cmp, layer, theCase }: {
   index: Index; ra: Region; rb: Region; variable: VariableRef; A: AnalysisResult; B: AnalysisResult; cmp: Compare; layer?: MapLayer; theCase?: Case;
 }) {
   const navigate = useNavigate();
+  const [legendOpen, setLegendOpen] = useState(true);
   const grey = 'rgba(122,129,139,0.55)';
   const yRange = useMemo<[number, number]>(() => {
     const vals = [...A.series.annual.anomaly, ...B.series.annual.anomaly].filter((v): v is number => v !== null);
@@ -81,7 +82,7 @@ function CompareBody({ index, ra, rb, variable, A, B, cmp, layer, theCase }: {
   return (
     <article className="case compare">
       <header className="case__header">
-        <div className="kicker">{theCase ? `${S.case.caseLabel} ${theCase.id} · ${theCase.title}` : S.compare.title}</div>
+        <Breadcrumb index={index} variable={variable} extra={S.compare.title} />
         <h1 className="case__question">{theCase?.question ?? S.compare.question(variable.long_name.toLowerCase(), ra.name_in_sentence, rb.name_in_sentence)}</h1>
         {theCase?.teaser && <p className="case__teaser">{theCase.teaser}</p>}
         <div className="compare__pickers">
@@ -112,7 +113,7 @@ function CompareBody({ index, ra, rb, variable, A, B, cmp, layer, theCase }: {
 
       <div className="grid75">
         <section className="sec">
-          <Kicker n={1}>{S.case.sections.overTime}</Kicker>
+          <Kicker>{S.case.sections.overTime}</Kicker>
           {rows.map(({ r, d, c, k }) => (
             <div key={r.id} className="compare__row">
               <div className="compare__rowhead">
@@ -136,16 +137,17 @@ function CompareBody({ index, ra, rb, variable, A, B, cmp, layer, theCase }: {
         </section>
 
         <section className="sec">
-          <Kicker n={2}>{S.case.sections.where}</Kicker>
+          <Kicker>{S.case.sections.where}</Kicker>
           <div className="where-map where-map--tall">
             <Suspense fallback={<Loading height={380} />}>
-              <TrendMap layer={layer} regions={[ra, rb]} activeRegionIds={[ra.id, rb.id]} fit={union(ra, rb)} scrollZoom={false}
+              <TrendMap layer={layer} regions={[ra, rb]} activeRegionIds={[ra.id, rb.id]} fit={union(ra, rb)} scrollZoom={false} attribution={false}
                 labels={{ [ra.id]: { prefix: 'A' }, [rb.id]: { prefix: 'B' } }}
                 onRegionClick={(id) => navigate(`/region/${id}?var=${variable.id}`)}
                 ariaLabel={`Map of the trend of ${variable.long_name.toLowerCase()} with ${ra.name} (A) and ${rb.name} (B) outlined.`} />
             </Suspense>
           </div>
-          {layer && <MapLegend layer={layer} />}
+          {layer && legendOpen && <LegendChip layer={layer} synthetic={layer.provenance.synthetic} onClose={() => setLegendOpen(false)} />}
+          {layer && !legendOpen && <button type="button" className="btn btn--quiet" onClick={() => setLegendOpen(true)}>{S.explore.legend}</button>}
           <div className="answer">
             <p className="answer__sentence">{cmp.sentence}</p>
             <p className="help">{S.compare.explain} <Link to="/methods?s=compare">{S.case.howDoWeKnow}</Link></p>
@@ -157,7 +159,7 @@ function CompareBody({ index, ra, rb, variable, A, B, cmp, layer, theCase }: {
         <div className="grid-2">
           {rows.map(({ r, d, c, k }) => (
             <section key={r.id} className="sec">
-              <Kicker n={k === 'A' ? 3 : 4}>{`${k} · ${r.name}`}</Kicker>
+              <Kicker>{`${k} · ${r.name}`}</Kicker>
               <div className="mini-verdict">
                 <i className="sw sw--line-c" style={{ background: c }} />
                 <div>
