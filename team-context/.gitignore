@@ -1,0 +1,14 @@
+data/raw/
+data/global/
+data/cache/
+**/cache/
+*.nc
+*.nc4
+*.h5
+*.zarr
+*.npz
+*.log
+.env
+.netrc
+.cdsapirc
+cookies.txt
