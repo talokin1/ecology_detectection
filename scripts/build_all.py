@@ -105,9 +105,9 @@ def build(out_dir: Path, only: set[str] | None = None, dry_run: bool = False) ->
         units = var.get("display_units") or var.get("units")
         for f in by_key[key]:
             series = [(t, None if v is None else conv(v)) for t, v in read_series(CACHE / f["path"])]
-            rec = dict(variable_id=var["id"], region=f.get("region_name"), source_units=var.get("units"),
-                       units=units, convert=var.get("convert"), cache_file=f["path"], cache_sha256=f.get("sha256"),
-                       data=[{"t": t, "v": v} for t, v in series])
+            rec = {"variable_id": var["id"], "region": f.get("region_name"), "source_units": var.get("units"),
+                   "units": units, "convert": var.get("convert"), "cache_file": f["path"],
+                   "cache_sha256": f.get("sha256"), "data": [{"t": t, "v": v} for t, v in series]}
             built.append(rec)
             if not dry_run:
                 slug = (f.get("region_name") or "region").lower().replace(" ", "_")
