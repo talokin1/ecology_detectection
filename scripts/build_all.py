@@ -30,8 +30,13 @@ ROOT = Path(__file__).resolve().parents[1]
 CATALOG = ROOT / "data" / "catalog" / "variables.yaml"
 CACHE = ROOT / "data" / "cache"
 FORBIDDEN = ROOT / "team-context"
-# catalog reader -> MANIFEST `source` for readers that do not name a store
-READER_SOURCE = {"grace": "grace", "modis_ndvi": "mod13c2"}
+# catalog reader -> MANIFEST (source, variable) for readers whose catalog `access` names no store or
+# parameter. Must match what each reader writes in its provenance sidecar ("variable" block).
+READER_KEY = {
+    "grace": ("grace", "lwe_thickness"),
+    "modis_ndvi": ("mod13c2", "NDVI"),
+    "omi_no2": ("omno2d", "NO2_trop"),
+}
 
 _OPS = {ast.Add: operator.add, ast.Sub: operator.sub, ast.Mult: operator.mul, ast.Div: operator.truediv,
         ast.Pow: operator.pow, ast.USub: operator.neg, ast.UAdd: operator.pos}
@@ -72,8 +77,12 @@ def manifest_key(var: dict) -> tuple[str, str] | None:
     reader = acc.get("reader")
     if not reader or reader == "none":
         return None
-    source = acc.get("store") or READER_SOURCE.get(reader, reader)
-    return source, acc.get("variable") or var.get("parameter")
+    if acc.get("store"):  # POWER: store + parameter name
+        return acc["store"], acc.get("variable") or var.get("parameter")
+    if reader not in READER_KEY:
+        raise KeyError(f"build_all: no MANIFEST key for reader {reader!r} ({var['id']}); "
+                       "add it to READER_KEY")
+    return READER_KEY[reader]
 
 
 def read_series(path: Path) -> list[tuple[str, float | None]]:
@@ -102,18 +111,23 @@ def build(out_dir: Path, only: set[str] | None = None, dry_run: bool = False) ->
         if only and var["id"] not in only:
             continue
         key = manifest_key(var)
-        if key is None or key not in by_key:
+        if key is None:
+            continue
+        if key not in by_key:  # deliverable in the catalog but nothing cached: say so, never skip silently
+            print(f"warning: {var['id']} has no cached series in MANIFEST (key {key})", file=sys.stderr)
             continue
         conv = compile_convert(var.get("convert"))
         units = var.get("display_units") or var.get("units")
         for f in by_key[key]:
             series = [(t, None if v is None else conv(v)) for t, v in read_series(CACHE / f["path"])]
-            rec = {"variable_id": var["id"], "region": f.get("region_name"), "source_units": var.get("units"),
-                   "units": units, "convert": var.get("convert"), "cache_file": f["path"],
-                   "cache_sha256": f.get("sha256"), "data": [{"t": t, "v": v} for t, v in series]}
+            rec = {"variable_id": var["id"], "region_id": f.get("region_id"), "region": f.get("region_name"),
+                   "bbox": f.get("bbox"), "land_only": bool(f.get("land_only")),
+                   "source_units": var.get("units"), "units": units, "convert": var.get("convert"),
+                   "cache_file": f["path"], "cache_sha256": f.get("sha256"),
+                   "data": [{"t": t, "v": v} for t, v in series]}
             built.append(rec)
             if not dry_run:
-                slug = (f.get("region_name") or "region").lower().replace(" ", "_")
+                slug = f.get("region_id") or (f.get("region_name") or "region").lower().replace(" ", "_")
                 dest = out_dir / var["id"] / f"{slug}_{Path(f['path']).stem}.json"
                 dest.parent.mkdir(parents=True, exist_ok=True)
                 dest.write_text(json.dumps(rec, indent=1))

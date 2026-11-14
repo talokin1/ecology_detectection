@@ -275,3 +275,11 @@ def test_omi_no2_is_dispatched_offline(monkeypatch):
     with pytest.raises(NotCachedError):
         acquire.get_series("no2_tropospheric_omi", [30.2, 50.2, 30.9, 50.7])
     assert seen == {"region": "custom box", "offline": True}
+
+
+def test_ocean_variable_refused_for_land_only_regions(monkeypatch):
+    """Sea ice over land-only boxes was a meaningless series (land cells are 0, coastal cells carry ice)."""
+    monkeypatch.setattr(power_zarr, "region_series", lambda *a, **k: pytest.fail("must not read data"))
+    assert acquire.list_variables()["sea_ice_fraction_power"].entry["surface"] == "ocean"
+    with pytest.raises(ValueError, match="no data: .*ocean variable.*land-only"):
+        acquire.get_series("sea_ice_fraction_power", [22.0, 44.0, 40.5, 52.5], land_only=True)

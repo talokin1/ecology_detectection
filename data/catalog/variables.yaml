@@ -158,6 +158,7 @@ variables:
     percent_change_meaningful: true
     biomes: [arctic, ocean]
     caveats: Land counts as 0, so the value is the share of the whole box, not of its ocean part; use boxes that are mostly ocean.
+    surface: ocean  # acquire refuses it for land_only regions (land cells are 0, coastal 'land' cells carry ice)
     dataset_verified: true
     variable_verified: true  # 2026-11-14: land cells are 0 (not missing), central Arctic Mar 2020 = 0.99
 

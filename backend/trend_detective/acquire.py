@@ -178,6 +178,11 @@ def get_series(
     if not v.available:
         raise LookupError(f"{variable_id!r} is in the catalog but has no reader yet")
     reg = resolve_region(region)
+    if land_only and v.entry.get("surface") == "ocean":
+        # Land cells hold 0 (not missing) for ocean variables such as sea-ice fraction, and coastal
+        # cells counted as land carry a little ice: a land-only mean would be a meaningless series.
+        raise ValueError(f"no data: {variable_id!r} is an ocean variable and region {reg.name!r} is "
+                         "land-only")
     offline = v.needs_login and not allow_login_fetch
 
     if v.reader == "power_zarr":

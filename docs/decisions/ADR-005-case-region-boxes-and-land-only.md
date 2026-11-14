@@ -37,7 +37,11 @@ the UK and Ireland [-10, 55, 31, 71] (63% land).
 
 ## Consequences
 - Boxes and the land-only rule must not change after results are seen; any change gets a new ADR.
-- Sea-ice fraction cannot be used with land-only presets (it is an ocean variable; acquire raises "no data").
+- Sea-ice fraction cannot be used with land-only presets: it is an ocean variable (`surface: ocean` in the
+  catalog) and `acquire.get_series` refuses it with "no data". Correction (2026-11-14): an earlier version of
+  this ADR claimed the refusal already happened; it did not. Land cells hold 0 rather than missing, and coastal
+  cells counted as land carry a little ice, so a land-only Ukraine series (84% zeros, max 0.008) had been built.
+  It was removed.
 - IMERG covers the whole northern box up to 71°N (checked 2026-11-14: 100% of cells in Jan and Jul), but
   satellite precipitation over snow is less reliable; MERRA-2 is the primary series, IMERG the cross-check.
 - Follow-up: team approves or edits, then removes `status: proposed` from the presets.

@@ -369,29 +369,6 @@
       "variable": "FRSEAICE"
     },
     {
-      "accessed": "2026-11-14T16:05:30Z",
-      "bbox": {
-        "lat_max": 52.5,
-        "lat_min": 44.0,
-        "lon_max": 40.5,
-        "lon_min": 22.0
-      },
-      "bytes": 9937,
-      "first": "1981-01-01",
-      "git_commit": "257ce4b",
-      "has_provenance": true,
-      "kind": "series",
-      "land_only": true,
-      "last": "2026-09-01",
-      "path": "power_zarr/merra2_FRSEAICE_931a0e37a2a0.csv",
-      "region_id": "ukraine",
-      "region_name": "Ukraine",
-      "rows": 549,
-      "sha256": "6aae9c455c393c6031852520d4a75a025bb4026f41b2177d4af5a908051d40ac",
-      "source": "merra2",
-      "variable": "FRSEAICE"
-    },
-    {
       "accessed": "2026-11-14T14:16:49Z",
       "bbox": {
         "lat_max": 90.0,
@@ -1681,6 +1658,6 @@
     }
   ],
   "freeze_date": "2026-11-14",
-  "n_files": 73,
-  "total_bytes": 33076829
+  "n_files": 72,
+  "total_bytes": 33066892
 }

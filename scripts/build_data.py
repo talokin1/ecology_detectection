@@ -39,8 +39,8 @@ import yaml
 REPO_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO_ROOT / "backend"))
 
-from trend_detective import acquire, power_zarr
-from trend_detective.earthdata import NotCachedError
+from trend_detective import acquire, power_zarr  # noqa: E402
+from trend_detective.earthdata import NotCachedError  # noqa: E402
 
 DEFAULT_JOBS = REPO_ROOT / "data" / "catalog" / "build.yaml"
 MANIFEST_NAME = "MANIFEST.json"
