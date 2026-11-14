@@ -9,7 +9,7 @@ Set `UKRAINE_SAMPLES` and `GLOBAL_DATA` if the extracts are not discoverable nex
 
     cd team-context/data/pipeline
     export OMP_NUM_THREADS=2
-    nice -n 10 python run_pipeline.py --region ukraine_bbox ukraine_mask ukraine_mask_no_crimea
+    nice -n 10 python run_pipeline.py --region ukraine_bbox ukraine_mask
     nice -n 10 python verify_global_vs_bbox.py   # global cuts vs old bbox extracts -> data/verify_global_vs_bbox.csv
     nice -n 10 python compare_modis_qc.py        # MODIS QC'd vs unQC'd -> data/modis_qc_impact*.csv
     python smoke_test.py      # exit 1 only on a BLOCKING failure (POWER, HadCRUT5, GRACE production -11.242)
@@ -20,7 +20,7 @@ New regions: add to `config/regions.yaml` - every gridded source, including the 
 ## Regions and Crimea
 - **`ukraine_mask` is the PRIMARY mask**: Natural Earth 10m Ukraine point-of-view file, internationally recognised
   borders, Crimea INCLUDED (597,211 km²).
-- `ukraine_mask_no_crimea` is a SENSITIVITY variant (default NE file, Crimea excluded, 570,178 km²).
+- Ukraine is analysed only with Crimea (`ukraine_mask`, Ukraine incl. Crimea); there is no without-Crimea variant.
 - `ukraine_bbox` 22.1-40.2E, 44.4-52.4N (used for the smoke test and the verification against the old extracts).
 
 ## Layout

@@ -3,8 +3,8 @@
 
 The zips are not committed (over the archive's preference to keep geometries
 rebuildable). Expected SHA-256 values are the files used for the published
-mask areas (ukraine_mask 597,211 km2 with Crimea; ukraine_mask_no_crimea
-570,178 km2).
+mask area (ukraine_mask 597,211 km2, Ukraine incl. Crimea). The default
+de-facto file is kept only for the Crimea membership check in ukpipe/qc.py.
 """
 from __future__ import annotations
 

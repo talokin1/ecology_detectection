@@ -201,7 +201,7 @@ def write_report():
          "Primary significance: repo Mann-Kendall with the Yue-Wang AR(1) correction (ADR-003). "
          "HAC and Hamed-Rao lag-3 are sensitivity columns.", "",
          "Run: `cd team-context/data/pipeline && OMP_NUM_THREADS=2 nice -n 10 python run_pipeline.py "
-         "--region ukraine_bbox ukraine_mask ukraine_mask_no_crimea && python smoke_test.py`", ""]
+         "--region ukraine_bbox ukraine_mask && python smoke_test.py`", ""]
     sm = PIPE / "data" / "smoke_test_results.json"
     L.append("## Smoke test (blocking, region=ukraine_bbox, tolerance ±0.005)\n")
     if sm.exists():
@@ -233,8 +233,8 @@ def write_report():
 - **Ukraine point-of-view file `ne_10m_admin_0_countries_ukr` assigns Crimea to UKR**: {ck['area_km2_ukr_pov_UKR']:,} km²,
   bounds {ck['ukr_pov_bounds']}. The difference is {ck['area_km2_difference']:,} km² with bounds {ck['difference_bounds']}
   (Crimea + Sevastopol only; Donetsk/Luhansk are UKR in both files).
-- **`ukraine_mask` (POV file, internationally recognised borders, Crimea INCLUDED) is the PRIMARY mask.**
-  `ukraine_mask_no_crimea` (default file, Crimea excluded) is a SENSITIVITY variant only.
+- **`ukraine_mask` (POV file, internationally recognised borders, Ukraine incl. Crimea) is the only Ukraine mask.**
+  The default file is used only for this check; there is no without-Crimea variant.
 - `ukraine_bbox` (44.4-52.4N) contains essentially all of Crimea (its southern tip reaches 44.38N).
 - Consistency: every gridded source (POWER, GRACE, HadCRUT5, GISTEMP, Berkeley 1°, CHIRPS, CCI SM, and now MERRA-2,
   GLDAS, IMERG, AIRS, MODIS, GPCC from global files) uses the SAME
@@ -242,7 +242,7 @@ def write_report():
   Berkeley country file EXCLUDES Crimea (flag `crimea_excluded;mask_mismatch_vs_region` in `ukraine_mask`);
   CRU-CY is undocumented (`crimea_undocumented`). Don't compare those 1:1 with masked series.
 - Stations in Crimea: GHCN (downloaded 28): {', '.join(ghcn_cr) if ghcn_cr else 'none'}; GSOM: {n_gsom_cr} of {n_gsom} UP stations.
-  They are in `ukraine_mask` and `ukraine_bbox`, and would drop out of `ukraine_mask_no_crimea`.
+  They are in `ukraine_mask` and `ukraine_bbox`.
 - Coarse products: one HadCRUT 5° cell / GRACE mascons straddle Crimea and the Black Sea; overlap weights only.
 """)
     L.append("## Units and conversions (single targets, config/variables.yaml)\n")

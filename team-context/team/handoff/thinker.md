@@ -7,13 +7,13 @@ Role: brainstorm analysis questions/methods, route work to Researcher/Researcher
 - Findings (bbox): warming ~+0.55–0.62 °C/dec 1981–2025, robust, all sources (but station grids share GHCN inputs, not independent); precip: no detectable trend, sources disagree on sign (CHIRPS/GPCC/IMERG/POWER); GRACE TWS −11.22 cm/dec 2003–2025 robust (CSR −9.8; GLDAS soil+snow explains ~−2.3; not labelled groundwater; ~3° regional); GLDAS soil drying caveated; SWOT too short; Kherson not a confirmed step.
 - ESA CCI SM v09.2 (1978-11–2024-12, extra/cci_sm/, Critique-approved): no robust drying; break-adjusted, rescaled to GLDAS so not independent in level; warm-season decline only significant from 1991/92 start.
 - Extra global sources catalog (Researcher 2), Critique-approved: GISTEMP, HadCRUT5 (coarse context), Berkeley 1° (primary check), CRU-CY, GPCC, CHIRPS v3.
-- Preprocessing plan v2 (Critique-reviewed) handed to Worker 13:50. Worker v1 built (run_pipeline.py --region ukraine_bbox ukraine_mask ukraine_mask_no_crimea; smoke POWER +0.5526, HadCRUT +0.5793, GRACE -11.2221 PASS); in Critique review.
+- Preprocessing plan v2 (Critique-reviewed) handed to Worker 13:50. Worker v1 built (run_pipeline.py --region ukraine_bbox ukraine_mask; smoke POWER +0.5526, HadCRUT +0.5793, GRACE -11.2221 PASS); in Critique review.
 - Global fetch done 14:06: 30.4 GB slim monthly in $GLOBAL_DATA/ (75 GB disk free); table in analysis/global_size_estimates.md; sent to Critique.
 
 ## 2. In progress / next
 - Worker: v1 in Critique review; asked to add loaders from $GLOBAL_DATA/ so masks work for gridded sources. Open team lead question: GRACE overlap weights (-11.242) vs old selection (-11.222).
 - Global fetch Critique-approved; fixes pulled 14:46 (MODIS QC, GLDAS Rainf/Snowf, MERRA-2 wind + T2MMAX/MIN from M2SMNXSLV): $GLOBAL_DATA/ now 39.7 GB, 70 GB free. Worker asked to add loaders + rerun.
-- GRACE: team lead chose overlap weights. bbox -11.242, ukraine_mask -12.120, no_crimea -12.364 cm/dec. Pipeline v1.1 Critique-approved.
+- GRACE: team lead chose overlap weights. bbox -11.242, ukraine_mask (incl. Crimea) -12.120 cm/dec. Pipeline v1.1 Critique-approved.
 - ERA5/ERA5-Land: CDS token required (CDSAPI_KEY); downloads need it (specs from Researcher 2). CEDA skipped (CRU TS open from UEA).
 - Researcher 2: CCI SM done; minor CHIRPS/HadCRUT doc fixes. ERA5 on hold pending team lead creating a Copernicus CDS account (ARCO hourly too slow: ~3 h for Ukraine).
 - Researcher: OMI pull; AppEEARS Kyiv MOD11A2+MCD12Q1 (urban heat island, the key "wow" finding).

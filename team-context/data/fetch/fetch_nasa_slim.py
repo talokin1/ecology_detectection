@@ -17,7 +17,7 @@ import urllib.request
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
-from locate import GLOBAL_DATA, LOG_DIR
+from locate import GLOBAL_DATA, LOG_DIR, SCRATCH
 
 ROOT = GLOBAL_DATA
 LOG = LOG_DIR / "nasa_slim_fetch.log"
@@ -120,7 +120,8 @@ def http_json(url: str, timeout=120):
 
 
 def list_granules(concept_id: str) -> list[dict]:
-    cache = Path(f"/tmp/cmr_granules_{concept_id}.json")
+    SCRATCH.mkdir(parents=True, exist_ok=True)
+    cache = SCRATCH / f"cmr_granules_{concept_id}.json"
     if cache.exists() and time.time() - cache.stat().st_mtime < 6 * 3600:
         return json.loads(cache.read_text())
     rows = []

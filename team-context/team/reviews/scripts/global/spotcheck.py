@@ -200,7 +200,7 @@ notes["file_bytes"] = file_bytes
 notes["claimed_total_log"] = sum(claimed_files.values())
 notes["on_disk_file_bytes_sum"] = sum(file_bytes.values()) + du.get("README.md", 0)
 # df
-df = subprocess.check_output(["df", "-B1", "/workspace"], text=True).strip().splitlines()
+df = subprocess.check_output(["df", "-B1", os.environ.get("DATA_ROOT", str(Path.cwd()))], text=True).strip().splitlines()
 notes["df"] = df[-1]
 
 # GRACE md5

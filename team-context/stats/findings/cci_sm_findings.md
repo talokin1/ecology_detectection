@@ -1,12 +1,14 @@
 # CCI SM COMBINED v09.2 Ukraine-bbox findings (revised after Critique)
 
+> **SUPERSEDED (2026-11-14).** Pre-pipeline analysis with the HAC/Hamed–Rao rule. The official test is repo MK Yue–Wang (ADR-002/ADR-003) with the OLS n_eff cross-check. Never send numbers from this file to the UI or slides (MC-4). **Restated 2026-11-14 (A2-05, conservative-verdict rule):** warm-season (Apr–Oct 7/7) soil moisture 1991–2024 shows **moderate drying**: Sen slope −0.0025 m³ m⁻³/decade (95% CI −0.0051 to −0.0004), repo MK Yue–Wang p = 0.01505, OLS n_eff cross-check p = 0.01695 (the two methods agree). Caveat: the result depends on the start year: from 2002 or 2003 it is not significant, and from 2007 (ASCAT) the sign flips (n.s.). Quote it as "moderate drying since 1991, sensitive to start year", never as a detection from 2002 on.
+
 Date: 14 November 2026, Europe/Kiev  
 Source: `$UKRAINE_SAMPLES/extra/cci_sm/cci_sm_combined_v09_2_ukraine_bbox_monthly.csv` and `$UKRAINE_SAMPLES/extra/cci_sm/cci_sm_combined_v09_2_ukraine_bbox_monthly.nc` (1978-11–2024-12, 554 months).  
 Methods: `$UKRAINE_SAMPLES/_staging/trend_methods.py`.  
 These notes **supersede** `cci_sm_trends_preliminary.txt`.
 
 **Headline (mixed-season, 1991–2024):** no significant change (OLS ≈ 0).  
-**Headline (warm season):** there is **no robust drying signal**. The 1991–2024 Apr–Oct 7/7 seasonal-mean slope is negative and formally significant under annual HAC + Hamed–Rao, but it is start-point dependent (n.s. from 2002; sign flips from 2007) and residual 2002/2007 mean shifts remain. Do not headline “drying.” Do not headline the full 1978–2024 record.
+**Headline (warm season):** *(superseded, see banner: moderate drying 1991–2024, start-year sensitive)* there is **no robust drying signal**. The 1991–2024 Apr–Oct 7/7 seasonal-mean slope is negative and formally significant under annual HAC + Hamed–Rao, but it is start-point dependent (n.s. from 2002; sign flips from 2007) and residual 2002/2007 mean shifts remain. Do not headline “drying.” Do not headline the full 1978–2024 record.
 
 ## Product status (PUG / PVIR / FAQ)
 
@@ -77,7 +79,7 @@ One mean of April–October per year, requiring **7/7 months**. Equally spaced (
 - **2003-2024 (first complete Apr–Oct after the 2002-06 AMSR-E start)** (n=22): n=22, OLS -0.00201 / Sen -0.00213 m³ m⁻³/decade, HAC lag-1 p=0.383, HAC lag-3 p=0.359, HR p=0.236, TFPW p=0.291, residual r=-0.18. Call: not significant at 0.05 on HAC and Hamed–Rao.
 - **2007-2024 (from official ASCAT start)** (n=18): n=18, OLS +0.00251 / Sen +0.00084 m³ m⁻³/decade, HAC lag-1 p=0.332, HAC lag-3 p=0.259, HR p=0.762, TFPW p=0.592, residual r=-0.45. Call: not significant at 0.05 on HAC and Hamed–Rao.
 
-**Start-point dependence:** the 1991–2024 (and 1992–2024) Apr–Oct 7/7 slope is negative and formally “robust” under annual HAC + HR, but it is **not stable** to a later start: from 2002–2024 (and 2003–2024) the slope is not significant, and from 2007 (ASCAT) the sign flips positive (n.s.). Residual r on the 1991–2024 seasonal series is slightly negative, so Hamed–Rao is mildly anti-conservative; TFPW is 0.057. Formal “robust at 0.05 (HAC and Hamed–Rao)” on the 1991–2024 row is therefore not a drying headline. Wording: **no robust drying signal.**
+**Start-point dependence:** the 1991–2024 (and 1992–2024) Apr–Oct 7/7 slope is negative and formally “robust” under annual HAC + HR, but it is **not stable** to a later start: from 2002–2024 (and 2003–2024) the slope is not significant, and from 2007 (ASCAT) the sign flips positive (n.s.). Residual r on the 1991–2024 seasonal series is slightly negative, so Hamed–Rao is mildly anti-conservative; TFPW is 0.057. Formal “robust at 0.05 (HAC and Hamed–Rao)” on the 1991–2024 row is therefore not a drying headline. Wording (pre-pipeline, superseded): **no robust drying signal.** Current wording: moderate drying since 1991, sensitive to start year (see banner).
 
 ### Annual means, 1991–2024, tightened to 12/12 months
 

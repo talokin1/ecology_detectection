@@ -43,3 +43,21 @@ POWER precipitation is the row that changes wording. HAC p = 0.135 (not signific
 - v1.4 tables and `qc_report.md` use Yue–Wang for `robust_call` and for `mt_*`.
 - Temperature series and GRACE that were Bonferroni survivors under HAC/HR remain Bonferroni survivors under Yue–Wang on the primary mask. No previously robust warming or GRACE headline was lost.
 - Smoke test is unchanged: it checks OLS slopes (POWER +0.5526, HadCRUT5 +0.5793, GRACE −11.242, tolerance ±0.005), not the p-value column.
+
+## Deviations and follow-ups (2026-11-14, merge plan v2)
+
+- **Conservative verdict (B-3).** When Yue-Wang and the OLS n_eff cross-check disagree at 0.05, the archive now
+  reports the more conservative verdict and clears `mt_bonferroni_pass` / `mt_bh_pass`
+  (`team-context/data/pipeline/ukpipe/verdict.py`, rule `.claude/skills/trend-stats/SKILL.md:26-28`). The v1.4
+  tables were re-derived, not recomputed (`tools/rederive_verdicts.py`).
+- **Anomaly baseline (A1-20/A2-11).** The archive deseasonalises against 1991-2020 (record mean when a calendar
+  month has < 20 baseline years), while `docs/planning/2026-11-14-stats-methods.md:34` sets 1981-2010. This is a
+  recorded deviation for the archive only. Anomaly levels are not comparable to the product; trend slopes change
+  only slightly with the baseline. Any number ported to the product is recomputed on 1981-2010 by `scripts/build_all.py`
+  and `trend_stats.py`.
+- **Regions (Q2).** The archive box 22.1-40.2E / 44.4-52.4N is the named alternate `ukraine_sa_bbox`; the canonical
+  product region is the catalog `ukraine` [22.0, 44.0, 40.5, 52.5] (ADR-005).
+- **Units and Tmax (Q1, Q3).** POWER monthly-store `T2M_MAX` is the hottest hour of the month, so archive Tmax and
+  DTR rows are labelled as such; the product uses mean daily max and DTR = mean(Tmax) - mean(Tmin) from daily data.
+- **GRACE (Q5).** The archive overlap-weighted GRACE series differs from the product `grace.py` (cell centres, JPL
+  land mask) by about 4%, inside the product's own uncertainty at ~3° resolution; the product uses `grace.py`.

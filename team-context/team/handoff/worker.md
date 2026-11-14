@@ -10,7 +10,7 @@ Updated 14 Nov 2026 after the archive pass.
 - Verdict table: `data/pipeline/outputs/verdict_changes_v1.3_to_v1.4.csv`. Review: `team/reviews/yw_v14_review.md`.
 
 ## Not claimed as detections
-- NASA POWER precipitation, bbox: Yue–Wang p = 0.019, OLS n_eff p = 0.086 (disagree), Bonferroni fails, BH passes. The mask is not significant (p = 0.077). Not a detection.
+- NASA POWER precipitation, bbox: Yue–Wang p = 0.019, OLS n_eff p = 0.086 (disagree), so the conservative verdict applies: method-dependent, BH/Bonferroni flags cleared (B-3). The mask is not significant (p = 0.077). Not a detection.
 - OMI and SWOT remain bbox-only. The OMI file is one regional mean, so a Ukraine polygon cannot be cut from it. SWOT is too short for a climate trend.
 
 ## Recreate

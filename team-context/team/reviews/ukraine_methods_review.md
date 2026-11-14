@@ -1,3 +1,5 @@
+> **HISTORICAL (2026-11-14).** Kept as a record. Its method wording (HAC/Hamed–Rao "robust", "Yue–Wang not used for wording") is superseded by ADR-003 and the conservative-verdict rule (`.claude/skills/trend-stats/SKILL.md:26-28`).
+
 # Ukraine sample trend-methods review
 
 **Reviewer:** Critique  

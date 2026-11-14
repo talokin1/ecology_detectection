@@ -54,7 +54,7 @@ def check_mt(df, pcol, prefix, family_expected=None):
       f"reject_match_bonf={same_b} bh_sm={same_h} bh_manual={same_man} n_bonf_rej={int(rej_b.sum())} n_bh_rej={int(rej_h.sum())}")
     return n, rej_b, rej_h
 
-for region in ["ukraine_mask","ukraine_bbox","ukraine_mask_no_crimea"]:
+for region in ["ukraine_mask","ukraine_bbox"]:
     df=pd.read_csv(f"team-context/data/pipeline/data/tidy/{region}/trends.csv")
     p("\n"+"="*72)
     p(f"REGION {region} n={len(df)}")

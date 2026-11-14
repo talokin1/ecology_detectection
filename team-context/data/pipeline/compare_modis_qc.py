@@ -16,7 +16,7 @@ from ukpipe.loaders import global_grids as GG  # noqa: E402
 from ukpipe.regions import load_region  # noqa: E402
 from ukpipe.trends import tm  # noqa: E402
 
-REGIONS = ["ukraine_bbox", "ukraine_mask", "ukraine_mask_no_crimea"]
+REGIONS = ["ukraine_bbox", "ukraine_mask"]
 VARS = {"mod13c2_qc": ["NDVI", "EVI"], "mod11c3_qc": ["LST_Day_K", "LST_Night_K"]}
 SEAS = {12: "DJF", 1: "DJF", 2: "DJF", 3: "MAM", 4: "MAM", 5: "MAM", 6: "JJA", 7: "JJA", 8: "JJA", 9: "SON", 10: "SON", 11: "SON"}
 

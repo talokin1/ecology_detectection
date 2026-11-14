@@ -1,30 +1,28 @@
-# Region definitions. Add a new region here; no code changes needed.
+# Region definitions for the ARCHIVE pipeline. Add a new region here; no code changes needed.
+# Canonical product region (Q2, ADR-005): data/catalog/regions.yaml `ukraine` = [22.0, 44.0, 40.5, 52.5], land_only.
+# The boxes/masks below are NAMED ALTERNATES: `ukraine_bbox` here is `ukraine_sa_bbox` in the catalog
+# (alias accepted by ukpipe.regions.load_region); `ukraine_mask` keeps its name.
 # type: bbox    -> lon_min/lon_max/lat_min/lat_max (degrees, -180..180)
 # type: polygon -> Natural Earth admin-0 shapefile + ADM0_A3 code
 #
 # Crimea (verified 2026-11-14, see qc_report.md "Crimea"):
 #   ne_10m_admin_0_countries (NE v5.1.1 default, de-facto view) assigns Crimea to RUS.
 #   ne_10m_admin_0_countries_ukr (NE v5.1.1 Ukraine point-of-view) assigns Crimea to UKR.
-#   Default (plan): internationally recognised borders -> the _ukr file (Crimea INCLUDED).
-#   ukraine_mask_no_crimea is the option to exclude it (same as the Berkeley Earth country polygon).
+#   Ukraine is always analysed WITH Crimea (internationally recognised borders) -> the _ukr file.
+#   There is no without-Crimea variant (team decision 2026-11-14).
 ukraine_bbox:
   type: bbox
   lon_min: 22.1
   lon_max: 40.2
   lat_min: 44.4
   lat_max: 52.4
-  description: "Approved-numbers box 22.1-40.2E, 44.4-52.4N (~2x Ukraine; includes neighbours and NW Black Sea)"
+  alias: ukraine_sa_bbox
+  description: "SA alternate box (not canonical; see header) 22.1-40.2E, 44.4-52.4N (~2x Ukraine; includes neighbours and NW Black Sea)"
 ukraine_mask:
   type: polygon
   shapefile: data/raw_aux/natural_earth/ne_10m_admin_0_countries_ukr/ne_10m_admin_0_countries_ukr.shp
   adm0_a3: UKR
   crimea: included
   description: "Ukraine, internationally recognised borders (Natural Earth 10m v5.1.1, Ukraine POV file; Crimea included)"
-ukraine_mask_no_crimea:
-  type: polygon
-  shapefile: data/raw_aux/natural_earth/ne_10m_admin_0_countries/ne_10m_admin_0_countries.shp
-  adm0_a3: UKR
-  crimea: excluded
-  description: "Ukraine without Crimea (Natural Earth 10m v5.1.1 default de-facto file; matches Berkeley Earth country polygon)"
 # Example of scaling: any other box works for global gridded inputs (HadCRUT, GISTEMP, Berkeley, GRACE global file).
 # Sources whose inputs are Ukraine-bbox extracts are skipped automatically when the region is not covered.

@@ -15,7 +15,7 @@ Goal: turn every raw extract into tidy, analysis-ready monthly/annual tables so 
 ## Spatial
 - Area (cos lat) weighting; fractional-overlap weights (not cell centres); record n_effective_cells.
 - Coarse products (GRACE 3° mascons, HadCRUT 5°, GISTEMP 1200 km): overlap weights only, no fine polygon mask; GRACE stays at mascon level.
-- Crimea: verify how the chosen Natural Earth file assigns it (don't assume). Default = internationally recognised borders (Crimea included), option to exclude. Cross-source comparisons must use the same mask; note Berkeley country files exclude Crimea, CRU-CY mask undocumented.
+- Crimea: verify how the chosen Natural Earth file assigns it (don't assume). Ukraine incl. Crimea (internationally recognised borders) only; no exclude option (team decision 2026-11-14). Cross-source comparisons must use the same mask; note Berkeley country files exclude Crimea, CRU-CY mask undocumented.
 
 ## Temporal
 - Daily->monthly: temperature >=20 valid days; PRCP >=27 days (or full month) else NaN+flag. Apply GHCN QFLAG filter.

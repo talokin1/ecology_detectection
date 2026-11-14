@@ -18,12 +18,12 @@ import urllib.request
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
-from locate import GLOBAL_DATA, LOG_DIR
+from locate import GLOBAL_DATA, LOG_DIR, SCRATCH, data_root
 
 ROOT = GLOBAL_DATA
 LOG = LOG_DIR / "extra_vars_fetch.log"
 PROGRESS = LOG_DIR / "extra_vars_progress.json"
-PROBE_DIR = Path("/tmp/extra_var_month_probes")
+PROBE_DIR = SCRATCH / "extra_var_month_probes"
 UA = "SpaceAppsTrendDetective/1.0"
 CTX = ssl.create_default_context()
 LOCK = threading.Lock()
@@ -111,7 +111,8 @@ def http_json(url: str, timeout=120):
 
 
 def list_granules(concept_id: str) -> list[dict]:
-    cache = Path(f"/tmp/cmr_granules_{concept_id}.json")
+    SCRATCH.mkdir(parents=True, exist_ok=True)
+    cache = SCRATCH / f"cmr_granules_{concept_id}.json"
     if cache.exists() and time.time() - cache.stat().st_mtime < 12 * 3600:
         return json.loads(cache.read_text())
     rows = []
@@ -234,9 +235,9 @@ def save_progress(state: dict) -> None:
         PROGRESS.write_text(json.dumps(state, indent=2, default=str))
 
 
-def free_bytes(path="/workspace") -> int:
+def free_bytes(path=None) -> int:
     import os
-    st = os.statvfs(path)
+    st = os.statvfs(path or data_root())
     return st.f_bavail * st.f_frsize
 
 
@@ -309,7 +310,7 @@ def main():
     # leave 20% of 128 GiB (~27.5e9? df size is 128G binary = 128*1024^3)
     # 20% of the filesystem: use statvfs
     import os as _os
-    st = _os.statvfs("/workspace")
+    st = _os.statvfs(data_root())
     total = st.f_blocks * st.f_frsize
     must_leave = 0.20 * total
     log(f"estimated extra {est/1e9:.2f} GB SI; free {free/1e9:.2f} GB; must leave {must_leave/1e9:.2f} GB")

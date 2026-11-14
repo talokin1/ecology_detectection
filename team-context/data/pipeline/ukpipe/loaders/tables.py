@@ -194,7 +194,7 @@ def load_berkeley_country(region):
         rows.append((int(p[0]), int(p[1]), float(p[2])))
     df = pd.DataFrame(rows, columns=["y", "m", "v"])
     dates = pd.to_datetime(dict(year=df.y, month=df.m, day=1))
-    fl = "own_country_mask;crimea_excluded" + ("" if region.cfg.get("crimea") == "excluded" else ";mask_mismatch_vs_region")
+    fl = "own_country_mask;crimea_excluded;mask_mismatch_vs_region"  # every Ukraine region includes Crimea
     return [make_tidy("berkeley_country", "TAVG", region.name, dates, df["v"].to_numpy(), flags=[fl] * len(df))], \
         {"source": "berkeley_country", "status": "ok", "mask": "Berkeley polygon 553,101 km², 45.21-52.37N: Crimea EXCLUDED"}
 
