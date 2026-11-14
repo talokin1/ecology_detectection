@@ -1,0 +1,2138 @@
+{
+  "du_dirs": {
+    "mod11c3_slim": 5238693688,
+    "README.md": 308,
+    "berkeley_earth": 198958040,
+    "merra2_flx_slim": 773787005,
+    "hadcrut5": 33039776,
+    "chirps_v3": 8960342547,
+    "merra2_slv_slim": 891108130,
+    "gldas20_slim": 3929728082,
+    "gistemp": 25934827,
+    "airs3stm_slim": 241075185,
+    "gpm_imerg_slim": 2268586131,
+    "mod13c2_slim": 5771738931,
+    "grace": 46374746,
+    "gpcc_v2025_1deg": 443882757,
+    "gldas21_slim": 1581824378
+  },
+  "file_bytes": {
+    "mod11c3_slim": 5238693688,
+    "berkeley_earth": 198958040,
+    "merra2_flx_slim": 773787005,
+    "hadcrut5": 33039776,
+    "chirps_v3": 8960342547,
+    "merra2_slv_slim": 891108130,
+    "gldas20_slim": 3929728082,
+    "gistemp": 25934827,
+    "airs3stm_slim": 241075185,
+    "gpm_imerg_slim": 2268586131,
+    "mod13c2_slim": 5771738931,
+    "grace": 46374746,
+    "gpcc_v2025_1deg": 443882757,
+    "gldas21_slim": 1581824378
+  },
+  "claimed_total_log": 30405064648,
+  "on_disk_file_bytes_sum": 30405074531,
+  "df": "/dev/vdb       136793763840 56781729792 79995256832  42% /",
+  "grace_md5": "1567b9401ec2a704aab16598fcce5e70",
+  "grace_md5_ok": true,
+  "grace_bytes": 46365171,
+  "inodes": {
+    "gistemp_global": {
+      "ino": 450448,
+      "nlink": 2,
+      "size": 25885943
+    },
+    "gistemp_ua": {
+      "ino": 450448,
+      "nlink": 2,
+      "size": 25885943
+    },
+    "hadcrut_global": {
+      "ino": 450466,
+      "nlink": 2,
+      "size": 32860971
+    },
+    "hadcrut_ua": {
+      "ino": 450466,
+      "nlink": 2,
+      "size": 32860971
+    }
+  },
+  "inspections": {
+    "merra2_slv": {
+      "path": "$GLOBAL_DATA/merra2_slv_slim/MERRA2_100.tavgM_2d_slv_Nx.198001.nc4.nc4",
+      "bytes": 1477419,
+      "format": "NETCDF4",
+      "groups": [],
+      "dims": {
+        "lon": 576,
+        "time": 1,
+        "lat": 361
+      },
+      "all_dims": {
+        "lon": 576,
+        "time": 1,
+        "lat": 361
+      },
+      "attrs": {
+        "History": "Original file generated: Fri May  8 00:36:04 2015 GMT",
+        "Comment": "GMAO filename: d5124_m2_jan79.tavg1_2d_slv_Nx.monthly.198001.nc4",
+        "Conventions": "CF-1",
+        "Institution": "NASA Global Modeling and Assimilation Office",
+        "References": "http://gmao.gsfc.nasa.gov",
+        "VersionID": "5.12.4",
+        "identifier_product_doi_authority": "http://dx.doi.org/",
+        "ShortName": "M2TMNXSLV",
+        "RangeBeginningDate": "1980-01-01",
+        "RangeEndingDate": "1980-01-31",
+        "ProductionDateTime": "Original file generated: Fri May  8 00:36:04 2015 GMT",
+        "Title": "MERRA2 tavg1_2d_slv_Nx: 2d,1-Hourly,Time-Averaged,Single-Level,Assimilation,Single-Level Diagnostics Monthly Mean",
+        "Source": "CVS tag: GEOSadas-5_12_4",
+        "identifier_product_doi": "10.5067/AP1B0BA5PD2K",
+        "RangeBeginningTime": "00:00:00.000000",
+        "RangeEndingTime": "23:59:59.000000",
+        "history": "2026-11-14 11:46:52 GMT hyrax-1.18.0-166 https://opendap.earthdata.nasa.gov/collections/C1276812859-GES_DISC/granules/M2TMNXSLV.5.12.4%3AMERRA2_100.tavgM_2d_slv_Nx.198001.nc4.dap.nc4?dap4.ce=%2FT2M%3B%2FQV2M%3B%2FSLP%3B%2Flat%3B%2Flon%3B%2Ftime\n",
+        "history_json": "[{\"$schema\":\"https:\\/\\/harmony.earthdata.nasa.gov\\/schemas\\/history\\/0.1.0\\/history-0.1.0.json\",\"date_time\":\"2026-11-14T11:46:52.908+0000\",\"program\":\"hyrax\",\"version\":\"1.18.0-166\",\"parameters\":[{\"request_url\":\"https:\\/\\/opendap.earthdata.nasa.gov\\/collections\\/C1276812859-GES_DISC\\/granules\\/M2TMNXS..."
+      },
+      "vars": [
+        {
+          "name": "lon",
+          "shape": [
+            576
+          ],
+          "dims": [
+            "lon"
+          ],
+          "dtype": "float64",
+          "units": "degrees_east",
+          "long_name": "longitude"
+        },
+        {
+          "name": "time",
+          "shape": [
+            1
+          ],
+          "dims": [
+            "time"
+          ],
+          "dtype": "int32",
+          "units": "minutes since 1980-01-01 00:30:00",
+          "long_name": "time"
+        },
+        {
+          "name": "lat",
+          "shape": [
+            361
+          ],
+          "dims": [
+            "lat"
+          ],
+          "dtype": "float64",
+          "units": "degrees_north",
+          "long_name": "latitude"
+        },
+        {
+          "name": "T2M",
+          "shape": [
+            1,
+            361,
+            576
+          ],
+          "dims": [
+            "time",
+            "lat",
+            "lon"
+          ],
+          "dtype": "float32",
+          "units": "K",
+          "long_name": "2-meter_air_temperature"
+        },
+        {
+          "name": "SLP",
+          "shape": [
+            1,
+            361,
+            576
+          ],
+          "dims": [
+            "time",
+            "lat",
+            "lon"
+          ],
+          "dtype": "float32",
+          "units": "Pa",
+          "long_name": "sea_level_pressure"
+        },
+        {
+          "name": "QV2M",
+          "shape": [
+            1,
+            361,
+            576
+          ],
+          "dims": [
+            "time",
+            "lat",
+            "lon"
+          ],
+          "dtype": "float32",
+          "units": "kg kg-1",
+          "long_name": "2-meter_specific_humidity"
+        }
+      ],
+      "time_n": 1,
+      "time_first": "1980-01-01",
+      "time_last": "1980-01-01",
+      "time_unique": 1
+    },
+    "merra2_flx": {
+      "path": "$GLOBAL_DATA/merra2_flx_slim/MERRA2_100.tavgM_2d_flx_Nx.198001.nc4.nc4",
+      "bytes": 1332793,
+      "format": "NETCDF4",
+      "groups": [],
+      "dims": {
+        "lon": 576,
+        "time": 1,
+        "lat": 361
+      },
+      "all_dims": {
+        "lon": 576,
+        "time": 1,
+        "lat": 361
+      },
+      "attrs": {
+        "History": "Original file generated: Thu May  7 23:09:56 2015 GMT",
+        "Comment": "GMAO filename: d5124_m2_jan79.tavg1_2d_flx_Nx.monthly.198001.nc4",
+        "Conventions": "CF-1",
+        "Institution": "NASA Global Modeling and Assimilation Office",
+        "References": "http://gmao.gsfc.nasa.gov",
+        "VersionID": "5.12.4",
+        "identifier_product_doi_authority": "http://dx.doi.org/",
+        "ShortName": "M2TMNXFLX",
+        "RangeBeginningDate": "1980-01-01",
+        "RangeEndingDate": "1980-01-31",
+        "ProductionDateTime": "Original file generated: Thu May  7 23:09:56 2015 GMT",
+        "Title": "MERRA2 tavg1_2d_flx_Nx: 2d,1-Hourly,Time-Averaged,Single-Level,Assimilation,Surface Flux Diagnostics Monthly Mean",
+        "Source": "CVS tag: GEOSadas-5_12_4",
+        "identifier_product_doi": "10.5067/0JRLVL8YV2Y4",
+        "RangeBeginningTime": "00:00:00.000000",
+        "RangeEndingTime": "23:59:59.000000",
+        "history": "2026-11-14 11:48:40 GMT hyrax-1.18.0-166 https://opendap.earthdata.nasa.gov/collections/C1276812868-GES_DISC/granules/M2TMNXFLX.5.12.4%3AMERRA2_100.tavgM_2d_flx_Nx.198001.nc4.dap.nc4?dap4.ce=%2FPRECTOT%3B%2FPRECTOTCORR%3B%2Flat%3B%2Flon%3B%2Ftime\n",
+        "history_json": "[{\"$schema\":\"https:\\/\\/harmony.earthdata.nasa.gov\\/schemas\\/history\\/0.1.0\\/history-0.1.0.json\",\"date_time\":\"2026-11-14T11:48:40.526+0000\",\"program\":\"hyrax\",\"version\":\"1.18.0-166\",\"parameters\":[{\"request_url\":\"https:\\/\\/opendap.earthdata.nasa.gov\\/collections\\/C1276812868-GES_DISC\\/granules\\/M2TMNXF..."
+      },
+      "vars": [
+        {
+          "name": "lon",
+          "shape": [
+            576
+          ],
+          "dims": [
+            "lon"
+          ],
+          "dtype": "float64",
+          "units": "degrees_east",
+          "long_name": "longitude"
+        },
+        {
+          "name": "time",
+          "shape": [
+            1
+          ],
+          "dims": [
+            "time"
+          ],
+          "dtype": "int32",
+          "units": "minutes since 1980-01-01 00:30:00",
+          "long_name": "time"
+        },
+        {
+          "name": "lat",
+          "shape": [
+            361
+          ],
+          "dims": [
+            "lat"
+          ],
+          "dtype": "float64",
+          "units": "degrees_north",
+          "long_name": "latitude"
+        },
+        {
+          "name": "PRECTOT",
+          "shape": [
+            1,
+            361,
+            576
+          ],
+          "dims": [
+            "time",
+            "lat",
+            "lon"
+          ],
+          "dtype": "float32",
+          "units": "kg m-2 s-1",
+          "long_name": "total_precipitation"
+        },
+        {
+          "name": "PRECTOTCORR",
+          "shape": [
+            1,
+            361,
+            576
+          ],
+          "dims": [
+            "time",
+            "lat",
+            "lon"
+          ],
+          "dtype": "float32",
+          "units": "kg m-2 s-1",
+          "long_name": "total_precipitation"
+        }
+      ],
+      "time_n": 1,
+      "time_first": "1980-01-01",
+      "time_last": "1980-01-01",
+      "time_unique": 1
+    },
+    "gldas20": {
+      "path": "$GLOBAL_DATA/gldas20_slim/GLDAS_NOAH025_M.A194801.020.nc4.nc4",
+      "bytes": 4826189,
+      "format": "NETCDF4",
+      "groups": [],
+      "dims": {
+        "lon": 1440,
+        "time": 1,
+        "lat": 600
+      },
+      "all_dims": {
+        "lon": 1440,
+        "time": 1,
+        "lat": 600
+      },
+      "attrs": {
+        "Conventions": "CF-1.6",
+        "history": "created on date: 2019-09-25T16:16:38.193\n2026-11-14 11:50:30 GMT hyrax-1.18.0-166 https://opendap.earthdata.nasa.gov/collections/C1233767569-GES_DISC/granules/GLDAS_NOAH025_M.2.0%3AGLDAS_NOAH025_M.A194801.020.nc4.dap.nc4?dap4.ce=%2FSoilMoi0_10cm_inst%3B%2FRootMoist_inst%3B%2FEvap_tavg%3B%2FQs_acc%3B...",
+        "source": "Noah_v3.6 forced with Princeton_V2.2",
+        "institution": "NASA GSFC",
+        "title": "GLDAS2.0 LIS land surface model output monthly mean",
+        "references": "Rodell_etal_BAMS_2004, Kumar_etal_EMS_2006, Peters-Lidard_etal_ISSE_2007",
+        "conventions": "CF-1.6",
+        "comment": "website: https://ldas.gsfc.nasa.gov/gldas, https://lis.gsfc.nasa.gov/",
+        "history_json": "[{\"$schema\":\"https:\\/\\/harmony.earthdata.nasa.gov\\/schemas\\/history\\/0.1.0\\/history-0.1.0.json\",\"date_time\":\"2026-11-14T11:50:30.242+0000\",\"program\":\"hyrax\",\"version\":\"1.18.0-166\",\"parameters\":[{\"request_url\":\"https:\\/\\/opendap.earthdata.nasa.gov\\/collections\\/C1233767569-GES_DISC\\/granules\\/GLDAS_N..."
+      },
+      "vars": [
+        {
+          "name": "lon",
+          "shape": [
+            1440
+          ],
+          "dims": [
+            "lon"
+          ],
+          "dtype": "float32",
+          "units": "degrees_east",
+          "long_name": "longitude"
+        },
+        {
+          "name": "time",
+          "shape": [
+            1
+          ],
+          "dims": [
+            "time"
+          ],
+          "dtype": "float64",
+          "units": "days since 1948-01-01 00:00:00",
+          "long_name": "time"
+        },
+        {
+          "name": "lat",
+          "shape": [
+            600
+          ],
+          "dims": [
+            "lat"
+          ],
+          "dtype": "float32",
+          "units": "degrees_north",
+          "long_name": "latitude"
+        },
+        {
+          "name": "SWE_inst",
+          "shape": [
+            1,
+            600,
+            1440
+          ],
+          "dims": [
+            "time",
+            "lat",
+            "lon"
+          ],
+          "dtype": "float32",
+          "units": "kg m-2",
+          "long_name": "Snow depth water equivalent"
+        },
+        {
+          "name": "Tair_f_inst",
+          "shape": [
+            1,
+            600,
+            1440
+          ],
+          "dims": [
+            "time",
+            "lat",
+            "lon"
+          ],
+          "dtype": "float32",
+          "units": "K",
+          "long_name": "Temperature"
+        },
+        {
+          "name": "Qs_acc",
+          "shape": [
+            1,
+            600,
+            1440
+          ],
+          "dims": [
+            "time",
+            "lat",
+            "lon"
+          ],
+          "dtype": "float32",
+          "units": "kg m-2",
+          "long_name": "Storm surface runoff"
+        },
+        {
+          "name": "RootMoist_inst",
+          "shape": [
+            1,
+            600,
+            1440
+          ],
+          "dims": [
+            "time",
+            "lat",
+            "lon"
+          ],
+          "dtype": "float32",
+          "units": "kg m-2",
+          "long_name": "Root zone soil moisture"
+        },
+        {
+          "name": "SoilMoi0_10cm_inst",
+          "shape": [
+            1,
+            600,
+            1440
+          ],
+          "dims": [
+            "time",
+            "lat",
+            "lon"
+          ],
+          "dtype": "float32",
+          "units": "kg m-2",
+          "long_name": "Soil moisture"
+        },
+        {
+          "name": "Evap_tavg",
+          "shape": [
+            1,
+            600,
+            1440
+          ],
+          "dims": [
+            "time",
+            "lat",
+            "lon"
+          ],
+          "dtype": "float32",
+          "units": "kg m-2 s-1",
+          "long_name": "Evapotranspiration"
+        },
+        {
+          "name": "Qsb_acc",
+          "shape": [
+            1,
+            600,
+            1440
+          ],
+          "dims": [
+            "time",
+            "lat",
+            "lon"
+          ],
+          "dtype": "float32",
+          "units": "kg m-2",
+          "long_name": "Baseflow-groundwater runoff"
+        }
+      ],
+      "time_n": 1,
+      "time_first": "1948-01-01",
+      "time_last": "1948-01-01",
+      "time_unique": 1
+    },
+    "gldas21": {
+      "path": "$GLOBAL_DATA/gldas21_slim/GLDAS_NOAH025_M.A200001.021.nc4.nc4",
+      "bytes": 4921336,
+      "format": "NETCDF4",
+      "groups": [],
+      "dims": {
+        "lon": 1440,
+        "time": 1,
+        "lat": 600
+      },
+      "all_dims": {
+        "lon": 1440,
+        "time": 1,
+        "lat": 600
+      },
+      "attrs": {
+        "Conventions": "CF-1.6",
+        "history": "created on date: 2019-09-17T14:58:21.836\n2026-11-14 11:53:33 GMT hyrax-1.18.0-166 https://opendap.earthdata.nasa.gov/collections/C1342986036-GES_DISC/granules/GLDAS_NOAH025_M.2.1%3AGLDAS_NOAH025_M.A200001.021.nc4.dap.nc4?dap4.ce=%2FSoilMoi0_10cm_inst%3B%2FRootMoist_inst%3B%2FEvap_tavg%3B%2FQs_acc%3B...",
+        "source": "Noah_v3.6 forced with GDAS-AGRMET-GPCPv13rA1",
+        "institution": "NASA GSFC",
+        "title": "GLDAS2.1 LIS land surface model output monthly mean",
+        "references": "Rodell_etal_BAMS_2004, Kumar_etal_EMS_2006, Peters-Lidard_etal_ISSE_2007",
+        "conventions": "CF-1.6",
+        "comment": "website: https://ldas.gsfc.nasa.gov/gldas, https://lis.gsfc.nasa.gov/",
+        "history_json": "[{\"$schema\":\"https:\\/\\/harmony.earthdata.nasa.gov\\/schemas\\/history\\/0.1.0\\/history-0.1.0.json\",\"date_time\":\"2026-11-14T11:53:33.915+0000\",\"program\":\"hyrax\",\"version\":\"1.18.0-166\",\"parameters\":[{\"request_url\":\"https:\\/\\/opendap.earthdata.nasa.gov\\/collections\\/C1342986036-GES_DISC\\/granules\\/GLDAS_N..."
+      },
+      "vars": [
+        {
+          "name": "lon",
+          "shape": [
+            1440
+          ],
+          "dims": [
+            "lon"
+          ],
+          "dtype": "float32",
+          "units": "degrees_east",
+          "long_name": "longitude"
+        },
+        {
+          "name": "time",
+          "shape": [
+            1
+          ],
+          "dims": [
+            "time"
+          ],
+          "dtype": "float64",
+          "units": "days since 2000-01-01 00:00:00",
+          "long_name": "time"
+        },
+        {
+          "name": "lat",
+          "shape": [
+            600
+          ],
+          "dims": [
+            "lat"
+          ],
+          "dtype": "float32",
+          "units": "degrees_north",
+          "long_name": "latitude"
+        },
+        {
+          "name": "SWE_inst",
+          "shape": [
+            1,
+            600,
+            1440
+          ],
+          "dims": [
+            "time",
+            "lat",
+            "lon"
+          ],
+          "dtype": "float32",
+          "units": "kg m-2",
+          "long_name": "Snow depth water equivalent"
+        },
+        {
+          "name": "Tair_f_inst",
+          "shape": [
+            1,
+            600,
+            1440
+          ],
+          "dims": [
+            "time",
+            "lat",
+            "lon"
+          ],
+          "dtype": "float32",
+          "units": "K",
+          "long_name": "Temperature"
+        },
+        {
+          "name": "Qs_acc",
+          "shape": [
+            1,
+            600,
+            1440
+          ],
+          "dims": [
+            "time",
+            "lat",
+            "lon"
+          ],
+          "dtype": "float32",
+          "units": "kg m-2",
+          "long_name": "Storm surface runoff"
+        },
+        {
+          "name": "RootMoist_inst",
+          "shape": [
+            1,
+            600,
+            1440
+          ],
+          "dims": [
+            "time",
+            "lat",
+            "lon"
+          ],
+          "dtype": "float32",
+          "units": "kg m-2",
+          "long_name": "Root zone soil moisture"
+        },
+        {
+          "name": "SoilMoi0_10cm_inst",
+          "shape": [
+            1,
+            600,
+            1440
+          ],
+          "dims": [
+            "time",
+            "lat",
+            "lon"
+          ],
+          "dtype": "float32",
+          "units": "kg m-2",
+          "long_name": "Soil moisture"
+        },
+        {
+          "name": "Evap_tavg",
+          "shape": [
+            1,
+            600,
+            1440
+          ],
+          "dims": [
+            "time",
+            "lat",
+            "lon"
+          ],
+          "dtype": "float32",
+          "units": "kg m-2 s-1",
+          "long_name": "Evapotranspiration"
+        },
+        {
+          "name": "Qsb_acc",
+          "shape": [
+            1,
+            600,
+            1440
+          ],
+          "dims": [
+            "time",
+            "lat",
+            "lon"
+          ],
+          "dtype": "float32",
+          "units": "kg m-2",
+          "long_name": "Baseflow-groundwater runoff"
+        }
+      ],
+      "time_n": 1,
+      "time_first": "2000-01-01",
+      "time_last": "2000-01-01",
+      "time_unique": 1
+    },
+    "imerg": {
+      "path": "$GLOBAL_DATA/gpm_imerg_slim/3B-MO.MS.MRG.3IMERG.19980101-S000000-E235959.01.V07B.HDF5.nc4",
+      "bytes": 6144819,
+      "format": "NETCDF4",
+      "groups": [
+        "Grid"
+      ],
+      "dims": {},
+      "all_dims": {
+        "Grid/time": 1,
+        "Grid/lon": 3600,
+        "Grid/lat": 1800,
+        "Grid/latv": 2,
+        "Grid/lonv": 2,
+        "Grid/nv": 2
+      },
+      "attrs": {
+        "history": "2026-11-14 11:54:43 GMT hyrax-1.18.0-166 https://opendap.earthdata.nasa.gov/collections/C2723754851-GES_DISC/granules/GPM_3IMERGM.07%3A3B-MO.MS.MRG.3IMERG.19980101-S000000-E235959.01.V07B.HDF5.dap.nc4?dap4.ce=%2FGrid%2Fprecipitation%3B%2FGrid%2Flon%3B%2FGrid%2Flat%3B%2FGrid%2Ftime\n",
+        "history_json": "[{\"$schema\":\"https:\\/\\/harmony.earthdata.nasa.gov\\/schemas\\/history\\/0.1.0\\/history-0.1.0.json\",\"date_time\":\"2026-11-14T11:54:43.613+0000\",\"program\":\"hyrax\",\"version\":\"1.18.0-166\",\"parameters\":[{\"request_url\":\"https:\\/\\/opendap.earthdata.nasa.gov\\/collections\\/C2723754851-GES_DISC\\/granules\\/GPM_3IM..."
+      },
+      "vars": [
+        {
+          "name": "Grid/time",
+          "shape": [
+            1
+          ],
+          "dims": [
+            "time"
+          ],
+          "dtype": "int32",
+          "units": "seconds since 1980-01-06 00:00:00 UTC",
+          "long_name": "time"
+        },
+        {
+          "name": "Grid/lon",
+          "shape": [
+            3600
+          ],
+          "dims": [
+            "lon"
+          ],
+          "dtype": "float32",
+          "units": "degrees_east",
+          "long_name": "longitude"
+        },
+        {
+          "name": "Grid/lat",
+          "shape": [
+            1800
+          ],
+          "dims": [
+            "lat"
+          ],
+          "dtype": "float32",
+          "units": "degrees_north",
+          "long_name": "latitude"
+        },
+        {
+          "name": "Grid/precipitation",
+          "shape": [
+            1,
+            3600,
+            1800
+          ],
+          "dims": [
+            "time",
+            "lon",
+            "lat"
+          ],
+          "dtype": "float32",
+          "units": "mm/hr",
+          "long_name": ""
+        }
+      ],
+      "time_n": 1,
+      "time_first": "1998-01-01",
+      "time_last": "1998-01-01",
+      "time_unique": 1
+    },
+    "airs": {
+      "path": "$GLOBAL_DATA/airs3stm_slim/AIRS.2002.09.01.L3.RetStd_IR030.v7.0.3.0.G20175163230.hdf.nc4",
+      "bytes": 826859,
+      "format": "NETCDF4",
+      "groups": [
+        "ascending",
+        "descending",
+        "location"
+      ],
+      "dims": {
+        "YDim_ascending": 180,
+        "XDim_ascending": 360,
+        "EmisFreqIR_ascending": 4,
+        "StdPressureLev_ascending": 24,
+        "H2OPressureLay_ascending": 12,
+        "H2OPressureLev_ascending": 12,
+        "FineCloudLayer_ascending": 12,
+        "CoarseCloudLayer_ascending": 3,
+        "YDim_descending": 180,
+        "XDim_descending": 360,
+        "EmisFreqIR_descending": 4,
+        "StdPressureLev_descending": 24,
+        "H2OPressureLay_descending": 12,
+        "H2OPressureLev_descending": 12,
+        "FineCloudLayer_descending": 12,
+        "CoarseCloudLayer_descending": 3,
+        "YDim_ascending_TqJoint": 180,
+        "XDim_ascending_TqJoint": 360,
+        "EmisFreqIR_ascending_TqJoint": 4,
+        "StdPressureLev_ascending_TqJoint": 24,
+        "H2OPressureLay_ascending_TqJoint": 12,
+        "H2OPressureLev_ascending_TqJoint": 12,
+        "FineCloudLayer_ascending_TqJoint": 12,
+        "CoarseCloudLayer_ascending_TqJoint": 3,
+        "YDim_descending_TqJoint": 180,
+        "XDim_descending_TqJoint": 360,
+        "EmisFreqIR_descending_TqJoint": 4,
+        "StdPressureLev_descending_TqJoint": 24,
+        "H2OPressureLay_descending_TqJoint": 12,
+        "H2OPressureLev_descending_TqJoint": 12,
+        "FineCloudLayer_descending_TqJoint": 12,
+        "CoarseCloudLayer_descending_TqJoint": 3,
+        "YDim_ascending_MW_only": 180,
+        "XDim_ascending_MW_only": 360,
+        "EmisFreqMW_ascending_MW_only": 3,
+        "StdPressureLev_ascending_MW_only": 24,
+        "YDim_descending_MW_only": 180,
+        "XDim_descending_MW_only": 360,
+        "EmisFreqMW_descending_MW_only": 3,
+        "StdPressureLev_descending_MW_only": 24,
+        "YDim_location": 180,
+        "XDim_location": 360
+      },
+      "all_dims": {
+        "YDim_ascending": 180,
+        "XDim_ascending": 360,
+        "EmisFreqIR_ascending": 4,
+        "StdPressureLev_ascending": 24,
+        "H2OPressureLay_ascending": 12,
+        "H2OPressureLev_ascending": 12,
+        "FineCloudLayer_ascending": 12,
+        "CoarseCloudLayer_ascending": 3,
+        "YDim_descending": 180,
+        "XDim_descending": 360,
+        "EmisFreqIR_descending": 4,
+        "StdPressureLev_descending": 24,
+        "H2OPressureLay_descending": 12,
+        "H2OPressureLev_descending": 12,
+        "FineCloudLayer_descending": 12,
+        "CoarseCloudLayer_descending": 3,
+        "YDim_ascending_TqJoint": 180,
+        "XDim_ascending_TqJoint": 360,
+        "EmisFreqIR_ascending_TqJoint": 4,
+        "StdPressureLev_ascending_TqJoint": 24,
+        "H2OPressureLay_ascending_TqJoint": 12,
+        "H2OPressureLev_ascending_TqJoint": 12,
+        "FineCloudLayer_ascending_TqJoint": 12,
+        "CoarseCloudLayer_ascending_TqJoint": 3,
+        "YDim_descending_TqJoint": 180,
+        "XDim_descending_TqJoint": 360,
+        "EmisFreqIR_descending_TqJoint": 4,
+        "StdPressureLev_descending_TqJoint": 24,
+        "H2OPressureLay_descending_TqJoint": 12,
+        "H2OPressureLev_descending_TqJoint": 12,
+        "FineCloudLayer_descending_TqJoint": 12,
+        "CoarseCloudLayer_descending_TqJoint": 3,
+        "YDim_ascending_MW_only": 180,
+        "XDim_ascending_MW_only": 360,
+        "EmisFreqMW_ascending_MW_only": 3,
+        "StdPressureLev_ascending_MW_only": 24,
+        "YDim_descending_MW_only": 180,
+        "XDim_descending_MW_only": 360,
+        "EmisFreqMW_descending_MW_only": 3,
+        "StdPressureLev_descending_MW_only": 24,
+        "YDim_location": 180,
+        "XDim_location": 360
+      },
+      "attrs": {
+        "HDFEOSVersion": "HDFEOS_V2.18",
+        "identifier_product_doi": "10.5067/UBENJB9D3T2H",
+        "identifier_product_doi_authority": "http://dx.doi.org/",
+        "history": "2026-11-14 11:55:44 GMT hyrax-1.18.0-166 https://opendap.earthdata.nasa.gov/collections/C1701805662-GES_DISC/granules/AIRS3STM.7.0%3AAIRS.2002.09.01.L3.RetStd_IR030.v7.0.3.0.G20175163230.hdf.dap.nc4?dap4.ce=%2Fascending%2FData_Fields%2FSurfAirTemp_A%3B%2Fascending%2FData_Fields%2FTotH2OVap_A%3B%2Fde...",
+        "history_json": "[{\"$schema\":\"https:\\/\\/harmony.earthdata.nasa.gov\\/schemas\\/history\\/0.1.0\\/history-0.1.0.json\",\"date_time\":\"2026-11-14T11:55:44.486+0000\",\"program\":\"hyrax\",\"version\":\"1.18.0-166\",\"parameters\":[{\"request_url\":\"https:\\/\\/opendap.earthdata.nasa.gov\\/collections\\/C1701805662-GES_DISC\\/granules\\/AIRS3ST..."
+      },
+      "vars": [
+        {
+          "name": "ascending/Data_Fields/SurfAirTemp_A",
+          "shape": [
+            180,
+            360
+          ],
+          "dims": [
+            "YDim_ascending",
+            "XDim_ascending"
+          ],
+          "dtype": "float32",
+          "units": "",
+          "long_name": ""
+        },
+        {
+          "name": "ascending/Data_Fields/TotH2OVap_A",
+          "shape": [
+            180,
+            360
+          ],
+          "dims": [
+            "YDim_ascending",
+            "XDim_ascending"
+          ],
+          "dtype": "float32",
+          "units": "",
+          "long_name": ""
+        },
+        {
+          "name": "descending/Data_Fields/SurfAirTemp_D",
+          "shape": [
+            180,
+            360
+          ],
+          "dims": [
+            "YDim_descending",
+            "XDim_descending"
+          ],
+          "dtype": "float32",
+          "units": "",
+          "long_name": ""
+        },
+        {
+          "name": "descending/Data_Fields/TotH2OVap_D",
+          "shape": [
+            180,
+            360
+          ],
+          "dims": [
+            "YDim_descending",
+            "XDim_descending"
+          ],
+          "dtype": "float32",
+          "units": "",
+          "long_name": ""
+        },
+        {
+          "name": "location/Data_Fields/Latitude",
+          "shape": [
+            180,
+            360
+          ],
+          "dims": [
+            "YDim_location",
+            "XDim_location"
+          ],
+          "dtype": "float32",
+          "units": "",
+          "long_name": ""
+        },
+        {
+          "name": "location/Data_Fields/Longitude",
+          "shape": [
+            180,
+            360
+          ],
+          "dims": [
+            "YDim_location",
+            "XDim_location"
+          ],
+          "dtype": "float32",
+          "units": "",
+          "long_name": ""
+        }
+      ]
+    },
+    "mod11": {
+      "path": "$GLOBAL_DATA/mod11c3_slim/MOD11C3.A2000032.061.2020048181639.nc4",
+      "bytes": 14937317,
+      "format": "NETCDF4",
+      "groups": [
+        "MODIS_MONTHLY_0_05DEG_CMG_LST"
+      ],
+      "dims": {
+        "YDim_MODIS_MONTHLY_0_05DEG_CMG_LST": 3600,
+        "XDim_MODIS_MONTHLY_0_05DEG_CMG_LST": 7200
+      },
+      "all_dims": {
+        "YDim_MODIS_MONTHLY_0_05DEG_CMG_LST": 3600,
+        "XDim_MODIS_MONTHLY_0_05DEG_CMG_LST": 7200
+      },
+      "attrs": {
+        "HDFEOSVersion": "HDFEOS_V2.19",
+        "identifier_product_doi": "10.5067/MODIS/MOD11C3.061",
+        "identifier_product_doi_authority": "http://dx.doi.org",
+        "history": "2026-11-14 12:01:16 GMT hyrax-1.18.0-166 https://opendap.earthdata.nasa.gov/collections/C2565788897-LPCLOUD/granules/MOD11C3.A2000032.061.2020048181639.dap.nc4?dap4.ce=%2FMODIS_MONTHLY_0_05DEG_CMG_LST%2FData_Fields%2FLST_Day_CMG%3B%2FMODIS_MONTHLY_0_05DEG_CMG_LST%2FData_Fields%2FLST_Night_CMG\n",
+        "history_json": "[{\"$schema\":\"https:\\/\\/harmony.earthdata.nasa.gov\\/schemas\\/history\\/0.1.0\\/history-0.1.0.json\",\"date_time\":\"2026-11-14T12:01:16.633+0000\",\"program\":\"hyrax\",\"version\":\"1.18.0-166\",\"parameters\":[{\"request_url\":\"https:\\/\\/opendap.earthdata.nasa.gov\\/collections\\/C2565788897-LPCLOUD\\/granules\\/MOD11C3...."
+      },
+      "vars": [
+        {
+          "name": "MODIS_MONTHLY_0_05DEG_CMG_LST/Data_Fields/LST_Day_CMG",
+          "shape": [
+            3600,
+            7200
+          ],
+          "dims": [
+            "YDim_MODIS_MONTHLY_0_05DEG_CMG_LST",
+            "XDim_MODIS_MONTHLY_0_05DEG_CMG_LST"
+          ],
+          "dtype": "uint16",
+          "units": "K",
+          "long_name": "Monthly daytime 3min CMG Land-surface Temperature"
+        },
+        {
+          "name": "MODIS_MONTHLY_0_05DEG_CMG_LST/Data_Fields/LST_Night_CMG",
+          "shape": [
+            3600,
+            7200
+          ],
+          "dims": [
+            "YDim_MODIS_MONTHLY_0_05DEG_CMG_LST",
+            "XDim_MODIS_MONTHLY_0_05DEG_CMG_LST"
+          ],
+          "dtype": "uint16",
+          "units": "K",
+          "long_name": "Monthly nighttime 3min CMG Land-surface Temperature"
+        }
+      ]
+    },
+    "mod13": {
+      "path": "$GLOBAL_DATA/mod13c2_slim/MOD13C2.A2000032.061.2020042083108.nc4",
+      "bytes": 17789933,
+      "format": "NETCDF4",
+      "groups": [
+        "MOD_Grid_monthly_CMG_VI"
+      ],
+      "dims": {
+        "YDim_MOD_Grid_monthly_CMG_VI": 3600,
+        "XDim_MOD_Grid_monthly_CMG_VI": 7200
+      },
+      "all_dims": {
+        "YDim_MOD_Grid_monthly_CMG_VI": 3600,
+        "XDim_MOD_Grid_monthly_CMG_VI": 7200
+      },
+      "attrs": {
+        "HDFEOSVersion": "HDFEOS_V2.19",
+        "identifier_product_doi": "10.5067/MODIS/MOD13C2.061",
+        "identifier_product_doi_authority": "http://dx.doi.org",
+        "history": "2026-11-14 11:46:28 GMT hyrax-1.18.0-166 https://opendap.earthdata.nasa.gov/collections/C2565788914-LPCLOUD/granules/MOD13C2.A2000032.061.2020042083108.dap.nc4?dap4.ce=%2FMOD_Grid_monthly_CMG_VI%2FData_Fields%2FCMG_0_05_Deg_Monthly_NDVI%3B%2FMOD_Grid_monthly_CMG_VI%2FData_Fields%2FCMG_0_05_Deg_Month...",
+        "history_json": "[{\"$schema\":\"https:\\/\\/harmony.earthdata.nasa.gov\\/schemas\\/history\\/0.1.0\\/history-0.1.0.json\",\"date_time\":\"2026-11-14T11:46:28.624+0000\",\"program\":\"hyrax\",\"version\":\"1.18.0-166\",\"parameters\":[{\"request_url\":\"https:\\/\\/opendap.earthdata.nasa.gov\\/collections\\/C2565788914-LPCLOUD\\/granules\\/MOD13C2...."
+      },
+      "vars": [
+        {
+          "name": "MOD_Grid_monthly_CMG_VI/Data_Fields/CMG_0_05_Deg_Monthly_NDVI",
+          "shape": [
+            3600,
+            7200
+          ],
+          "dims": [
+            "YDim_MOD_Grid_monthly_CMG_VI",
+            "XDim_MOD_Grid_monthly_CMG_VI"
+          ],
+          "dtype": "int16",
+          "units": "NDVI",
+          "long_name": "CMG 0.05 Deg Monthly NDVI"
+        },
+        {
+          "name": "MOD_Grid_monthly_CMG_VI/Data_Fields/CMG_0_05_Deg_Monthly_EVI",
+          "shape": [
+            3600,
+            7200
+          ],
+          "dims": [
+            "YDim_MOD_Grid_monthly_CMG_VI",
+            "XDim_MOD_Grid_monthly_CMG_VI"
+          ],
+          "dtype": "int16",
+          "units": "EVI",
+          "long_name": "CMG 0.05 Deg Monthly EVI"
+        }
+      ]
+    },
+    "grace": {
+      "path": "$GLOBAL_DATA/grace/GRCTellus.JPL.200204_202609.GLO.RL06.3M.MSCNv04CRI.nc",
+      "bytes": 46365171,
+      "format": "NETCDF4",
+      "groups": [],
+      "dims": {
+        "lon": 720,
+        "lat": 360,
+        "time": 261,
+        "bounds": 2
+      },
+      "all_dims": {
+        "lon": 720,
+        "lat": 360,
+        "time": 261,
+        "bounds": 2
+      },
+      "attrs": {
+        "Conventions": "CF-1.6, ACDD-1.3, ISO 8601",
+        "Metadata_Conventions": "Unidata Dataset Discovery v1.0",
+        "title": "JPL GRACE and GRACE-FO MASCON RL06.3Mv04 CRI",
+        "summary": "Monthly gravity solutions from GRACE and GRACE-FO as determined from the JPL RL06.3Mv04 mascon solution - with CRI filter applied",
+        "institution": "NASA/JPL",
+        "creator_institution": "NASA/JPL",
+        "publisher_institution": "NASA/JPL",
+        "source": "GRACE and GRACE-FO JPL RL06.3Mv04-CRI",
+        "product_version": "v3.0",
+        "time_coverage_start": "2002-04-16T00:00:00Z",
+        "time_coverage_end": "2026-09-16T23:59:59Z",
+        "months_missing": "2002-06;2002-07;2003-06;2011-01;2011-06;2012-05;2012-10;2013-03;2013-08;2013-09;2014-02;2014-07;2014-12;2015-06;2015-10;2015-11;2016-04;2016-09;2016-10;2017-02;2017-07;2017-08;2017-09;2017-10;2017-11;2017-12;2018-01;2018-02;2018-03;2018-04;2018-05;2018-08;2018-09"
+      },
+      "vars": [
+        {
+          "name": "lon",
+          "shape": [
+            720
+          ],
+          "dims": [
+            "lon"
+          ],
+          "dtype": "float64",
+          "units": "degrees_east",
+          "long_name": "longitude"
+        },
+        {
+          "name": "lat",
+          "shape": [
+            360
+          ],
+          "dims": [
+            "lat"
+          ],
+          "dtype": "float64",
+          "units": "degrees_north",
+          "long_name": "latitude"
+        },
+        {
+          "name": "time",
+          "shape": [
+            261
+          ],
+          "dims": [
+            "time"
+          ],
+          "dtype": "float64",
+          "units": "days since 2002-01-01T00:00:00Z",
+          "long_name": "time"
+        },
+        {
+          "name": "lwe_thickness",
+          "shape": [
+            261,
+            360,
+            720
+          ],
+          "dims": [
+            "time",
+            "lat",
+            "lon"
+          ],
+          "dtype": "float64",
+          "units": "cm",
+          "long_name": "Liquid_Water_Equivalent_Thickness"
+        },
+        {
+          "name": "uncertainty",
+          "shape": [
+            261,
+            360,
+            720
+          ],
+          "dims": [
+            "time",
+            "lat",
+            "lon"
+          ],
+          "dtype": "float64",
+          "units": "cm",
+          "long_name": "uncertainty"
+        },
+        {
+          "name": "lat_bounds",
+          "shape": [
+            360,
+            2
+          ],
+          "dims": [
+            "lat",
+            "bounds"
+          ],
+          "dtype": "float64",
+          "units": "degrees_north",
+          "long_name": "latitude boundaries"
+        },
+        {
+          "name": "lon_bounds",
+          "shape": [
+            720,
+            2
+          ],
+          "dims": [
+            "lon",
+            "bounds"
+          ],
+          "dtype": "float64",
+          "units": "degrees_east",
+          "long_name": "longitude boundaries"
+        },
+        {
+          "name": "time_bounds",
+          "shape": [
+            261,
+            2
+          ],
+          "dims": [
+            "time",
+            "bounds"
+          ],
+          "dtype": "float64",
+          "units": "days since 2002-01-01T00:00:00Z",
+          "long_name": "time boundaries"
+        },
+        {
+          "name": "land_mask",
+          "shape": [
+            360,
+            720
+          ],
+          "dims": [
+            "lat",
+            "lon"
+          ],
+          "dtype": "float64",
+          "units": "binary",
+          "long_name": "Land_Mask"
+        },
+        {
+          "name": "scale_factor",
+          "shape": [
+            360,
+            720
+          ],
+          "dims": [
+            "lat",
+            "lon"
+          ],
+          "dtype": "float64",
+          "units": "dimensionless",
+          "long_name": "Scale_Factor_CRI"
+        },
+        {
+          "name": "mascon_ID",
+          "shape": [
+            360,
+            720
+          ],
+          "dims": [
+            "lat",
+            "lon"
+          ],
+          "dtype": "float64",
+          "units": "dimensionless",
+          "long_name": "Mascon_Identifier"
+        },
+        {
+          "name": "GAD",
+          "shape": [
+            261,
+            360,
+            720
+          ],
+          "dims": [
+            "time",
+            "lat",
+            "lon"
+          ],
+          "dtype": "float64",
+          "units": "cm",
+          "long_name": "OCEAN_ATMOSPHERE_DEALIAS_MODEL_(GAD)"
+        }
+      ],
+      "time_n": 261,
+      "time_first": "2002-04-17",
+      "time_last": "2026-09-16",
+      "time_unique": 259
+    },
+    "hadcrut": {
+      "path": "$GLOBAL_DATA/hadcrut5/HadCRUT.5.2.0.0.analysis.anomalies.ensemble_mean.nc",
+      "bytes": 32860971,
+      "format": "NETCDF4",
+      "groups": [],
+      "dims": {
+        "time": 2121,
+        "latitude": 36,
+        "longitude": 72,
+        "bnds": 2
+      },
+      "all_dims": {
+        "time": 2121,
+        "latitude": 36,
+        "longitude": 72,
+        "bnds": 2
+      },
+      "attrs": {
+        "comment": "2m air temperature over land blended with sea water temperature at a depth of 20cm expressed as monthly anomalies relative to 1961-1990 climatology.",
+        "history": "Data set built at: 2026-10-22T18:23:15+00:00",
+        "institution": "Met Office Hadley Centre / Climatic Research Unit, University of East Anglia",
+        "source": "CRUTEM.5.2.0.0 HadSST.4.2.0.0",
+        "title": "HadCRUT.5.2.0.0 blended land air temperature and sea-surface temperature anomaly data set",
+        "version": "HadCRUT.5.2.0.0",
+        "Conventions": "CF-1.7"
+      },
+      "vars": [
+        {
+          "name": "tas_mean",
+          "shape": [
+            2121,
+            36,
+            72
+          ],
+          "dims": [
+            "time",
+            "latitude",
+            "longitude"
+          ],
+          "dtype": "float64",
+          "units": "K",
+          "long_name": "blended air_temperature_anomaly over land with sea_water_temperature_anomaly"
+        },
+        {
+          "name": "time",
+          "shape": [
+            2121
+          ],
+          "dims": [
+            "time"
+          ],
+          "dtype": "float64",
+          "units": "days since 1850-01-01 00:00:00",
+          "long_name": "time"
+        },
+        {
+          "name": "time_bnds",
+          "shape": [
+            2121,
+            2
+          ],
+          "dims": [
+            "time",
+            "bnds"
+          ],
+          "dtype": "int64",
+          "units": "",
+          "long_name": ""
+        },
+        {
+          "name": "latitude",
+          "shape": [
+            36
+          ],
+          "dims": [
+            "latitude"
+          ],
+          "dtype": "float64",
+          "units": "degrees_north",
+          "long_name": "latitude"
+        },
+        {
+          "name": "latitude_bnds",
+          "shape": [
+            36,
+            2
+          ],
+          "dims": [
+            "latitude",
+            "bnds"
+          ],
+          "dtype": "float64",
+          "units": "",
+          "long_name": ""
+        },
+        {
+          "name": "longitude",
+          "shape": [
+            72
+          ],
+          "dims": [
+            "longitude"
+          ],
+          "dtype": "float64",
+          "units": "degrees_east",
+          "long_name": "longitude"
+        },
+        {
+          "name": "longitude_bnds",
+          "shape": [
+            72,
+            2
+          ],
+          "dims": [
+            "longitude",
+            "bnds"
+          ],
+          "dtype": "float64",
+          "units": "",
+          "long_name": ""
+        },
+        {
+          "name": "realization",
+          "shape": [],
+          "dims": [],
+          "dtype": "int64",
+          "units": "1",
+          "long_name": "realization"
+        },
+        {
+          "name": "realization_bnds",
+          "shape": [
+            2
+          ],
+          "dims": [
+            "bnds"
+          ],
+          "dtype": "int64",
+          "units": "",
+          "long_name": ""
+        }
+      ],
+      "time_n": 2121,
+      "time_first": "1850-01-16",
+      "time_last": "2026-09-16",
+      "time_unique": 2121
+    },
+    "berkeley": {
+      "path": "$GLOBAL_DATA/berkeley_earth/Complete_TAVG_LatLong1.nc",
+      "bytes": 198958040,
+      "format": "NETCDF4",
+      "groups": [],
+      "dims": {
+        "longitude": 360,
+        "latitude": 180,
+        "time": 3300,
+        "month_number": 12
+      },
+      "all_dims": {
+        "longitude": 360,
+        "latitude": 180,
+        "time": 3300,
+        "month_number": 12
+      },
+      "attrs": {
+        "Conventions": "Berkeley Earth Internal Convention (based on CF-1.5)",
+        "title": "Gridded Berkeley Earth Surface Temperature Anomaly Field",
+        "history": "09-Jan-2025 17:05:58",
+        "institution": "Berkeley Earth Surface Temperature Project",
+        "source_file": "Complete_TAVG.50660s.20250109T165051.mat",
+        "source_history": "04-Jan-2025 19:11:11",
+        "source_code_version": "39450532da59f01260bebf53cd008378",
+        "comment": "This file contains surface temperature anomaly field gridded on a 1\ufffd (longitude) by 1\ufffd (latitude) grid-box basis."
+      },
+      "vars": [
+        {
+          "name": "longitude",
+          "shape": [
+            360
+          ],
+          "dims": [
+            "longitude"
+          ],
+          "dtype": "float32",
+          "units": "degrees_east",
+          "long_name": "Longitude"
+        },
+        {
+          "name": "latitude",
+          "shape": [
+            180
+          ],
+          "dims": [
+            "latitude"
+          ],
+          "dtype": "float32",
+          "units": "degrees_north",
+          "long_name": "Latitude"
+        },
+        {
+          "name": "time",
+          "shape": [
+            3300
+          ],
+          "dims": [
+            "time"
+          ],
+          "dtype": "float64",
+          "units": "year A.D.",
+          "long_name": "Time"
+        },
+        {
+          "name": "land_mask",
+          "shape": [
+            180,
+            360
+          ],
+          "dims": [
+            "latitude",
+            "longitude"
+          ],
+          "dtype": "float64",
+          "units": "none",
+          "long_name": "Land Mask"
+        },
+        {
+          "name": "temperature",
+          "shape": [
+            3300,
+            180,
+            360
+          ],
+          "dims": [
+            "time",
+            "latitude",
+            "longitude"
+          ],
+          "dtype": "float32",
+          "units": "degree C",
+          "long_name": "Air Surface Temperature Anomaly"
+        },
+        {
+          "name": "climatology",
+          "shape": [
+            12,
+            180,
+            360
+          ],
+          "dims": [
+            "month_number",
+            "latitude",
+            "longitude"
+          ],
+          "dtype": "float32",
+          "units": "degree C",
+          "long_name": "Air Surface Temperature Climatology (Jan 1951 - Dec 1980)"
+        }
+      ]
+    },
+    "gpcc_1981": {
+      "path": "$GLOBAL_DATA/gpcc_v2025_1deg/gpcc_precipitation_analysis_monthly_1981_1985_v2025_100.nc.gz",
+      "bytes": 18422418,
+      "format": "NETCDF3_64BIT_OFFSET",
+      "groups": [],
+      "dims": {
+        "time": 60,
+        "lon": 360,
+        "lat": 180
+      },
+      "all_dims": {
+        "time": 60,
+        "lon": 360,
+        "lat": 180
+      },
+      "attrs": {
+        "Conventions": "CF-1.6",
+        "history": "Fri Nov 28 08:01:20 2025: cdo -setattribute,FILE=gattfile_10 ./RESULT/monthly_v2025_10.nc tmp10.nc\nFri Nov 28 08:01:13 2025: cdo -merge ./RESULT/precip_v2025_10.nc ./RESULT/gauge_v2025_10.nc ./RESULT/err_v2025_10.nc ./RESULT/sys_err_v2025_10.nc ./RESULT/gauge_int_v2025_10.nc ./RESULT/dist_int_v2025_...",
+        "title": "GPCC Analysis Monthly Version 2025, precipitation in mm/month, 1.0 degree",
+        "summary": "The GPCC Analysis Monthly Product is of much higher accuracy compared to the GPCC near real-time products mentioned above. Therefore, its application is recommended for hydrometeorological model verification and water cycle studies, e.g. in context of UNESCO, GEWEX, and GTN-H (Global Terrestrial Net...",
+        "institution": "Deutscher Wetterdienst",
+        "time_coverage_start": "-01-01",
+        "time_coverage_end": "-12-01",
+        "time_coverage_resolution": "month"
+      },
+      "vars": [
+        {
+          "name": "time",
+          "shape": [
+            60
+          ],
+          "dims": [
+            "time"
+          ],
+          "dtype": "float64",
+          "units": "hours since 1981-1-1 00:00:00",
+          "long_name": "time"
+        },
+        {
+          "name": "lon",
+          "shape": [
+            360
+          ],
+          "dims": [
+            "lon"
+          ],
+          "dtype": "float64",
+          "units": "degrees_east",
+          "long_name": "longitude"
+        },
+        {
+          "name": "lat",
+          "shape": [
+            180
+          ],
+          "dims": [
+            "lat"
+          ],
+          "dtype": "float64",
+          "units": "degrees_north",
+          "long_name": "latitude"
+        },
+        {
+          "name": "precip",
+          "shape": [
+            60,
+            180,
+            360
+          ],
+          "dims": [
+            "time",
+            "lat",
+            "lon"
+          ],
+          "dtype": "float32",
+          "units": "mm/month",
+          "long_name": "gpcc monthly version 2025, precipitation per grid cell"
+        },
+        {
+          "name": "gauge",
+          "shape": [
+            60,
+            180,
+            360
+          ],
+          "dims": [
+            "time",
+            "lat",
+            "lon"
+          ],
+          "dtype": "float32",
+          "units": "number of gauges per grid cell",
+          "long_name": "gpcc monthly version 2025, number of gauges per grid cell"
+        },
+        {
+          "name": "err",
+          "shape": [
+            60,
+            180,
+            360
+          ],
+          "dims": [
+            "time",
+            "lat",
+            "lon"
+          ],
+          "dtype": "float32",
+          "units": "mm/month",
+          "long_name": "gpcc monthly version 2025, interpolation error (YAMAMOTO) per grid cell"
+        },
+        {
+          "name": "sys_err",
+          "shape": [
+            60,
+            180,
+            360
+          ],
+          "dims": [
+            "time",
+            "lat",
+            "lon"
+          ],
+          "dtype": "float32",
+          "units": "multiplier",
+          "long_name": "gpcc monthly version 2025, gpcc mean systematic gauge error correction factor per grid cell"
+        },
+        {
+          "name": "gauge_int",
+          "shape": [
+            60,
+            180,
+            360
+          ],
+          "dims": [
+            "time",
+            "lat",
+            "lon"
+          ],
+          "dtype": "float32",
+          "units": "number gauges used per grid cell interpolation",
+          "long_name": "gpcc monthly version 2025, number of gauges used by interpolation per grid cell"
+        },
+        {
+          "name": "dist_int",
+          "shape": [
+            60,
+            180,
+            360
+          ],
+          "dims": [
+            "time",
+            "lat",
+            "lon"
+          ],
+          "dtype": "float32",
+          "units": "mean distance in kilometer",
+          "long_name": "gpcc monthly version 2025, mean distance of gauges used by interpolation per grid cell"
+        },
+        {
+          "name": "liquid",
+          "shape": [
+            60,
+            180,
+            360
+          ],
+          "dims": [
+            "time",
+            "lat",
+            "lon"
+          ],
+          "dtype": "float32",
+          "units": "%/month",
+          "long_name": "gpcc monthly version 2025, proportion of liquid precipitation per grid cell"
+        },
+        {
+          "name": "solid",
+          "shape": [
+            60,
+            180,
+            360
+          ],
+          "dims": [
+            "time",
+            "lat",
+            "lon"
+          ],
+          "dtype": "float32",
+          "units": "%/month",
+          "long_name": "gpcc monthly version 2025, proportion of solid precipitation per grid cell"
+        },
+        {
+          "name": "precip_infill",
+          "shape": [
+            60,
+            180,
+            360
+          ],
+          "dims": [
+            "time",
+            "lat",
+            "lon"
+          ],
+          "dtype": "float32",
+          "units": "mm/month",
+          "long_name": "gpcc monthly version 2025, precipitation per grid cell with climatological station values infilling"
+        }
+      ],
+      "time_n": 60,
+      "time_first": "1981-01-01",
+      "time_last": "1985-12-01",
+      "time_unique": 60
+    },
+    "gistemp": {
+      "path": "$GLOBAL_DATA/gistemp/gistemp1200_GHCNv4_ERSSTv5.nc.gz",
+      "bytes": 25885943,
+      "format": "NETCDF3_CLASSIC",
+      "groups": [],
+      "dims": {
+        "lat": 90,
+        "lon": 180,
+        "time": 1762,
+        "nv": 2
+      },
+      "all_dims": {
+        "lat": 90,
+        "lon": 180,
+        "time": 1762,
+        "nv": 2
+      },
+      "attrs": {
+        "title": "GISTEMP Surface Temperature Analysis",
+        "institution": "NASA Goddard Institute for Space Studies",
+        "source": "http://data.giss.nasa.gov/gistemp/",
+        "Conventions": "CF-1.6",
+        "history": "Created 2026-11-10 08:55:39 by SBBX_to_nc 2.0 - ILAND=1200, IOCEAN=NCDC/ER5, Base: 1951-1980"
+      },
+      "vars": [
+        {
+          "name": "lat",
+          "shape": [
+            90
+          ],
+          "dims": [
+            "lat"
+          ],
+          "dtype": "float32",
+          "units": "degrees_north",
+          "long_name": "Latitude"
+        },
+        {
+          "name": "lon",
+          "shape": [
+            180
+          ],
+          "dims": [
+            "lon"
+          ],
+          "dtype": "float32",
+          "units": "degrees_east",
+          "long_name": "Longitude"
+        },
+        {
+          "name": "time",
+          "shape": [
+            1762
+          ],
+          "dims": [
+            "time"
+          ],
+          "dtype": "int32",
+          "units": "days since 1800-01-01 00:00:00",
+          "long_name": "time"
+        },
+        {
+          "name": "time_bnds",
+          "shape": [
+            1762,
+            2
+          ],
+          "dims": [
+            "time",
+            "nv"
+          ],
+          "dtype": "int32",
+          "units": "",
+          "long_name": ""
+        },
+        {
+          "name": "tempanomaly",
+          "shape": [
+            1762,
+            90,
+            180
+          ],
+          "dims": [
+            "time",
+            "lat",
+            "lon"
+          ],
+          "dtype": "int16",
+          "units": "K",
+          "long_name": "Surface temperature anomaly"
+        }
+      ],
+      "time_n": 1762,
+      "time_first": "1880-01-15",
+      "time_last": "2026-10-15",
+      "time_unique": 1762
+    },
+    "chirps": {
+      "path": "$GLOBAL_DATA/chirps_v3/chirps-v3.0.monthly.nc",
+      "bytes": 8960342547,
+      "format": "NETCDF4",
+      "groups": [],
+      "dims": {
+        "longitude": 7200,
+        "latitude": 2400,
+        "time": 549
+      },
+      "all_dims": {
+        "longitude": 7200,
+        "latitude": 2400,
+        "time": 549
+      },
+      "attrs": {
+        "Conventions": "CF-1.6",
+        "title": "CHIRPS Version 3.0",
+        "history": "created by Climate Hazards Center",
+        "version": "Version 3.0",
+        "institution": "Climate Hazards Center. University of California at Santa Barbara"
+      },
+      "vars": [
+        {
+          "name": "latitude",
+          "shape": [
+            2400
+          ],
+          "dims": [
+            "latitude"
+          ],
+          "dtype": "float32",
+          "units": "degrees_north",
+          "long_name": "latitude"
+        },
+        {
+          "name": "longitude",
+          "shape": [
+            7200
+          ],
+          "dims": [
+            "longitude"
+          ],
+          "dtype": "float32",
+          "units": "degrees_east",
+          "long_name": "longitude"
+        },
+        {
+          "name": "precip",
+          "shape": [
+            549,
+            2400,
+            7200
+          ],
+          "dims": [
+            "time",
+            "latitude",
+            "longitude"
+          ],
+          "dtype": "float32",
+          "units": "mm/month",
+          "long_name": "Climate Hazards center InfraRed Precipitation with Stations"
+        },
+        {
+          "name": "time",
+          "shape": [
+            549
+          ],
+          "dims": [
+            "time"
+          ],
+          "dtype": "float32",
+          "units": "days since 1980-1-1 0:0:0",
+          "long_name": "time"
+        }
+      ],
+      "time_n": 549,
+      "time_first": "1981-01-01",
+      "time_last": "2026-09-01",
+      "time_unique": 549
+    },
+    "merra2_slv_202609": {
+      "path": "$GLOBAL_DATA/merra2_slv_slim/MERRA2_400.tavgM_2d_slv_Nx.202609.nc4.nc4",
+      "bytes": 1929505,
+      "format": "NETCDF4",
+      "groups": [],
+      "dims": {
+        "lon": 576,
+        "time": 1,
+        "lat": 361
+      },
+      "all_dims": {
+        "lon": 576,
+        "time": 1,
+        "lat": 361
+      },
+      "attrs": {
+        "History": "Original file generated: Mon Oct 12 01:11:38 2026 GMT",
+        "Comment": "GMAO filename: d5124_m2_jan10.tavg1_2d_slv_Nx.monthly.202609.nc4",
+        "Source": "CVS tag: GEOSadas-5_12_4_p41_SLES15_M2-OPS experiment_id: d5124_m2_jan10",
+        "Conventions": "CF-1",
+        "Institution": "NASA Global Modeling and Assimilation Office",
+        "References": "http://gmao.gsfc.nasa.gov",
+        "VersionID": "5.12.4",
+        "identifier_product_doi_authority": "http://dx.doi.org/",
+        "ShortName": "M2TMNXSLV",
+        "RangeBeginningDate": "2026-09-01",
+        "RangeEndingDate": "2026-09-30",
+        "ProductionDateTime": "Original file generated: Mon Oct 12 01:11:38 2026 GMT",
+        "Title": "MERRA2 tavg1_2d_slv_Nx: 2d,1-Hourly,Time-Averaged,Single-Level,Assimilation,Single-Level Diagnostics Monthly Mean",
+        "identifier_product_doi": "10.5067/AP1B0BA5PD2K",
+        "RangeBeginningTime": "00:00:00.000000",
+        "RangeEndingTime": "23:59:59.000000",
+        "history": "2026-11-14 11:48:40 GMT hyrax-1.18.0-166 https://opendap.earthdata.nasa.gov/collections/C1276812859-GES_DISC/granules/M2TMNXSLV.5.12.4%3AMERRA2_400.tavgM_2d_slv_Nx.202609.nc4.dap.nc4?dap4.ce=%2FT2M%3B%2FQV2M%3B%2FSLP%3B%2Flat%3B%2Flon%3B%2Ftime\n",
+        "history_json": "[{\"$schema\":\"https:\\/\\/harmony.earthdata.nasa.gov\\/schemas\\/history\\/0.1.0\\/history-0.1.0.json\",\"date_time\":\"2026-11-14T11:48:40.166+0000\",\"program\":\"hyrax\",\"version\":\"1.18.0-166\",\"parameters\":[{\"request_url\":\"https:\\/\\/opendap.earthdata.nasa.gov\\/collections\\/C1276812859-GES_DISC\\/granules\\/M2TMNXS..."
+      },
+      "vars": [
+        {
+          "name": "lon",
+          "shape": [
+            576
+          ],
+          "dims": [
+            "lon"
+          ],
+          "dtype": "float64",
+          "units": "degrees_east",
+          "long_name": "longitude"
+        },
+        {
+          "name": "time",
+          "shape": [
+            1
+          ],
+          "dims": [
+            "time"
+          ],
+          "dtype": "int32",
+          "units": "minutes since 2026-09-01 00:30:00",
+          "long_name": "time"
+        },
+        {
+          "name": "lat",
+          "shape": [
+            361
+          ],
+          "dims": [
+            "lat"
+          ],
+          "dtype": "float64",
+          "units": "degrees_north",
+          "long_name": "latitude"
+        },
+        {
+          "name": "T2M",
+          "shape": [
+            1,
+            361,
+            576
+          ],
+          "dims": [
+            "time",
+            "lat",
+            "lon"
+          ],
+          "dtype": "float32",
+          "units": "K",
+          "long_name": "2-meter_air_temperature"
+        },
+        {
+          "name": "SLP",
+          "shape": [
+            1,
+            361,
+            576
+          ],
+          "dims": [
+            "time",
+            "lat",
+            "lon"
+          ],
+          "dtype": "float32",
+          "units": "Pa",
+          "long_name": "sea_level_pressure"
+        },
+        {
+          "name": "QV2M",
+          "shape": [
+            1,
+            361,
+            576
+          ],
+          "dims": [
+            "time",
+            "lat",
+            "lon"
+          ],
+          "dtype": "float32",
+          "units": "kg kg-1",
+          "long_name": "2-meter_specific_humidity"
+        }
+      ],
+      "time_n": 1,
+      "time_first": "2026-09-01",
+      "time_last": "2026-09-01",
+      "time_unique": 1
+    }
+  },
+  "chirps_varnames": [
+    "latitude",
+    "longitude",
+    "precip",
+    "time"
+  ],
+  "chirps_dims": {
+    "longitude": 7200,
+    "latitude": 2400,
+    "time": 549
+  },
+  "chirps_attrs_all_keys": [
+    "Conventions",
+    "title",
+    "history",
+    "version",
+    "data_created",
+    "creator_name",
+    "creator_email",
+    "institution",
+    "documentation",
+    "reference",
+    "acknowledgements",
+    "ftp_url",
+    "website",
+    "faq"
+  ],
+  "chirps_time": {
+    "n": 549,
+    "first": "1981-01",
+    "last": "2026-09",
+    "expected": 549,
+    "missing": [],
+    "dups": []
+  },
+  "chirps_lat_range": [
+    -59.974998474121094,
+    59.97499084472656,
+    2400
+  ],
+  "chirps_lon_range": [
+    -179.97500610351562,
+    179.97500610351562,
+    7200
+  ],
+  "chirps_dlat": 0.049999237060546875,
+  "chirps_dlon": 0.0500030517578125,
+  "gpcc_time": {
+    "n": 1628,
+    "unique": 1628,
+    "first": "1891-01",
+    "last": "2026-08",
+    "expected": 1628,
+    "missing": [],
+    "dups": [],
+    "vars_first": [
+      "time",
+      "lon",
+      "lat",
+      "precip",
+      "gauge",
+      "err",
+      "sys_err",
+      "gauge_int",
+      "dist_int",
+      "liquid",
+      "solid",
+      "precip_infill"
+    ],
+    "vars_last": [
+      "time",
+      "lon",
+      "lat",
+      "precip",
+      "gauge",
+      "err",
+      "sys_err",
+      "gauge_int",
+      "dist_int",
+      "liquid",
+      "solid",
+      "precip_infill"
+    ],
+    "all_same_vars": true
+  },
+  "coverage_fields": {
+    "grace": [
+      "land_mask",
+      "scale_factor",
+      "mascon_ID"
+    ],
+    "gistemp": [
+      "lat",
+      "lon",
+      "time",
+      "time_bnds",
+      "tempanomaly"
+    ],
+    "hadcrut": [
+      "tas_mean",
+      "time",
+      "time_bnds",
+      "latitude",
+      "latitude_bnds",
+      "longitude",
+      "longitude_bnds",
+      "realization",
+      "realization_bnds"
+    ],
+    "berkeley": [
+      "longitude",
+      "latitude",
+      "time",
+      "land_mask",
+      "temperature",
+      "climatology"
+    ]
+  }
+}

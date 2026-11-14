@@ -1,0 +1,202 @@
+# Per-source variable metadata. Single source of truth for units and conversions.
+# conversion (applied to raw monthly values, BEFORE spatial averaging is irrelevant: all are linear):
+#   none | K_to_C | scale (x factor) | per_s_to_month (x86400 x days) | per_day_to_month (x days)
+#   per_hour_to_month (x24 x days) | acc3h_to_month (x8 x days) | tenths (x0.1)
+# agg: how months combine into annual/seasonal values (mean or sum)
+# valid_range: in TARGET units; values outside -> NaN and flag out_of_range
+# group: independence group (sources sharing a group are NOT independent confirmations)
+defaults:
+  temp_range: &trange [-80, 60]
+  precip_range: &prange [0, 2000]
+
+nasa_power:
+  group: MERRA-2
+  fill: -999
+  note: "NASA POWER monthly = MERRA-2 (CERES for solar); not independent of merra2"
+  variables:
+    T2M:               {raw_unit: "°C", conversion: none, unit: "°C", agg: mean, valid_range: *trange}
+    T2M_MAX:           {raw_unit: "°C", conversion: none, unit: "°C", agg: mean, valid_range: *trange, note: "monthly mean of daily max; do NOT use POWER ANN"}
+    T2M_MIN:           {raw_unit: "°C", conversion: none, unit: "°C", agg: mean, valid_range: *trange}
+    PRECTOTCORR:       {raw_unit: "mm/day", conversion: per_day_to_month, unit: "mm/month", agg: sum, valid_range: *prange}
+    QV2M:              {raw_unit: "g/kg", conversion: none, unit: "g/kg", agg: mean, valid_range: [0, 40]}
+    WS10M:             {raw_unit: "m/s", conversion: none, unit: "m/s", agg: mean, valid_range: [0, 50]}
+    ALLSKY_SFC_SW_DWN: {raw_unit: "kWh/m²/day", conversion: none, unit: "kWh/m²/day", agg: mean, valid_range: [0, 15], start: "2001-01", group: CERES, note: "POWER solar used 2001+ only (plan)"}
+
+merra2:
+  group: MERRA-2
+  preaggregated: true
+  note: "Global M2TMNXSLV/M2TMNXFLX (+ U10M/V10M) and M2SMNXSLV (T2MMAX/T2MMIN) files cut with overlap weights; fallback = bbox extract (cell centres)"
+  variables:
+    T2M:         {raw_unit: "K", conversion: K_to_C, unit: "°C", agg: mean, valid_range: *trange}
+    QV2M:        {raw_unit: "kg/kg", conversion: scale, factor: 1000, unit: "g/kg", agg: mean, valid_range: [0, 40]}
+    SLP:         {raw_unit: "Pa", conversion: scale, factor: 0.01, unit: "hPa", agg: mean, valid_range: [900, 1100]}
+    PRECTOTCORR: {raw_unit: "kg m-2 s-1", conversion: per_s_to_month, unit: "mm/month", agg: sum, valid_range: *prange}
+    PRECTOT:     {raw_unit: "kg m-2 s-1", conversion: per_s_to_month, unit: "mm/month", agg: sum, valid_range: *prange}
+    # merra2_slv_wind (M2TMNXSLV U10M/V10M monthly means)
+    U10M:        {raw_unit: "m/s", conversion: none, unit: "m/s", agg: mean, valid_range: [-50, 50]}
+    V10M:        {raw_unit: "m/s", conversion: none, unit: "m/s", agg: mean, valid_range: [-50, 50]}
+    WS10M_from_mean_UV: {raw_unit: "m/s", conversion: none, unit: "m/s", agg: mean, valid_range: [0, 50],
+                         qc_flag: speed_of_monthly_mean_wind_underestimates_mean_speed,
+                         note: "sqrt(U10M^2+V10M^2) per cell from MONTHLY-MEAN components, then area-averaged"}
+    # merra2_statm_extremes (M2SMNXSLV: monthly mean of daily max/min)
+    T2MMAX:      {raw_unit: "K", conversion: K_to_C, unit: "°C", agg: mean, valid_range: *trange, note: "monthly mean of daily max"}
+    T2MMIN:      {raw_unit: "K", conversion: K_to_C, unit: "°C", agg: mean, valid_range: *trange, note: "monthly mean of daily min"}
+    DTR:         {raw_unit: "K", conversion: none, unit: "°C", agg: mean, valid_range: [0, 40], note: "T2MMAX - T2MMIN per cell (K difference = °C)"}
+
+gldas20:
+  group: GLDAS-2.0 (Princeton forcing)
+  preaggregated: true
+  note: "GLDAS Noah 2.0 (1948-2014). Do NOT splice with gldas21."
+  variables: &gldasvars
+    SoilMoi0_10cm_inst: {raw_unit: "kg/m²", conversion: none, unit: "kg/m² (≈mm)", agg: mean, valid_range: [0, 1000]}
+    RootMoist_inst:     {raw_unit: "kg/m²", conversion: none, unit: "kg/m² (≈mm)", agg: mean, valid_range: [0, 2000]}
+    SWE_inst:           {raw_unit: "kg/m²", conversion: none, unit: "kg/m² (≈mm)", agg: mean, valid_range: [0, 2000]}
+    Tair_f_inst:        {raw_unit: "K", conversion: K_to_C, unit: "°C", agg: mean, valid_range: *trange}
+    Evap_tavg:          {raw_unit: "kg m-2 s-1", conversion: per_s_to_month, unit: "mm/month", agg: sum, valid_range: [-50, 500]}
+    Qs_acc:             {raw_unit: "kg m-2 per 3h", conversion: acc3h_to_month, unit: "mm/month", agg: sum, valid_range: [0, 1000]}
+    Qsb_acc:            {raw_unit: "kg m-2 per 3h", conversion: acc3h_to_month, unit: "mm/month", agg: sum, valid_range: [0, 1000]}
+    # gldasXX_rainf add-on files. GLDAS-2 Rainf_f_tavg = TOTAL precipitation rate (rain + snow, forcing), so total
+    # precip is Rainf_f itself (adding Snowf would double count); liquid rain = Rainf_f - Snowf per cell.
+    Rainf_f_tavg:       {raw_unit: "kg m-2 s-1", conversion: per_s_to_month, unit: "mm/month", agg: sum, valid_range: *prange, out_name: precip_total}
+    Snowf_tavg:         {raw_unit: "kg m-2 s-1", conversion: per_s_to_month, unit: "mm/month", agg: sum, valid_range: *prange, out_name: snowfall}
+    Rain_liquid:        {raw_unit: "kg m-2 s-1", conversion: per_s_to_month, unit: "mm/month", agg: sum, valid_range: *prange, out_name: rainfall_liquid}
+gldas21:
+  group: GLDAS-2.1 (GDAS/GPCP forcing)
+  preaggregated: true
+  note: "GLDAS Noah 2.1 (2000-). Do NOT splice with gldas20."
+  variables: *gldasvars
+
+gpm_imerg:
+  group: IMERG (gauge-calibrated with GPCC)
+  preaggregated: true
+  note: "IMERG V07B Final monthly; bbox mean of 14,480 0.1° cells; 2025 partial"
+  variables:
+    precipitation: {raw_unit: "mm/hr", conversion: per_hour_to_month, unit: "mm/month", agg: sum, valid_range: *prange}
+
+airs:
+  group: AIRS
+  preaggregated: true
+  note: "AIRS L3 v7 monthly, asc+desc combined; bbox mean of 1° cells"
+  variables:
+    SurfAirTemp: {raw_unit: "K", conversion: K_to_C, unit: "°C", agg: mean, valid_range: *trange}
+    TotH2OVap:   {raw_unit: "kg/m²", conversion: none, unit: "kg/m² (≈mm)", agg: mean, valid_range: [0, 100]}
+
+modis:
+  group: MODIS Terra
+  preaggregated: true
+  note: "MOD11C3/MOD13C2 0.05° CMG global files; scale factors applied (VI raw/10000, LST raw*0.02); per-pixel QC from the *_qc files applied BEFORE area averaging (flag qc_pixel_masked); no_qc only on fallback"
+  qc_flag: "terra_only"
+  variables:
+    LST_Day_K:   {raw_unit: "K", conversion: K_to_C, unit: "°C", agg: mean, valid_range: *trange, out_name: LST_Day, qc_flag: lst_clear_sky_winter_bias}
+    LST_Night_K: {raw_unit: "K", conversion: K_to_C, unit: "°C", agg: mean, valid_range: *trange, out_name: LST_Night, qc_flag: lst_clear_sky_winter_bias}
+    NDVI:        {raw_unit: "index", conversion: none, unit: "index", agg: mean, valid_range: [-0.2, 1.0], qc_flag: vi_winter_snow_masked_sampling}
+    EVI:         {raw_unit: "index", conversion: none, unit: "index", agg: mean, valid_range: [-0.2, 1.0], qc_flag: vi_winter_snow_masked_sampling}
+    LST_Day_clear_days:   {raw_unit: "days", conversion: none, unit: "days", agg: mean, valid_range: [0, 31], note: "popcount of Clear_sky_days bit field over QC'd LST_Day pixels"}
+    LST_Night_clear_days: {raw_unit: "days", conversion: none, unit: "days", agg: mean, valid_range: [0, 31], note: "popcount of Clear_sky_nights bit field over QC'd LST_Night pixels"}
+
+omi:
+  group: OMI
+  preaggregated: true
+  note: "OMNO2d daily L3 -> monthly bbox mean; row anomaly affects data from 2007 (XTrackQualityFlags)"
+  variables:
+    ColumnAmountNO2Trop:              {raw_unit: "molec/cm²", conversion: none, unit: "molec/cm²", agg: mean, valid_range: [-1.0e16, 1.0e17]}
+    ColumnAmountNO2TropCloudScreened: {raw_unit: "molec/cm²", conversion: none, unit: "molec/cm²", agg: mean, valid_range: [-1.0e16, 1.0e17]}
+
+grace:
+  group: GRACE
+  note: "JPL RL06.3Mv04 CRI mascons (~3° native, 0.5° sampling); unscaled lwe_thickness, land_mask cells; anomaly vs 2004.0-2009.999"
+  variables:
+    lwe_thickness: {raw_unit: "cm", conversion: none, unit: "cm EWH anomaly", agg: mean, valid_range: [-200, 200], out_name: TWS}
+
+hadcrut5:
+  group: station family (GHCN/CLIMAT)
+  coarse: true
+  note: "HadCRUT 5.2.0.0 analysis ensemble mean, 5° land-ocean blend; anomaly vs 1961-1990"
+  variables:
+    tas_mean: {raw_unit: "K anomaly", conversion: none, unit: "°C anomaly (1961-1990)", agg: mean, valid_range: [-25, 25], out_name: tas_anomaly}
+
+gistemp:
+  group: station family (GHCN/CLIMAT)
+  coarse: true
+  note: "GISTEMP v4 1200 km smoothing, 2° land-ocean; anomaly vs 1951-1980"
+  variables:
+    tempanomaly: {raw_unit: "K anomaly", conversion: none, unit: "°C anomaly (1951-1980)", agg: mean, valid_range: [-25, 25], out_name: tas_anomaly}
+
+berkeley:
+  group: station family (GHCN/CLIMAT)
+  note: "Berkeley Earth Complete_TAVG 1° land, anomaly vs 1951-1980; land_mask fraction used as weight; ends 2024-12"
+  variables:
+    temperature: {raw_unit: "°C anomaly", conversion: none, unit: "°C anomaly (1951-1980)", agg: mean, valid_range: [-25, 25], out_name: tas_anomaly}
+
+berkeley_country:
+  group: station family (GHCN/CLIMAT)
+  country_series: true
+  note: "Berkeley Earth country file (2021 run); polygon 553,101 km², lat 45.21-52.37 -> EXCLUDES Crimea (same as NE default de-facto UKR)"
+  variables:
+    TAVG: {raw_unit: "°C anomaly", conversion: none, unit: "°C anomaly (1951-1980)", agg: mean, valid_range: [-25, 25], out_name: tas_anomaly}
+
+cru_cy:
+  group: station family (GHCN/CLIMAT)
+  country_series: true
+  note: "CRU-CY v4.10 country series (CRU TS 0.5° land cells assigned to Ukraine); Crimea in/out UNDOCUMENTED"
+  variables:
+    tmp:     {raw_unit: "°C", conversion: none, unit: "°C", agg: mean, valid_range: *trange, note: "ABSOLUTE; use tmp_anom for cross-source comparison"}
+    tmp_anom: {raw_unit: "°C anomaly", conversion: none, unit: "°C anomaly (1961-1990)", agg: mean, valid_range: [-25, 25]}
+    tmn:     {raw_unit: "°C", conversion: none, unit: "°C", agg: mean, valid_range: *trange}
+    tmx:     {raw_unit: "°C", conversion: none, unit: "°C", agg: mean, valid_range: *trange}
+    dtr:     {raw_unit: "°C", conversion: none, unit: "°C", agg: mean, valid_range: [0, 30]}
+    pre:     {raw_unit: "mm/month", conversion: none, unit: "mm/month", agg: sum, valid_range: *prange}
+    pet:     {raw_unit: "mm/day", conversion: per_day_to_month, unit: "mm/month", agg: sum, valid_range: [0, 500]}
+    vap:     {raw_unit: "hPa", conversion: none, unit: "hPa", agg: mean, valid_range: [0, 60]}
+    wet:     {raw_unit: "days", conversion: none, unit: "days", agg: sum, valid_range: [0, 31]}
+
+gpcc:
+  group: GPCC gauges (shares gauges with GHCN; calibrates IMERG)
+  preaggregated: true
+  note: "GPCC Full Data v2025 1°, bbox cos-lat mean of cells with centres in box (8x18)"
+  variables:
+    precip: {raw_unit: "mm/month", conversion: none, unit: "mm/month", agg: sum, valid_range: *prange}
+
+chirps:
+  group: CHIRPS (uses GTS/GHCN/GPCC normals + ERA5 fill)
+  note: "CHIRPS v3.0 monthly 0.05°, 60S-60N; units attr 'mm' = monthly totals; Black Sea/Azov pixels are nodata"
+  variables:
+    precip: {raw_unit: "mm (monthly total)", conversion: none, unit: "mm/month", agg: sum, valid_range: *prange}
+
+cci_sm:
+  group: ESA CCI SM
+  note: "COMBINED v09.2 daily->monthly; PARTIAL record 1978-11..1991-12; winter coverage low (frozen soil)"
+  variables:
+    sm: {raw_unit: "m³/m³", conversion: none, unit: "m³/m³", agg: mean, valid_range: [0, 1]}
+
+ghcn:
+  group: station family (GHCN/CLIMAT)
+  stations: true
+  note: "GHCN-Daily, 28 UP stations; QFLAG!=blank removed; T monthly needs >=20 valid days, PRCP >=27 days"
+  variables:
+    TAVG: {raw_unit: "tenths °C", conversion: tenths, unit: "°C", agg: mean, valid_range: *trange}
+    TMAX: {raw_unit: "tenths °C", conversion: tenths, unit: "°C", agg: mean, valid_range: *trange}
+    TMIN: {raw_unit: "tenths °C", conversion: tenths, unit: "°C", agg: mean, valid_range: *trange}
+    PRCP: {raw_unit: "tenths mm", conversion: tenths, unit: "mm/month", agg: sum, valid_range: *prange}
+
+gsom:
+  group: station family (GHCN/CLIMAT)
+  stations: true
+  note: "NOAA GSOM monthly summaries, UP stations; 2020-2024 collapse in long-record TAVG stations"
+  variables:
+    TAVG: {raw_unit: "°C", conversion: none, unit: "°C", agg: mean, valid_range: *trange}
+    TMAX: {raw_unit: "°C", conversion: none, unit: "°C", agg: mean, valid_range: *trange}
+    TMIN: {raw_unit: "°C", conversion: none, unit: "°C", agg: mean, valid_range: *trange}
+    PRCP: {raw_unit: "mm", conversion: none, unit: "mm/month", agg: sum, valid_range: *prange}
+
+swot:
+  group: SWOT
+  note: "SWOT RiverSP reach WSE, quality-filtered monthly means; ~3 yr record -> too short for climate inference"
+  variables:
+    wse: {raw_unit: "m", conversion: none, unit: "m", agg: mean, valid_range: [-100, 5000]}
+
+derived:
+  group: MERRA-2
+  note: "Derived series"
+  variables:
+    DTR: {raw_unit: "°C", conversion: none, unit: "°C", agg: mean, valid_range: [0, 40], note: "POWER T2M_MAX - T2M_MIN"}

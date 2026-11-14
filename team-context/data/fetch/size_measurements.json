@@ -1,0 +1,1495 @@
+{
+  "generated": "2026-11-14T11:38:29+0000",
+  "items": {},
+  "collection_searches": {
+    "mod11a2": [
+      {
+        "concept_id": "C2269056084-LPCLOUD",
+        "short_name": "MOD11A2",
+        "version": "061",
+        "title": "MODIS/Terra Land Surface Temperature/Emissivity 8-Day L3 Global 1km SIN Grid V061",
+        "provider": "LPCLOUD",
+        "hits_header": "1"
+      }
+    ],
+    "mcd12q1": [
+      {
+        "concept_id": "C2484079608-LPCLOUD",
+        "short_name": "MCD12Q1",
+        "version": "061",
+        "title": "MODIS/Terra+Aqua Land Cover Type Yearly L3 Global 500m SIN Grid V061",
+        "provider": "LPCLOUD",
+        "hits_header": "1"
+      }
+    ],
+    "swot_riversp": [
+      {
+        "concept_id": "C2799438299-POCLOUD",
+        "short_name": "SWOT_L2_HR_RiverSP_2.0",
+        "version": "2.0",
+        "title": "SWOT Level 2 River Single-Pass Vector Data Product, Version C",
+        "provider": "POCLOUD"
+      }
+    ],
+    "swot_riversp_reach": [
+      {
+        "concept_id": "C2799438303-POCLOUD",
+        "short_name": "SWOT_L2_HR_RiverSP_reach_2.0",
+        "version": "2.0",
+        "title": "SWOT Level 2 River Single-Pass Vector Reach Data Product, Version C",
+        "provider": "POCLOUD"
+      }
+    ],
+    "hydrocron": [],
+    "swot_riversp_any": [
+      {
+        "concept_id": "C3233944997-POCLOUD",
+        "short_name": "SWOT_L2_HR_RiverSP_D",
+        "version": "D",
+        "title": "SWOT Level 2 River Single-Pass Vector Data Product, Version D",
+        "provider": "POCLOUD"
+      }
+    ],
+    "swot_riversp_v2": [
+      {
+        "concept_id": "C2799438299-POCLOUD",
+        "short_name": "SWOT_L2_HR_RiverSP_2.0",
+        "version": "2.0",
+        "title": "SWOT Level 2 River Single-Pass Vector Data Product, Version C",
+        "provider": "POCLOUD"
+      }
+    ],
+    "swot_keyword": [
+      {
+        "concept_id": "C3233944997-POCLOUD",
+        "short_name": "SWOT_L2_HR_RiverSP_D",
+        "version": "D",
+        "title": "SWOT Level 2 River Single-Pass Vector Data Product, Version D",
+        "provider": "POCLOUD",
+        "hits_header": "7"
+      },
+      {
+        "concept_id": "C2799438299-POCLOUD",
+        "short_name": "SWOT_L2_HR_RiverSP_2.0",
+        "version": "2.0",
+        "title": "SWOT Level 2 River Single-Pass Vector Data Product, Version C",
+        "provider": "POCLOUD",
+        "hits_header": "7"
+      },
+      {
+        "concept_id": "C2799438301-POCLOUD",
+        "short_name": "SWOT_L2_HR_RiverSP_node_2.0",
+        "version": "2.0",
+        "title": "SWOT Level 2 River Single-Pass Vector Node Data Product, Version C",
+        "provider": "POCLOUD",
+        "hits_header": "7"
+      },
+      {
+        "concept_id": "C3233942282-POCLOUD",
+        "short_name": "SWOT_L2_HR_RiverSP_node_D",
+        "version": "D",
+        "title": "SWOT Level 2 River Single-Pass Vector Node Data Product, Version D",
+        "provider": "POCLOUD",
+        "hits_header": "7"
+      },
+      {
+        "concept_id": "C2799438303-POCLOUD",
+        "short_name": "SWOT_L2_HR_RiverSP_reach_2.0",
+        "version": "2.0",
+        "title": "SWOT Level 2 River Single-Pass Vector Reach Data Product, Version C",
+        "provider": "POCLOUD",
+        "hits_header": "7"
+      },
+      {
+        "concept_id": "C3233942283-POCLOUD",
+        "short_name": "SWOT_L2_HR_RiverSP_reach_D",
+        "version": "D",
+        "title": "SWOT Level 2 River Single-Pass Vector Reach Data Product, Version D",
+        "provider": "POCLOUD",
+        "hits_header": "7"
+      },
+      {
+        "concept_id": "C2263384307-POCLOUD",
+        "short_name": "SWOT_SIMULATED_NA_CONTINENT_L2_HR_RIVERSP_V1",
+        "version": "1.0",
+        "title": "SWOT Simulated Level 2 North America Continent High Rate River Vectors Product Version 1.0",
+        "provider": "POCLOUD",
+        "hits_header": "7"
+      }
+    ],
+    "hydrocron_keyword": []
+  },
+  "cmr": {
+    "airs3stm": {
+      "concept_id": "C1701805662-GES_DISC",
+      "hits": 290,
+      "sample_n": 290,
+      "sample_bytes_mean": 199720977.2724138,
+      "sample_bytes_median": 200226871,
+      "sample_bytes_min": 188993933,
+      "sample_bytes_max": 205221183,
+      "total_bytes_from_sample_mean": 57919083409,
+      "sum_sampled_bytes": 57919083409,
+      "sample_names_head": [
+        "AIRS3STM.7.0:AIRS.2002.09.01.L3.RetStd_IR030.v7.0.3.0.G20175163230.hdf",
+        "AIRS3STM.7.0:AIRS.2002.10.01.L3.RetStd_IR031.v7.0.3.0.G20218134003.hdf",
+        "AIRS3STM.7.0:AIRS.2002.11.01.L3.RetStd_IR030.v7.0.3.0.G20218133642.hdf"
+      ],
+      "sample_links_head": [
+        {
+          "type": "GET DATA",
+          "url": "https://data.gesdisc.earthdata.nasa.gov/data/Aqua_AIRS_Level3/AIRS3STM.7.0/2002/AIRS.2002.09.01.L3.RetStd_IR030.v7.0.3.0.G20175163230.hdf",
+          "name": "AIRS3STM.7.0:AIRS.2002.09.01.L3.RetStd_IR030.v7.0.3.0.G20175163230.hdf"
+        },
+        {
+          "type": "GET DATA",
+          "url": "https://data.gesdisc.earthdata.nasa.gov/data/Aqua_AIRS_Level3/AIRS3STM.7.0/2002/AIRS.2002.10.01.L3.RetStd_IR031.v7.0.3.0.G20218134003.hdf",
+          "name": "AIRS3STM.7.0:AIRS.2002.10.01.L3.RetStd_IR031.v7.0.3.0.G20218134003.hdf"
+        },
+        {
+          "type": "GET DATA",
+          "url": "https://data.gesdisc.earthdata.nasa.gov/data/Aqua_AIRS_Level3/AIRS3STM.7.0/2002/AIRS.2002.11.01.L3.RetStd_IR030.v7.0.3.0.G20218133642.hdf",
+          "name": "AIRS3STM.7.0:AIRS.2002.11.01.L3.RetStd_IR030.v7.0.3.0.G20218133642.hdf"
+        },
+        {
+          "type": "GET DATA",
+          "url": "https://data.gesdisc.earthdata.nasa.gov/data/Aqua_AIRS_Level3/AIRS3STM.7.0/2002/AIRS.2002.12.01.L3.RetStd_IR031.v7.0.3.0.G20218133629.hdf",
+          "name": "AIRS3STM.7.0:AIRS.2002.12.01.L3.RetStd_IR031.v7.0.3.0.G20218133629.hdf"
+        }
+      ]
+    },
+    "gldas21": {
+      "concept_id": "C1342986036-GES_DISC",
+      "hits": 319,
+      "sample_n": 319,
+      "sample_bytes_mean": 23943917.479623824,
+      "sample_bytes_median": 23981119,
+      "sample_bytes_min": 23294366,
+      "sample_bytes_max": 24610369,
+      "total_bytes_from_sample_mean": 7638109676,
+      "sum_sampled_bytes": 7638109676,
+      "sample_names_head": [
+        "GLDAS_NOAH025_M.2.1:GLDAS_NOAH025_M.A200001.021.nc4",
+        "GLDAS_NOAH025_M.2.1:GLDAS_NOAH025_M.A200002.021.nc4",
+        "GLDAS_NOAH025_M.2.1:GLDAS_NOAH025_M.A200003.021.nc4"
+      ],
+      "sample_links_head": [
+        {
+          "type": "GET DATA",
+          "url": "https://data.gesdisc.earthdata.nasa.gov/data/GLDAS/GLDAS_NOAH025_M.2.1/2000/GLDAS_NOAH025_M.A200001.021.nc4",
+          "name": "GLDAS_NOAH025_M.2.1:GLDAS_NOAH025_M.A200001.021.nc4"
+        },
+        {
+          "type": "GET DATA",
+          "url": "https://data.gesdisc.earthdata.nasa.gov/data/GLDAS/GLDAS_NOAH025_M.2.1/2000/GLDAS_NOAH025_M.A200002.021.nc4",
+          "name": "GLDAS_NOAH025_M.2.1:GLDAS_NOAH025_M.A200002.021.nc4"
+        },
+        {
+          "type": "GET DATA",
+          "url": "https://data.gesdisc.earthdata.nasa.gov/data/GLDAS/GLDAS_NOAH025_M.2.1/2000/GLDAS_NOAH025_M.A200003.021.nc4",
+          "name": "GLDAS_NOAH025_M.2.1:GLDAS_NOAH025_M.A200003.021.nc4"
+        },
+        {
+          "type": "GET DATA",
+          "url": "https://data.gesdisc.earthdata.nasa.gov/data/GLDAS/GLDAS_NOAH025_M.2.1/2000/GLDAS_NOAH025_M.A200004.021.nc4",
+          "name": "GLDAS_NOAH025_M.2.1:GLDAS_NOAH025_M.A200004.021.nc4"
+        }
+      ]
+    },
+    "imerg_monthly": {
+      "concept_id": "C2723754851-GES_DISC",
+      "hits": 333,
+      "sample_n": 333,
+      "sample_bytes_mean": 17847873.3993994,
+      "sample_bytes_median": 17966212,
+      "sample_bytes_min": 16371543,
+      "sample_bytes_max": 18666777,
+      "total_bytes_from_sample_mean": 5943341842,
+      "sum_sampled_bytes": 5943341842,
+      "sample_names_head": [
+        "GPM_3IMERGM.07:3B-MO.MS.MRG.3IMERG.19980101-S000000-E235959.01.V07B.HDF5",
+        "GPM_3IMERGM.07:3B-MO.MS.MRG.3IMERG.19980201-S000000-E235959.02.V07B.HDF5",
+        "GPM_3IMERGM.07:3B-MO.MS.MRG.3IMERG.19980301-S000000-E235959.03.V07B.HDF5"
+      ],
+      "sample_links_head": [
+        {
+          "type": "GET DATA",
+          "url": "https://data.gesdisc.earthdata.nasa.gov/data/GPM_L3/GPM_3IMERGM.07/1998/3B-MO.MS.MRG.3IMERG.19980101-S000000-E235959.01.V07B.HDF5",
+          "name": "GPM_3IMERGM.07:3B-MO.MS.MRG.3IMERG.19980101-S000000-E235959.01.V07B.HDF5"
+        },
+        {
+          "type": "GET DATA",
+          "url": "https://data.gesdisc.earthdata.nasa.gov/data/GPM_L3/GPM_3IMERGM.07/1998/3B-MO.MS.MRG.3IMERG.19980201-S000000-E235959.02.V07B.HDF5",
+          "name": "GPM_3IMERGM.07:3B-MO.MS.MRG.3IMERG.19980201-S000000-E235959.02.V07B.HDF5"
+        },
+        {
+          "type": "GET DATA",
+          "url": "https://data.gesdisc.earthdata.nasa.gov/data/GPM_L3/GPM_3IMERGM.07/1998/3B-MO.MS.MRG.3IMERG.19980301-S000000-E235959.03.V07B.HDF5",
+          "name": "GPM_3IMERGM.07:3B-MO.MS.MRG.3IMERG.19980301-S000000-E235959.03.V07B.HDF5"
+        },
+        {
+          "type": "GET DATA",
+          "url": "https://data.gesdisc.earthdata.nasa.gov/data/GPM_L3/GPM_3IMERGM.07/1998/3B-MO.MS.MRG.3IMERG.19980401-S000000-E235959.04.V07B.HDF5",
+          "name": "GPM_3IMERGM.07:3B-MO.MS.MRG.3IMERG.19980401-S000000-E235959.04.V07B.HDF5"
+        }
+      ]
+    },
+    "grace_jpl_cri": {
+      "concept_id": "C3195527175-POCLOUD",
+      "hits": 1,
+      "sample_n": 1,
+      "sample_bytes_mean": 46365258.0,
+      "sample_bytes_median": 46365258,
+      "sample_bytes_min": 46365258,
+      "sample_bytes_max": 46365258,
+      "total_bytes_from_sample_mean": 46365258,
+      "sum_sampled_bytes": 46365258,
+      "sample_names_head": [
+        "GRCTellus.JPL.200204_202609.GLO.RL06.3M.MSCNv04CRI"
+      ],
+      "sample_links_head": [
+        {
+          "type": "GET DATA",
+          "url": "https://archive.podaac.earthdata.nasa.gov/podaac-ops-cumulus-protected/TELLUS_GRAC-GRFO_MASCON_CRI_GRID_RL06.3_V4/GRCTellus.JPL.200204_202609.GLO.RL06.3M.MSCNv04CRI.nc",
+          "name": "GRCTellus.JPL.200204_202609.GLO.RL06.3M.MSCNv04CRI"
+        }
+      ]
+    },
+    "merra2_flx": {
+      "concept_id": "C1276812868-GES_DISC",
+      "hits": 561,
+      "sample_n": 561,
+      "sample_bytes_mean": 57229211.45632798,
+      "sample_bytes_median": 52099521,
+      "sample_bytes_min": 51641018,
+      "sample_bytes_max": 73589135,
+      "total_bytes_from_sample_mean": 32105587626,
+      "sum_sampled_bytes": 32105587627,
+      "sample_names_head": [
+        "M2TMNXFLX.5.12.4:MERRA2_100.tavgM_2d_flx_Nx.198001.nc4",
+        "M2TMNXFLX.5.12.4:MERRA2_100.tavgM_2d_flx_Nx.198002.nc4",
+        "M2TMNXFLX.5.12.4:MERRA2_100.tavgM_2d_flx_Nx.198003.nc4"
+      ],
+      "sample_links_head": [
+        {
+          "type": "GET DATA",
+          "url": "https://data.gesdisc.earthdata.nasa.gov/data/MERRA2_MONTHLY/M2TMNXFLX.5.12.4/1980/MERRA2_100.tavgM_2d_flx_Nx.198001.nc4",
+          "name": "M2TMNXFLX.5.12.4:MERRA2_100.tavgM_2d_flx_Nx.198001.nc4"
+        },
+        {
+          "type": "GET DATA",
+          "url": "https://data.gesdisc.earthdata.nasa.gov/data/MERRA2_MONTHLY/M2TMNXFLX.5.12.4/1980/MERRA2_100.tavgM_2d_flx_Nx.198002.nc4",
+          "name": "M2TMNXFLX.5.12.4:MERRA2_100.tavgM_2d_flx_Nx.198002.nc4"
+        },
+        {
+          "type": "GET DATA",
+          "url": "https://data.gesdisc.earthdata.nasa.gov/data/MERRA2_MONTHLY/M2TMNXFLX.5.12.4/1980/MERRA2_100.tavgM_2d_flx_Nx.198003.nc4",
+          "name": "M2TMNXFLX.5.12.4:MERRA2_100.tavgM_2d_flx_Nx.198003.nc4"
+        },
+        {
+          "type": "GET DATA",
+          "url": "https://data.gesdisc.earthdata.nasa.gov/data/MERRA2_MONTHLY/M2TMNXFLX.5.12.4/1980/MERRA2_100.tavgM_2d_flx_Nx.198004.nc4",
+          "name": "M2TMNXFLX.5.12.4:MERRA2_100.tavgM_2d_flx_Nx.198004.nc4"
+        }
+      ]
+    },
+    "omno2d": {
+      "concept_id": "C3333493715-GES_DISC",
+      "hits": 8028,
+      "sample_n": 400,
+      "sample_bytes_mean": 13596117.545,
+      "sample_bytes_median": 13861469,
+      "sample_bytes_min": 5347015,
+      "sample_bytes_max": 15294408,
+      "total_bytes_from_sample_mean": 109149631651,
+      "sum_sampled_bytes": 5438447018,
+      "sample_names_head": [
+        "OMNO2d.004:OMI-Aura_L3-OMNO2d_2004m1001_v004-2025m1014t150042.he5",
+        "OMNO2d.004:OMI-Aura_L3-OMNO2d_2004m1002_v004-2025m1014t150053.he5",
+        "OMNO2d.004:OMI-Aura_L3-OMNO2d_2004m1003_v004-2025m1014t150047.he5"
+      ],
+      "sample_links_head": [
+        {
+          "type": "GET DATA",
+          "url": "https://data.gesdisc.earthdata.nasa.gov/data/Aura_OMI_Level3/OMNO2d.004/2004/OMI-Aura_L3-OMNO2d_2004m1001_v004-2025m1014t150042.he5",
+          "name": "OMNO2d.004:OMI-Aura_L3-OMNO2d_2004m1001_v004-2025m1014t150042.he5"
+        },
+        {
+          "type": "GET DATA",
+          "url": "https://data.gesdisc.earthdata.nasa.gov/data/Aura_OMI_Level3/OMNO2d.004/2004/OMI-Aura_L3-OMNO2d_2004m1002_v004-2025m1014t150053.he5",
+          "name": "OMNO2d.004:OMI-Aura_L3-OMNO2d_2004m1002_v004-2025m1014t150053.he5"
+        },
+        {
+          "type": "GET DATA",
+          "url": "https://data.gesdisc.earthdata.nasa.gov/data/Aura_OMI_Level3/OMNO2d.004/2004/OMI-Aura_L3-OMNO2d_2004m1003_v004-2025m1014t150047.he5",
+          "name": "OMNO2d.004:OMI-Aura_L3-OMNO2d_2004m1003_v004-2025m1014t150047.he5"
+        },
+        {
+          "type": "GET DATA",
+          "url": "https://data.gesdisc.earthdata.nasa.gov/data/Aura_OMI_Level3/OMNO2d.004/2004/OMI-Aura_L3-OMNO2d_2004m1004_v004-2025m1014t150044.he5",
+          "name": "OMNO2d.004:OMI-Aura_L3-OMNO2d_2004m1004_v004-2025m1014t150044.he5"
+        }
+      ]
+    },
+    "omto3e": {
+      "concept_id": "C1266136071-GES_DISC",
+      "hits": 8035,
+      "sample_n": 400,
+      "sample_bytes_mean": 3937586.0525,
+      "sample_bytes_median": 4084666,
+      "sample_bytes_min": 1566354,
+      "sample_bytes_max": 4293231,
+      "total_bytes_from_sample_mean": 31638503931,
+      "sum_sampled_bytes": 1575034421,
+      "sample_names_head": [
+        "OMTO3e.003:OMI-Aura_L3-OMTO3e_2004m1001_v003-2012m0409t101417.he5",
+        "OMTO3e.003:OMI-Aura_L3-OMTO3e_2004m1002_v003-2012m0409t101425.he5",
+        "OMTO3e.003:OMI-Aura_L3-OMTO3e_2004m1003_v003-2012m0409t101434.he5"
+      ],
+      "sample_links_head": [
+        {
+          "type": "GET DATA",
+          "url": "https://data.gesdisc.earthdata.nasa.gov/data/Aura_OMI_Level3/OMTO3e.003/2004/OMI-Aura_L3-OMTO3e_2004m1001_v003-2012m0409t101417.he5",
+          "name": "OMTO3e.003:OMI-Aura_L3-OMTO3e_2004m1001_v003-2012m0409t101417.he5"
+        },
+        {
+          "type": "GET DATA",
+          "url": "https://data.gesdisc.earthdata.nasa.gov/data/Aura_OMI_Level3/OMTO3e.003/2004/OMI-Aura_L3-OMTO3e_2004m1002_v003-2012m0409t101425.he5",
+          "name": "OMTO3e.003:OMI-Aura_L3-OMTO3e_2004m1002_v003-2012m0409t101425.he5"
+        },
+        {
+          "type": "GET DATA",
+          "url": "https://data.gesdisc.earthdata.nasa.gov/data/Aura_OMI_Level3/OMTO3e.003/2004/OMI-Aura_L3-OMTO3e_2004m1003_v003-2012m0409t101434.he5",
+          "name": "OMTO3e.003:OMI-Aura_L3-OMTO3e_2004m1003_v003-2012m0409t101434.he5"
+        },
+        {
+          "type": "GET DATA",
+          "url": "https://data.gesdisc.earthdata.nasa.gov/data/Aura_OMI_Level3/OMTO3e.003/2004/OMI-Aura_L3-OMTO3e_2004m1004_v003-2012m0409t101428.he5",
+          "name": "OMTO3e.003:OMI-Aura_L3-OMTO3e_2004m1004_v003-2012m0409t101428.he5"
+        }
+      ]
+    },
+    "gldas20": {
+      "concept_id": "C1233767569-GES_DISC",
+      "hits": 804,
+      "sample_n": 800,
+      "sample_bytes_mean": 23728848.09375,
+      "sample_bytes_median": 23725186,
+      "sample_bytes_min": 23113903,
+      "sample_bytes_max": 24385398,
+      "total_bytes_from_sample_mean": 19077993867,
+      "sum_sampled_bytes": 18983078475,
+      "sample_names_head": [
+        "GLDAS_NOAH025_M.2.0:GLDAS_NOAH025_M.A194801.020.nc4",
+        "GLDAS_NOAH025_M.2.0:GLDAS_NOAH025_M.A194802.020.nc4",
+        "GLDAS_NOAH025_M.2.0:GLDAS_NOAH025_M.A194803.020.nc4"
+      ],
+      "sample_links_head": [
+        {
+          "type": "GET DATA",
+          "url": "https://data.gesdisc.earthdata.nasa.gov/data/GLDAS/GLDAS_NOAH025_M.2.0/1948/GLDAS_NOAH025_M.A194801.020.nc4",
+          "name": "GLDAS_NOAH025_M.2.0:GLDAS_NOAH025_M.A194801.020.nc4"
+        },
+        {
+          "type": "GET DATA",
+          "url": "https://data.gesdisc.earthdata.nasa.gov/data/GLDAS/GLDAS_NOAH025_M.2.0/1948/GLDAS_NOAH025_M.A194802.020.nc4",
+          "name": "GLDAS_NOAH025_M.2.0:GLDAS_NOAH025_M.A194802.020.nc4"
+        },
+        {
+          "type": "GET DATA",
+          "url": "https://data.gesdisc.earthdata.nasa.gov/data/GLDAS/GLDAS_NOAH025_M.2.0/1948/GLDAS_NOAH025_M.A194803.020.nc4",
+          "name": "GLDAS_NOAH025_M.2.0:GLDAS_NOAH025_M.A194803.020.nc4"
+        },
+        {
+          "type": "GET DATA",
+          "url": "https://data.gesdisc.earthdata.nasa.gov/data/GLDAS/GLDAS_NOAH025_M.2.0/1948/GLDAS_NOAH025_M.A194804.020.nc4",
+          "name": "GLDAS_NOAH025_M.2.0:GLDAS_NOAH025_M.A194804.020.nc4"
+        }
+      ]
+    },
+    "merra2_slv": {
+      "concept_id": "C1276812859-GES_DISC",
+      "hits": 561,
+      "sample_n": 561,
+      "sample_bytes_mean": 57387564.525846705,
+      "sample_bytes_median": 51782876,
+      "sample_bytes_min": 51520697,
+      "sample_bytes_max": 75188770,
+      "total_bytes_from_sample_mean": 32194423699,
+      "sum_sampled_bytes": 32194423699,
+      "sample_names_head": [
+        "M2TMNXSLV.5.12.4:MERRA2_100.tavgM_2d_slv_Nx.198001.nc4",
+        "M2TMNXSLV.5.12.4:MERRA2_100.tavgM_2d_slv_Nx.198002.nc4",
+        "M2TMNXSLV.5.12.4:MERRA2_100.tavgM_2d_slv_Nx.198003.nc4"
+      ],
+      "sample_links_head": [
+        {
+          "type": "GET DATA",
+          "url": "https://data.gesdisc.earthdata.nasa.gov/data/MERRA2_MONTHLY/M2TMNXSLV.5.12.4/1980/MERRA2_100.tavgM_2d_slv_Nx.198001.nc4",
+          "name": "M2TMNXSLV.5.12.4:MERRA2_100.tavgM_2d_slv_Nx.198001.nc4"
+        },
+        {
+          "type": "GET DATA",
+          "url": "https://data.gesdisc.earthdata.nasa.gov/data/MERRA2_MONTHLY/M2TMNXSLV.5.12.4/1980/MERRA2_100.tavgM_2d_slv_Nx.198002.nc4",
+          "name": "M2TMNXSLV.5.12.4:MERRA2_100.tavgM_2d_slv_Nx.198002.nc4"
+        },
+        {
+          "type": "GET DATA",
+          "url": "https://data.gesdisc.earthdata.nasa.gov/data/MERRA2_MONTHLY/M2TMNXSLV.5.12.4/1980/MERRA2_100.tavgM_2d_slv_Nx.198003.nc4",
+          "name": "M2TMNXSLV.5.12.4:MERRA2_100.tavgM_2d_slv_Nx.198003.nc4"
+        },
+        {
+          "type": "GET DATA",
+          "url": "https://data.gesdisc.earthdata.nasa.gov/data/MERRA2_MONTHLY/M2TMNXSLV.5.12.4/1980/MERRA2_100.tavgM_2d_slv_Nx.198004.nc4",
+          "name": "M2TMNXSLV.5.12.4:MERRA2_100.tavgM_2d_slv_Nx.198004.nc4"
+        }
+      ]
+    },
+    "mod11c3": {
+      "concept_id": "C2565788897-LPCLOUD",
+      "hits": 321,
+      "sample_n": 321,
+      "sample_bytes_mean": 70012767.53271028,
+      "sample_bytes_median": 70111100,
+      "sample_bytes_min": 53892800,
+      "sample_bytes_max": 73874400,
+      "total_bytes_from_sample_mean": 22474098378,
+      "sum_sampled_bytes": 22474098378,
+      "sample_names_head": [
+        "MOD11C3.A2000032.061.2020048181639",
+        "MOD11C3.A2000061.061.2020045152812",
+        "MOD11C3.A2000092.061.2020044211829"
+      ],
+      "sample_links_head": [
+        {
+          "type": "GET DATA",
+          "url": "https://data.lpdaac.earthdatacloud.nasa.gov/lp-prod-protected/MOD11C3.061/MOD11C3.A2000032.061.2020048181639/MOD11C3.A2000032.061.2020048181639.hdf",
+          "name": "MOD11C3.A2000032.061.2020048181639"
+        },
+        {
+          "type": "GET DATA",
+          "url": "https://data.lpdaac.earthdatacloud.nasa.gov/lp-prod-protected/MOD11C3.061/MOD11C3.A2000061.061.2020045152812/MOD11C3.A2000061.061.2020045152812.hdf",
+          "name": "MOD11C3.A2000061.061.2020045152812"
+        },
+        {
+          "type": "GET DATA",
+          "url": "https://data.lpdaac.earthdatacloud.nasa.gov/lp-prod-protected/MOD11C3.061/MOD11C3.A2000092.061.2020044211829/MOD11C3.A2000092.061.2020044211829.hdf",
+          "name": "MOD11C3.A2000092.061.2020044211829"
+        },
+        {
+          "type": "GET DATA",
+          "url": "https://data.lpdaac.earthdatacloud.nasa.gov/lp-prod-protected/MOD11C3.061/MOD11C3.A2000122.061.2020048141451/MOD11C3.A2000122.061.2020048141451.hdf",
+          "name": "MOD11C3.A2000122.061.2020048141451"
+        }
+      ]
+    },
+    "mod13c2": {
+      "concept_id": "C2565788914-LPCLOUD",
+      "hits": 321,
+      "sample_n": 321,
+      "sample_bytes_mean": 98216052.51401868,
+      "sample_bytes_median": 100663000,
+      "sample_bytes_min": 85007080,
+      "sample_bytes_max": 102947000,
+      "total_bytes_from_sample_mean": 31527352856,
+      "sum_sampled_bytes": 31527352857,
+      "sample_names_head": [
+        "MOD13C2.A2000032.061.2020042083108",
+        "MOD13C2.A2000061.061.2020041172815",
+        "MOD13C2.A2000092.061.2020042094547"
+      ],
+      "sample_links_head": [
+        {
+          "type": "GET DATA",
+          "url": "https://data.lpdaac.earthdatacloud.nasa.gov/lp-prod-protected/MOD13C2.061/MOD13C2.A2000032.061.2020042083108/MOD13C2.A2000032.061.2020042083108.hdf",
+          "name": "MOD13C2.A2000032.061.2020042083108"
+        },
+        {
+          "type": "GET DATA",
+          "url": "https://data.lpdaac.earthdatacloud.nasa.gov/lp-prod-protected/MOD13C2.061/MOD13C2.A2000061.061.2020041172815/MOD13C2.A2000061.061.2020041172815.hdf",
+          "name": "MOD13C2.A2000061.061.2020041172815"
+        },
+        {
+          "type": "GET DATA",
+          "url": "https://data.lpdaac.earthdatacloud.nasa.gov/lp-prod-protected/MOD13C2.061/MOD13C2.A2000092.061.2020042094547/MOD13C2.A2000092.061.2020042094547.hdf",
+          "name": "MOD13C2.A2000092.061.2020042094547"
+        },
+        {
+          "type": "GET DATA",
+          "url": "https://data.lpdaac.earthdatacloud.nasa.gov/lp-prod-protected/MOD13C2.061/MOD13C2.A2000122.061.2020045185153/MOD13C2.A2000122.061.2020045185153.hdf",
+          "name": "MOD13C2.A2000122.061.2020045185153"
+        }
+      ]
+    },
+    "mcd12q1": {
+      "concept_id": "C2484079608-LPCLOUD",
+      "hits": 7875,
+      "sample_n": 400,
+      "sample_bytes_mean": 5182036.5125,
+      "sample_bytes_median": 2372240,
+      "sample_bytes_min": 139050,
+      "sample_bytes_max": 18977300,
+      "total_bytes_from_sample_mean": 40808537535,
+      "sum_sampled_bytes": 2072814605,
+      "sample_names_head": [
+        "MCD12Q1.A2001001.h01v09.061.2022146025902",
+        "MCD12Q1.A2001001.h08v03.061.2022146025122",
+        "MCD12Q1.A2001001.h02v09.061.2022146032707"
+      ],
+      "sample_links_head": [
+        {
+          "type": "GET DATA",
+          "url": "https://data.lpdaac.earthdatacloud.nasa.gov/lp-prod-protected/MCD12Q1.061/MCD12Q1.A2001001.h01v09.061.2022146025902/MCD12Q1.A2001001.h01v09.061.2022146025902.hdf",
+          "name": "MCD12Q1.A2001001.h01v09.061.2022146025902"
+        },
+        {
+          "type": "GET DATA",
+          "url": "https://data.lpdaac.earthdatacloud.nasa.gov/lp-prod-protected/MCD12Q1.061/MCD12Q1.A2001001.h08v03.061.2022146025122/MCD12Q1.A2001001.h08v03.061.2022146025122.hdf",
+          "name": "MCD12Q1.A2001001.h08v03.061.2022146025122"
+        },
+        {
+          "type": "GET DATA",
+          "url": "https://data.lpdaac.earthdatacloud.nasa.gov/lp-prod-protected/MCD12Q1.061/MCD12Q1.A2001001.h02v09.061.2022146032707/MCD12Q1.A2001001.h02v09.061.2022146032707.hdf",
+          "name": "MCD12Q1.A2001001.h02v09.061.2022146032707"
+        },
+        {
+          "type": "GET DATA",
+          "url": "https://data.lpdaac.earthdatacloud.nasa.gov/lp-prod-protected/MCD12Q1.061/MCD12Q1.A2001001.h12v07.061.2022146050444/MCD12Q1.A2001001.h12v07.061.2022146050444.hdf",
+          "name": "MCD12Q1.A2001001.h12v07.061.2022146050444"
+        }
+      ]
+    },
+    "mod11a2": {
+      "concept_id": "C2269056084-LPCLOUD",
+      "hits": 388853,
+      "sample_n": 400,
+      "sample_bytes_mean": 2526101.585,
+      "sample_bytes_median": 1779080,
+      "sample_bytes_min": 1148060,
+      "sample_bytes_max": 9588950,
+      "total_bytes_from_sample_mean": 982282179632,
+      "sum_sampled_bytes": 1010440634,
+      "sample_names_head": [
+        "MOD11A2.A2000049.h30v06.061.2020048120245",
+        "MOD11A2.A2000049.h15v15.061.2020048120243",
+        "MOD11A2.A2000049.h21v08.061.2020048120243"
+      ],
+      "sample_links_head": [
+        {
+          "type": "GET DATA",
+          "url": "https://data.lpdaac.earthdatacloud.nasa.gov/lp-prod-public/MOD11A2.061/MOD11A2.A2000049.h30v06.061.2020048120245/BROWSE.MOD11A2.A2000049.h30v06.061.2020048070245.1.jpg",
+          "name": "MOD11A2.A2000049.h30v06.061.2020048120245"
+        },
+        {
+          "type": "GET DATA",
+          "url": "https://data.lpdaac.earthdatacloud.nasa.gov/lp-prod-public/MOD11A2.061/MOD11A2.A2000049.h15v15.061.2020048120243/BROWSE.MOD11A2.A2000049.h15v15.061.2020048070243.1.jpg",
+          "name": "MOD11A2.A2000049.h15v15.061.2020048120243"
+        },
+        {
+          "type": "GET DATA",
+          "url": "https://data.lpdaac.earthdatacloud.nasa.gov/lp-prod-public/MOD11A2.061/MOD11A2.A2000049.h21v08.061.2020048120243/BROWSE.MOD11A2.A2000049.h21v08.061.2020048070243.1.jpg",
+          "name": "MOD11A2.A2000049.h21v08.061.2020048120243"
+        },
+        {
+          "type": "GET DATA",
+          "url": "https://data.lpdaac.earthdatacloud.nasa.gov/lp-prod-public/MOD11A2.061/MOD11A2.A2000049.h17v15.061.2020048120244/BROWSE.MOD11A2.A2000049.h17v15.061.2020048070244.1.jpg",
+          "name": "MOD11A2.A2000049.h17v15.061.2020048120244"
+        }
+      ]
+    },
+    "swot_riversp": {
+      "concept_id": "C3233944997-POCLOUD",
+      "hits": 166444,
+      "sample_n": 400,
+      "sample_bytes_mean": 9690666.27,
+      "sample_bytes_median": 2368176,
+      "sample_bytes_min": 197304,
+      "sample_bytes_max": 93086750,
+      "total_bytes_from_sample_mean": 1612953256643,
+      "sum_sampled_bytes": 3876266508,
+      "sample_names_head": [
+        "SWOT_L2_HR_RiverSP_Node_474_001_EU_20230328T223755_20230328T223818_PGD0_01",
+        "SWOT_L2_HR_RiverSP_Reach_474_001_EU_20230328T223755_20230328T223818_PGD0_01",
+        "SWOT_L2_HR_RiverSP_Node_474_003_AF_20230329T002001_20230329T002047_PGD0_01"
+      ],
+      "sample_links_head": [
+        {
+          "type": "GET DATA",
+          "url": "https://archive.swot.podaac.earthdata.nasa.gov/podaac-swot-ops-cumulus-protected/SWOT_L2_HR_RiverSP_D/SWOT_L2_HR_RiverSP_Node_474_001_EU_20230328T223755_20230328T223818_PGD0_01.zip",
+          "name": "SWOT_L2_HR_RiverSP_Node_474_001_EU_20230328T223755_20230328T223818_PGD0_01"
+        },
+        {
+          "type": "GET DATA",
+          "url": "https://archive.swot.podaac.earthdata.nasa.gov/podaac-swot-ops-cumulus-protected/SWOT_L2_HR_RiverSP_D/SWOT_L2_HR_RiverSP_Reach_474_001_EU_20230328T223755_20230328T223818_PGD0_01.zip",
+          "name": "SWOT_L2_HR_RiverSP_Reach_474_001_EU_20230328T223755_20230328T223818_PGD0_01"
+        },
+        {
+          "type": "GET DATA",
+          "url": "https://archive.swot.podaac.earthdata.nasa.gov/podaac-swot-ops-cumulus-protected/SWOT_L2_HR_RiverSP_D/SWOT_L2_HR_RiverSP_Node_474_003_AF_20230329T002001_20230329T002047_PGD0_01.zip",
+          "name": "SWOT_L2_HR_RiverSP_Node_474_003_AF_20230329T002001_20230329T002047_PGD0_01"
+        },
+        {
+          "type": "GET DATA",
+          "url": "https://archive.swot.podaac.earthdata.nasa.gov/podaac-swot-ops-cumulus-protected/SWOT_L2_HR_RiverSP_D/SWOT_L2_HR_RiverSP_Reach_474_003_AF_20230329T002001_20230329T002047_PGD0_01.zip",
+          "name": "SWOT_L2_HR_RiverSP_Reach_474_003_AF_20230329T002001_20230329T002047_PGD0_01"
+        }
+      ]
+    }
+  },
+  "heads": {
+    "gistemp_1200_nc_gz": {
+      "url": "https://data.giss.nasa.gov/pub/gistemp/gistemp1200_GHCNv4_ERSSTv5.nc.gz",
+      "final": "https://data.giss.nasa.gov/pub/gistemp/gistemp1200_GHCNv4_ERSSTv5.nc.gz",
+      "status": 200,
+      "bytes": 25885943,
+      "method": "head",
+      "content_type": "application/x-gzip"
+    },
+    "gistemp_250_nc_gz": {
+      "url": "https://data.giss.nasa.gov/pub/gistemp/gistemp250_GHCNv4_ERSSTv5.nc.gz",
+      "final": "https://data.giss.nasa.gov/pub/gistemp/gistemp250_GHCNv4_ERSSTv5.nc.gz",
+      "status": 404,
+      "bytes": null,
+      "method": "head",
+      "content_type": "text/html; charset=iso-8859-1"
+    },
+    "gistemp_lnd_ocn": {
+      "url": "https://data.giss.nasa.gov/pub/gistemp/gistemp1200_GHCNv4_ERSSTv5.nc",
+      "final": "https://data.giss.nasa.gov/pub/gistemp/gistemp1200_GHCNv4_ERSSTv5.nc",
+      "status": 404,
+      "bytes": null,
+      "method": "head",
+      "content_type": "text/html; charset=iso-8859-1"
+    },
+    "berkeley_tavg_land_1deg": {
+      "url": "https://berkeley-earth-temperature.s3.us-west-1.amazonaws.com/Global/Gridded/Complete_TAVG_LatLong1.nc",
+      "final": "https://berkeley-earth-temperature.s3.us-west-1.amazonaws.com/Global/Gridded/Complete_TAVG_LatLong1.nc",
+      "status": 200,
+      "bytes": 198958040,
+      "method": "head",
+      "content_type": "application/x-netcdf"
+    },
+    "berkeley_tmax_land_1deg": {
+      "url": "https://berkeley-earth-temperature.s3.us-west-1.amazonaws.com/Global/Gridded/Complete_TMAX_LatLong1.nc",
+      "final": "https://berkeley-earth-temperature.s3.us-west-1.amazonaws.com/Global/Gridded/Complete_TMAX_LatLong1.nc",
+      "status": 200,
+      "bytes": 157627241,
+      "method": "head",
+      "content_type": "application/x-netcdf"
+    },
+    "hadcrut5_noninfilled": {
+      "url": "https://www.metoffice.gov.uk/hadobs/hadcrut5/data/current/analysis/HadCRUT.5.2.0.0.anomalies.ensemble_mean.nc",
+      "final": "https://www.metoffice.gov.uk/hadobs/hadcrut5/data/current/analysis/HadCRUT.5.2.0.0.anomalies.ensemble_mean.nc",
+      "status": 404,
+      "bytes": 0,
+      "method": "head",
+      "content_type": "text/html; charset=iso-8859-1"
+    },
+    "berkeley_tmin_land_1deg": {
+      "url": "https://berkeley-earth-temperature.s3.us-west-1.amazonaws.com/Global/Gridded/Complete_TMIN_LatLong1.nc",
+      "final": "https://berkeley-earth-temperature.s3.us-west-1.amazonaws.com/Global/Gridded/Complete_TMIN_LatLong1.nc",
+      "status": 200,
+      "bytes": 158588697,
+      "method": "head",
+      "content_type": "application/x-netcdf"
+    },
+    "berkeley_landocean_1deg": {
+      "url": "https://berkeley-earth-temperature.s3.us-west-1.amazonaws.com/Global/Gridded/Land_and_Ocean_LatLong1.nc",
+      "final": "https://berkeley-earth-temperature.s3.us-west-1.amazonaws.com/Global/Gridded/Land_and_Ocean_LatLong1.nc",
+      "status": 200,
+      "bytes": 454568996,
+      "method": "head",
+      "content_type": "application/x-netcdf"
+    },
+    "hadcrut5_analysis_mean_uea": {
+      "url": "https://crudata.uea.ac.uk/cru/data/temperature/HadCRUT.5.2.0.0.analysis.anomalies.ensemble_mean.nc",
+      "final": "https://crudata.uea.ac.uk/cru/data/temperature/HadCRUT.5.2.0.0.analysis.anomalies.ensemble_mean.nc",
+      "status": 200,
+      "bytes": 32860971,
+      "method": "head",
+      "content_type": "application/x-netcdf"
+    },
+    "berkeley_landocean_eqarea": {
+      "url": "https://berkeley-earth-temperature.s3.us-west-1.amazonaws.com/Global/Gridded/Land_and_Ocean_EqualArea.nc",
+      "final": "https://berkeley-earth-temperature.s3.us-west-1.amazonaws.com/Global/Gridded/Land_and_Ocean_EqualArea.nc",
+      "status": 200,
+      "bytes": 119743152,
+      "method": "head",
+      "content_type": "application/x-netcdf"
+    },
+    "hadcrut5_analysis_mean_metoffice": {
+      "url": "https://www.metoffice.gov.uk/hadobs/hadcrut5/data/current/analysis/HadCRUT.5.2.0.0.analysis.anomalies.ensemble_mean.nc",
+      "final": "https://www.metoffice.gov.uk/hadobs/hadcrut5/data/current/analysis/HadCRUT.5.2.0.0.analysis.anomalies.ensemble_mean.nc",
+      "status": 404,
+      "bytes": 0,
+      "method": "head",
+      "content_type": "text/html; charset=iso-8859-1"
+    },
+    "cru_ts_410_tmp": {
+      "url": "https://crudata.uea.ac.uk/cru/data/hrg/cru_ts_4.10/cruts.2604091129.v4.10/tmp/cru_ts4.10.1901.2025.tmp.dat.nc.gz",
+      "final": "https://crudata.uea.ac.uk/cru/data/hrg/cru_ts_4.10/cruts.2604091129.v4.10/tmp/cru_ts4.10.1901.2025.tmp.dat.nc.gz",
+      "status": 200,
+      "bytes": 446389518,
+      "method": "head",
+      "content_type": "application/x-gzip"
+    },
+    "cru_ts_410_pet": {
+      "url": "https://crudata.uea.ac.uk/cru/data/hrg/cru_ts_4.10/cruts.2604091129.v4.10/pet/cru_ts4.10.1901.2025.pet.dat.nc.gz",
+      "final": "https://crudata.uea.ac.uk/cru/data/hrg/cru_ts_4.10/cruts.2604091129.v4.10/pet/cru_ts4.10.1901.2025.pet.dat.nc.gz",
+      "status": 200,
+      "bytes": 72951284,
+      "method": "head",
+      "content_type": "application/x-gzip"
+    },
+    "cru_ts_410_tmn": {
+      "url": "https://crudata.uea.ac.uk/cru/data/hrg/cru_ts_4.10/cruts.2604091129.v4.10/tmn/cru_ts4.10.1901.2025.tmn.dat.nc.gz",
+      "final": "https://crudata.uea.ac.uk/cru/data/hrg/cru_ts_4.10/cruts.2604091129.v4.10/tmn/cru_ts4.10.1901.2025.tmn.dat.nc.gz",
+      "status": 200,
+      "bytes": 191328148,
+      "method": "head",
+      "content_type": "application/x-gzip"
+    },
+    "cru_ts_410_dtr": {
+      "url": "https://crudata.uea.ac.uk/cru/data/hrg/cru_ts_4.10/cruts.2604091129.v4.10/dtr/cru_ts4.10.1901.2025.dtr.dat.nc.gz",
+      "final": "https://crudata.uea.ac.uk/cru/data/hrg/cru_ts_4.10/cruts.2604091129.v4.10/dtr/cru_ts4.10.1901.2025.dtr.dat.nc.gz",
+      "status": 200,
+      "bytes": 381417947,
+      "method": "head",
+      "content_type": "application/x-gzip"
+    },
+    "cru_ts_410_vap": {
+      "url": "https://crudata.uea.ac.uk/cru/data/hrg/cru_ts_4.10/cruts.2604091129.v4.10/vap/cru_ts4.10.1901.2025.vap.dat.nc.gz",
+      "final": "https://crudata.uea.ac.uk/cru/data/hrg/cru_ts_4.10/cruts.2604091129.v4.10/vap/cru_ts4.10.1901.2025.vap.dat.nc.gz",
+      "status": 200,
+      "bytes": 378089559,
+      "method": "head",
+      "content_type": "application/x-gzip"
+    },
+    "cru_ts_410_tmx": {
+      "url": "https://crudata.uea.ac.uk/cru/data/hrg/cru_ts_4.10/cruts.2604091129.v4.10/tmx/cru_ts4.10.1901.2025.tmx.dat.nc.gz",
+      "final": "https://crudata.uea.ac.uk/cru/data/hrg/cru_ts_4.10/cruts.2604091129.v4.10/tmx/cru_ts4.10.1901.2025.tmx.dat.nc.gz",
+      "status": 200,
+      "bytes": 189422713,
+      "method": "head",
+      "content_type": "application/x-gzip"
+    },
+    "cru_ts_410_pre": {
+      "url": "https://crudata.uea.ac.uk/cru/data/hrg/cru_ts_4.10/cruts.2604091129.v4.10/pre/cru_ts4.10.1901.2025.pre.dat.nc.gz",
+      "final": "https://crudata.uea.ac.uk/cru/data/hrg/cru_ts_4.10/cruts.2604091129.v4.10/pre/cru_ts4.10.1901.2025.pre.dat.nc.gz",
+      "status": 200,
+      "bytes": 698006393,
+      "method": "head",
+      "content_type": "application/x-gzip"
+    },
+    "cru_ts_410_wet": {
+      "url": "https://crudata.uea.ac.uk/cru/data/hrg/cru_ts_4.10/cruts.2604091129.v4.10/wet/cru_ts4.10.1901.2025.wet.dat.nc.gz",
+      "final": "https://crudata.uea.ac.uk/cru/data/hrg/cru_ts_4.10/cruts.2604091129.v4.10/wet/cru_ts4.10.1901.2025.wet.dat.nc.gz",
+      "status": 200,
+      "bytes": 718686297,
+      "method": "head",
+      "content_type": "application/x-gzip"
+    },
+    "ghcnd_all_tar_gz": {
+      "url": "https://www.ncei.noaa.gov/pub/data/ghcn/daily/ghcnd_all.tar.gz",
+      "final": "https://www.ncei.noaa.gov/pub/data/ghcn/daily/ghcnd_all.tar.gz",
+      "status": 200,
+      "bytes": 3825867971,
+      "method": "head",
+      "content_type": "application/gzip"
+    },
+    "cru_ts_410_cld": {
+      "url": "https://crudata.uea.ac.uk/cru/data/hrg/cru_ts_4.10/cruts.2604091129.v4.10/cld/cru_ts4.10.1901.2025.cld.dat.nc.gz",
+      "final": "https://crudata.uea.ac.uk/cru/data/hrg/cru_ts_4.10/cruts.2604091129.v4.10/cld/cru_ts4.10.1901.2025.cld.dat.nc.gz",
+      "status": 200,
+      "bytes": 463886407,
+      "method": "head",
+      "content_type": "application/x-gzip"
+    },
+    "ghcnd_by_year_tar_gz": {
+      "url": "https://www.ncei.noaa.gov/pub/data/ghcn/daily/by_year.tar.gz",
+      "final": "https://www.ncei.noaa.gov/pub/data/ghcn/daily/by_year.tar.gz",
+      "status": 404,
+      "bytes": null,
+      "method": "head",
+      "content_type": "text/html; charset=iso-8859-1"
+    },
+    "ghcnd_superghcnd": {
+      "url": "https://www.ncei.noaa.gov/pub/data/ghcn/daily/superghcnd/",
+      "final": "https://www.ncei.noaa.gov/pub/data/ghcn/daily/superghcnd/",
+      "status": 200,
+      "bytes": null,
+      "method": "head",
+      "content_type": "text/html; charset=UTF-8"
+    },
+    "cru_ts_410_frs": {
+      "url": "https://crudata.uea.ac.uk/cru/data/hrg/cru_ts_4.10/cruts.2604091129.v4.10/frs/cru_ts4.10.1901.2025.frs.dat.nc.gz",
+      "final": "https://crudata.uea.ac.uk/cru/data/hrg/cru_ts_4.10/cruts.2604091129.v4.10/frs/cru_ts4.10.1901.2025.frs.dat.nc.gz",
+      "status": 200,
+      "bytes": 108742041,
+      "method": "head",
+      "content_type": "application/x-gzip"
+    },
+    "chirps_v3_monthly_nc": {
+      "url": "https://data.chc.ucsb.edu/products/CHIRPS/v3.0/monthly/global/netcdf/",
+      "final": "https://data.chc.ucsb.edu/products/CHIRPS/v3.0/monthly/global/netcdf/",
+      "status": 200,
+      "bytes": null,
+      "method": "head",
+      "content_type": "text/html; charset=utf-8"
+    },
+    "grace_jpl_https": {
+      "url": "https://archive.podaac.earthdata.nasa.gov/podaac-ops-cumulus-protected/TELLUS_GRAC-GRFO_MASCON_CRI_GRID_RL06.3_V4/GRCTellus.JPL.200204_202609.GLO.RL06.3M.MSCNv04CRI.nc",
+      "final": "https://deotb6e7tfubr.cloudfront.net/head-edaf5da92e0ce48fb61175c28b67e95d/podaac-ops-cumulus-protected.s3.us-west-2.amazonaws.com/TELLUS_GRAC-GRFO_MASCON_CRI_GRID_RL06.3_V4/GRCTellus.JPL.200204_202609.GLO.RL06.3M.MSCNv04CRI.nc?A-userid=None&Expires=1794659914&Signature=Md3~V~AhNlw6Nqy~HUPq-7879CVBWsx0wWSYmhvuF7GI17z3eKu5ScNsvBURRlx82xT29IrukqReEOKPU9jV~3LER5hRx7RX6bYrp4rewC8ra802rk76rDZGGshMvd~6dRryu45jmivaE6YyMbTKDCsLOHbxkfUeYmD~zg6B0bDAF-XvqFYz6lB9T3DDXoESGm1vGShev3pTiGfXaJqJpFNouuftMKx5S5ojDUud3U-xs9xwWrAF7eZp3gjYpSgRK7HLaJSAaPMrPFqaobwRxVq1zgLa-tz1XgDiRJIrA8QCqeypJtZHHis5FREygdgLLqLbhonfI0YKrcTR7Udj5w__&Key-Pair-Id=K84PLOJK0JQP8",
+      "status": 200,
+      "bytes": 46365171,
+      "method": "head",
+      "content_type": "binary/octet-stream"
+    }
+  },
+  "listings": {
+    "gpcc_v2025_1deg": {
+      "url": "https://opendata.dwd.de/climate_environment/GPCC/GPCC_Precipitation_Analysis_Monthly/Version_2025/100_degree/",
+      "final": "https://opendata.dwd.de/climate_environment/GPCC/GPCC_Precipitation_Analysis_Monthly/Version_2025/100_degree/",
+      "status": 200,
+      "n_files": 47,
+      "bytes_sum_listed": 0,
+      "files_head": [
+        {
+          "href": "gpcc_precipitation_analysis_monthly_1891_1895_v2025_100.nc.gz",
+          "name": "gpcc_precipitation_analysis_monthly_1891_1895_v2025_100.nc.gz",
+          "bytes": null
+        },
+        {
+          "href": "gpcc_precipitation_analysis_monthly_1896_1900_v2025_100.nc.gz",
+          "name": "gpcc_precipitation_analysis_monthly_1896_1900_v2025_100.nc.gz",
+          "bytes": null
+        },
+        {
+          "href": "gpcc_precipitation_analysis_monthly_1901_1905_v2025_100.nc.gz",
+          "name": "gpcc_precipitation_analysis_monthly_1901_1905_v2025_100.nc.gz",
+          "bytes": null
+        },
+        {
+          "href": "gpcc_precipitation_analysis_monthly_1906_1910_v2025_100.nc.gz",
+          "name": "gpcc_precipitation_analysis_monthly_1906_1910_v2025_100.nc.gz",
+          "bytes": null
+        },
+        {
+          "href": "gpcc_precipitation_analysis_monthly_1911_1915_v2025_100.nc.gz",
+          "name": "gpcc_precipitation_analysis_monthly_1911_1915_v2025_100.nc.gz",
+          "bytes": null
+        },
+        {
+          "href": "gpcc_precipitation_analysis_monthly_1916_1920_v2025_100.nc.gz",
+          "name": "gpcc_precipitation_analysis_monthly_1916_1920_v2025_100.nc.gz",
+          "bytes": null
+        },
+        {
+          "href": "gpcc_precipitation_analysis_monthly_1921_1925_v2025_100.nc.gz",
+          "name": "gpcc_precipitation_analysis_monthly_1921_1925_v2025_100.nc.gz",
+          "bytes": null
+        },
+        {
+          "href": "gpcc_precipitation_analysis_monthly_1926_1930_v2025_100.nc.gz",
+          "name": "gpcc_precipitation_analysis_monthly_1926_1930_v2025_100.nc.gz",
+          "bytes": null
+        },
+        {
+          "href": "gpcc_precipitation_analysis_monthly_1931_1935_v2025_100.nc.gz",
+          "name": "gpcc_precipitation_analysis_monthly_1931_1935_v2025_100.nc.gz",
+          "bytes": null
+        },
+        {
+          "href": "gpcc_precipitation_analysis_monthly_1936_1940_v2025_100.nc.gz",
+          "name": "gpcc_precipitation_analysis_monthly_1936_1940_v2025_100.nc.gz",
+          "bytes": null
+        },
+        {
+          "href": "gpcc_precipitation_analysis_monthly_1941_1945_v2025_100.nc.gz",
+          "name": "gpcc_precipitation_analysis_monthly_1941_1945_v2025_100.nc.gz",
+          "bytes": null
+        },
+        {
+          "href": "gpcc_precipitation_analysis_monthly_1946_1950_v2025_100.nc.gz",
+          "name": "gpcc_precipitation_analysis_monthly_1946_1950_v2025_100.nc.gz",
+          "bytes": null
+        },
+        {
+          "href": "gpcc_precipitation_analysis_monthly_1951_1955_v2025_100.nc.gz",
+          "name": "gpcc_precipitation_analysis_monthly_1951_1955_v2025_100.nc.gz",
+          "bytes": null
+        },
+        {
+          "href": "gpcc_precipitation_analysis_monthly_1956_1960_v2025_100.nc.gz",
+          "name": "gpcc_precipitation_analysis_monthly_1956_1960_v2025_100.nc.gz",
+          "bytes": null
+        },
+        {
+          "href": "gpcc_precipitation_analysis_monthly_1961_1965_v2025_100.nc.gz",
+          "name": "gpcc_precipitation_analysis_monthly_1961_1965_v2025_100.nc.gz",
+          "bytes": null
+        },
+        {
+          "href": "gpcc_precipitation_analysis_monthly_1966_1970_v2025_100.nc.gz",
+          "name": "gpcc_precipitation_analysis_monthly_1966_1970_v2025_100.nc.gz",
+          "bytes": null
+        },
+        {
+          "href": "gpcc_precipitation_analysis_monthly_1971_1975_v2025_100.nc.gz",
+          "name": "gpcc_precipitation_analysis_monthly_1971_1975_v2025_100.nc.gz",
+          "bytes": null
+        },
+        {
+          "href": "gpcc_precipitation_analysis_monthly_1976_1980_v2025_100.nc.gz",
+          "name": "gpcc_precipitation_analysis_monthly_1976_1980_v2025_100.nc.gz",
+          "bytes": null
+        },
+        {
+          "href": "gpcc_precipitation_analysis_monthly_1981_1985_v2025_100.nc.gz",
+          "name": "gpcc_precipitation_analysis_monthly_1981_1985_v2025_100.nc.gz",
+          "bytes": null
+        },
+        {
+          "href": "gpcc_precipitation_analysis_monthly_1986_1990_v2025_100.nc.gz",
+          "name": "gpcc_precipitation_analysis_monthly_1986_1990_v2025_100.nc.gz",
+          "bytes": null
+        }
+      ],
+      "files_tail": [
+        {
+          "href": "gpcc_precipitation_analysis_monthly_2026_04_v2025_100.nc.gz",
+          "name": "gpcc_precipitation_analysis_monthly_2026_04_v2025_100.nc.gz",
+          "bytes": null
+        },
+        {
+          "href": "gpcc_precipitation_analysis_monthly_2026_05_v2025_100.nc.gz",
+          "name": "gpcc_precipitation_analysis_monthly_2026_05_v2025_100.nc.gz",
+          "bytes": null
+        },
+        {
+          "href": "gpcc_precipitation_analysis_monthly_2026_06_v2025_100.nc.gz",
+          "name": "gpcc_precipitation_analysis_monthly_2026_06_v2025_100.nc.gz",
+          "bytes": null
+        },
+        {
+          "href": "gpcc_precipitation_analysis_monthly_2026_07_v2025_100.nc.gz",
+          "name": "gpcc_precipitation_analysis_monthly_2026_07_v2025_100.nc.gz",
+          "bytes": null
+        },
+        {
+          "href": "gpcc_precipitation_analysis_monthly_2026_08_v2025_100.nc.gz",
+          "name": "gpcc_precipitation_analysis_monthly_2026_08_v2025_100.nc.gz",
+          "bytes": null
+        }
+      ],
+      "n_files_with_size": 0
+    },
+    "gpcc_v2025_025deg": {
+      "url": "https://opendata.dwd.de/climate_environment/GPCC/GPCC_Precipitation_Analysis_Monthly/Version_2025/025_degree/",
+      "final": "https://opendata.dwd.de/climate_environment/GPCC/GPCC_Precipitation_Analysis_Monthly/Version_2025/025_degree/",
+      "status": 200,
+      "n_files": 47,
+      "bytes_sum_listed": 0,
+      "files_head": [
+        {
+          "href": "gpcc_precipitation_analysis_monthly_1891_1895_v2025_025.nc.gz",
+          "name": "gpcc_precipitation_analysis_monthly_1891_1895_v2025_025.nc.gz",
+          "bytes": null
+        },
+        {
+          "href": "gpcc_precipitation_analysis_monthly_1896_1900_v2025_025.nc.gz",
+          "name": "gpcc_precipitation_analysis_monthly_1896_1900_v2025_025.nc.gz",
+          "bytes": null
+        },
+        {
+          "href": "gpcc_precipitation_analysis_monthly_1901_1905_v2025_025.nc.gz",
+          "name": "gpcc_precipitation_analysis_monthly_1901_1905_v2025_025.nc.gz",
+          "bytes": null
+        },
+        {
+          "href": "gpcc_precipitation_analysis_monthly_1906_1910_v2025_025.nc.gz",
+          "name": "gpcc_precipitation_analysis_monthly_1906_1910_v2025_025.nc.gz",
+          "bytes": null
+        },
+        {
+          "href": "gpcc_precipitation_analysis_monthly_1911_1915_v2025_025.nc.gz",
+          "name": "gpcc_precipitation_analysis_monthly_1911_1915_v2025_025.nc.gz",
+          "bytes": null
+        },
+        {
+          "href": "gpcc_precipitation_analysis_monthly_1916_1920_v2025_025.nc.gz",
+          "name": "gpcc_precipitation_analysis_monthly_1916_1920_v2025_025.nc.gz",
+          "bytes": null
+        },
+        {
+          "href": "gpcc_precipitation_analysis_monthly_1921_1925_v2025_025.nc.gz",
+          "name": "gpcc_precipitation_analysis_monthly_1921_1925_v2025_025.nc.gz",
+          "bytes": null
+        },
+        {
+          "href": "gpcc_precipitation_analysis_monthly_1926_1930_v2025_025.nc.gz",
+          "name": "gpcc_precipitation_analysis_monthly_1926_1930_v2025_025.nc.gz",
+          "bytes": null
+        },
+        {
+          "href": "gpcc_precipitation_analysis_monthly_1931_1935_v2025_025.nc.gz",
+          "name": "gpcc_precipitation_analysis_monthly_1931_1935_v2025_025.nc.gz",
+          "bytes": null
+        },
+        {
+          "href": "gpcc_precipitation_analysis_monthly_1936_1940_v2025_025.nc.gz",
+          "name": "gpcc_precipitation_analysis_monthly_1936_1940_v2025_025.nc.gz",
+          "bytes": null
+        },
+        {
+          "href": "gpcc_precipitation_analysis_monthly_1941_1945_v2025_025.nc.gz",
+          "name": "gpcc_precipitation_analysis_monthly_1941_1945_v2025_025.nc.gz",
+          "bytes": null
+        },
+        {
+          "href": "gpcc_precipitation_analysis_monthly_1946_1950_v2025_025.nc.gz",
+          "name": "gpcc_precipitation_analysis_monthly_1946_1950_v2025_025.nc.gz",
+          "bytes": null
+        },
+        {
+          "href": "gpcc_precipitation_analysis_monthly_1951_1955_v2025_025.nc.gz",
+          "name": "gpcc_precipitation_analysis_monthly_1951_1955_v2025_025.nc.gz",
+          "bytes": null
+        },
+        {
+          "href": "gpcc_precipitation_analysis_monthly_1956_1960_v2025_025.nc.gz",
+          "name": "gpcc_precipitation_analysis_monthly_1956_1960_v2025_025.nc.gz",
+          "bytes": null
+        },
+        {
+          "href": "gpcc_precipitation_analysis_monthly_1961_1965_v2025_025.nc.gz",
+          "name": "gpcc_precipitation_analysis_monthly_1961_1965_v2025_025.nc.gz",
+          "bytes": null
+        },
+        {
+          "href": "gpcc_precipitation_analysis_monthly_1966_1970_v2025_025.nc.gz",
+          "name": "gpcc_precipitation_analysis_monthly_1966_1970_v2025_025.nc.gz",
+          "bytes": null
+        },
+        {
+          "href": "gpcc_precipitation_analysis_monthly_1971_1975_v2025_025.nc.gz",
+          "name": "gpcc_precipitation_analysis_monthly_1971_1975_v2025_025.nc.gz",
+          "bytes": null
+        },
+        {
+          "href": "gpcc_precipitation_analysis_monthly_1976_1980_v2025_025.nc.gz",
+          "name": "gpcc_precipitation_analysis_monthly_1976_1980_v2025_025.nc.gz",
+          "bytes": null
+        },
+        {
+          "href": "gpcc_precipitation_analysis_monthly_1981_1985_v2025_025.nc.gz",
+          "name": "gpcc_precipitation_analysis_monthly_1981_1985_v2025_025.nc.gz",
+          "bytes": null
+        },
+        {
+          "href": "gpcc_precipitation_analysis_monthly_1986_1990_v2025_025.nc.gz",
+          "name": "gpcc_precipitation_analysis_monthly_1986_1990_v2025_025.nc.gz",
+          "bytes": null
+        }
+      ],
+      "files_tail": [
+        {
+          "href": "gpcc_precipitation_analysis_monthly_2026_04_v2025_025.nc.gz",
+          "name": "gpcc_precipitation_analysis_monthly_2026_04_v2025_025.nc.gz",
+          "bytes": null
+        },
+        {
+          "href": "gpcc_precipitation_analysis_monthly_2026_05_v2025_025.nc.gz",
+          "name": "gpcc_precipitation_analysis_monthly_2026_05_v2025_025.nc.gz",
+          "bytes": null
+        },
+        {
+          "href": "gpcc_precipitation_analysis_monthly_2026_06_v2025_025.nc.gz",
+          "name": "gpcc_precipitation_analysis_monthly_2026_06_v2025_025.nc.gz",
+          "bytes": null
+        },
+        {
+          "href": "gpcc_precipitation_analysis_monthly_2026_07_v2025_025.nc.gz",
+          "name": "gpcc_precipitation_analysis_monthly_2026_07_v2025_025.nc.gz",
+          "bytes": null
+        },
+        {
+          "href": "gpcc_precipitation_analysis_monthly_2026_08_v2025_025.nc.gz",
+          "name": "gpcc_precipitation_analysis_monthly_2026_08_v2025_025.nc.gz",
+          "bytes": null
+        }
+      ],
+      "n_files_with_size": 0
+    },
+    "gpcc_v2025_05deg": {
+      "url": "https://opendata.dwd.de/climate_environment/GPCC/GPCC_Precipitation_Analysis_Monthly/Version_2025/050_degree/",
+      "final": "https://opendata.dwd.de/climate_environment/GPCC/GPCC_Precipitation_Analysis_Monthly/Version_2025/050_degree/",
+      "status": 200,
+      "n_files": 47,
+      "bytes_sum_listed": 0,
+      "files_head": [
+        {
+          "href": "gpcc_precipitation_analysis_monthly_1891_1895_v2025_050.nc.gz",
+          "name": "gpcc_precipitation_analysis_monthly_1891_1895_v2025_050.nc.gz",
+          "bytes": null
+        },
+        {
+          "href": "gpcc_precipitation_analysis_monthly_1896_1900_v2025_050.nc.gz",
+          "name": "gpcc_precipitation_analysis_monthly_1896_1900_v2025_050.nc.gz",
+          "bytes": null
+        },
+        {
+          "href": "gpcc_precipitation_analysis_monthly_1901_1905_v2025_050.nc.gz",
+          "name": "gpcc_precipitation_analysis_monthly_1901_1905_v2025_050.nc.gz",
+          "bytes": null
+        },
+        {
+          "href": "gpcc_precipitation_analysis_monthly_1906_1910_v2025_050.nc.gz",
+          "name": "gpcc_precipitation_analysis_monthly_1906_1910_v2025_050.nc.gz",
+          "bytes": null
+        },
+        {
+          "href": "gpcc_precipitation_analysis_monthly_1911_1915_v2025_050.nc.gz",
+          "name": "gpcc_precipitation_analysis_monthly_1911_1915_v2025_050.nc.gz",
+          "bytes": null
+        },
+        {
+          "href": "gpcc_precipitation_analysis_monthly_1916_1920_v2025_050.nc.gz",
+          "name": "gpcc_precipitation_analysis_monthly_1916_1920_v2025_050.nc.gz",
+          "bytes": null
+        },
+        {
+          "href": "gpcc_precipitation_analysis_monthly_1921_1925_v2025_050.nc.gz",
+          "name": "gpcc_precipitation_analysis_monthly_1921_1925_v2025_050.nc.gz",
+          "bytes": null
+        },
+        {
+          "href": "gpcc_precipitation_analysis_monthly_1926_1930_v2025_050.nc.gz",
+          "name": "gpcc_precipitation_analysis_monthly_1926_1930_v2025_050.nc.gz",
+          "bytes": null
+        },
+        {
+          "href": "gpcc_precipitation_analysis_monthly_1931_1935_v2025_050.nc.gz",
+          "name": "gpcc_precipitation_analysis_monthly_1931_1935_v2025_050.nc.gz",
+          "bytes": null
+        },
+        {
+          "href": "gpcc_precipitation_analysis_monthly_1936_1940_v2025_050.nc.gz",
+          "name": "gpcc_precipitation_analysis_monthly_1936_1940_v2025_050.nc.gz",
+          "bytes": null
+        },
+        {
+          "href": "gpcc_precipitation_analysis_monthly_1941_1945_v2025_050.nc.gz",
+          "name": "gpcc_precipitation_analysis_monthly_1941_1945_v2025_050.nc.gz",
+          "bytes": null
+        },
+        {
+          "href": "gpcc_precipitation_analysis_monthly_1946_1950_v2025_050.nc.gz",
+          "name": "gpcc_precipitation_analysis_monthly_1946_1950_v2025_050.nc.gz",
+          "bytes": null
+        },
+        {
+          "href": "gpcc_precipitation_analysis_monthly_1951_1955_v2025_050.nc.gz",
+          "name": "gpcc_precipitation_analysis_monthly_1951_1955_v2025_050.nc.gz",
+          "bytes": null
+        },
+        {
+          "href": "gpcc_precipitation_analysis_monthly_1956_1960_v2025_050.nc.gz",
+          "name": "gpcc_precipitation_analysis_monthly_1956_1960_v2025_050.nc.gz",
+          "bytes": null
+        },
+        {
+          "href": "gpcc_precipitation_analysis_monthly_1961_1965_v2025_050.nc.gz",
+          "name": "gpcc_precipitation_analysis_monthly_1961_1965_v2025_050.nc.gz",
+          "bytes": null
+        },
+        {
+          "href": "gpcc_precipitation_analysis_monthly_1966_1970_v2025_050.nc.gz",
+          "name": "gpcc_precipitation_analysis_monthly_1966_1970_v2025_050.nc.gz",
+          "bytes": null
+        },
+        {
+          "href": "gpcc_precipitation_analysis_monthly_1971_1975_v2025_050.nc.gz",
+          "name": "gpcc_precipitation_analysis_monthly_1971_1975_v2025_050.nc.gz",
+          "bytes": null
+        },
+        {
+          "href": "gpcc_precipitation_analysis_monthly_1976_1980_v2025_050.nc.gz",
+          "name": "gpcc_precipitation_analysis_monthly_1976_1980_v2025_050.nc.gz",
+          "bytes": null
+        },
+        {
+          "href": "gpcc_precipitation_analysis_monthly_1981_1985_v2025_050.nc.gz",
+          "name": "gpcc_precipitation_analysis_monthly_1981_1985_v2025_050.nc.gz",
+          "bytes": null
+        },
+        {
+          "href": "gpcc_precipitation_analysis_monthly_1986_1990_v2025_050.nc.gz",
+          "name": "gpcc_precipitation_analysis_monthly_1986_1990_v2025_050.nc.gz",
+          "bytes": null
+        }
+      ],
+      "files_tail": [
+        {
+          "href": "gpcc_precipitation_analysis_monthly_2026_04_v2025_050.nc.gz",
+          "name": "gpcc_precipitation_analysis_monthly_2026_04_v2025_050.nc.gz",
+          "bytes": null
+        },
+        {
+          "href": "gpcc_precipitation_analysis_monthly_2026_05_v2025_050.nc.gz",
+          "name": "gpcc_precipitation_analysis_monthly_2026_05_v2025_050.nc.gz",
+          "bytes": null
+        },
+        {
+          "href": "gpcc_precipitation_analysis_monthly_2026_06_v2025_050.nc.gz",
+          "name": "gpcc_precipitation_analysis_monthly_2026_06_v2025_050.nc.gz",
+          "bytes": null
+        },
+        {
+          "href": "gpcc_precipitation_analysis_monthly_2026_07_v2025_050.nc.gz",
+          "name": "gpcc_precipitation_analysis_monthly_2026_07_v2025_050.nc.gz",
+          "bytes": null
+        },
+        {
+          "href": "gpcc_precipitation_analysis_monthly_2026_08_v2025_050.nc.gz",
+          "name": "gpcc_precipitation_analysis_monthly_2026_08_v2025_050.nc.gz",
+          "bytes": null
+        }
+      ],
+      "n_files_with_size": 0
+    },
+    "ghcn_daily": {
+      "url": "https://www.ncei.noaa.gov/pub/data/ghcn/daily/",
+      "final": "https://www.ncei.noaa.gov/pub/data/ghcn/daily/",
+      "status": 200,
+      "n_files": 3,
+      "bytes_sum_listed": null,
+      "files": [
+        {
+          "href": "ghcnd_all.tar.gz",
+          "name": "ghcnd_all.tar.gz",
+          "bytes": null
+        },
+        {
+          "href": "ghcnd_gsn.tar.gz",
+          "name": "ghcnd_gsn.tar.gz",
+          "bytes": null
+        },
+        {
+          "href": "ghcnd_hcn.tar.gz",
+          "name": "ghcnd_hcn.tar.gz",
+          "bytes": null
+        }
+      ]
+    },
+    "giss_gistemp": {
+      "url": "https://data.giss.nasa.gov/pub/gistemp/",
+      "final": "https://data.giss.nasa.gov/pub/gistemp/",
+      "status": 200,
+      "n_files": 4,
+      "bytes_sum_listed": null,
+      "files": [
+        {
+          "href": "gistemp1200_GHCNv4_ERSSTv5.nc.gz",
+          "name": "gistemp1200_GHCNv4_ERSSTv5.nc.gz",
+          "bytes": null
+        },
+        {
+          "href": "gistemp1200_GHCNv4_ERSSTv5.zarr.tar.gz",
+          "name": "gistemp1200_GHCNv4_ERSSTv5.zarr.tar.gz",
+          "bytes": null
+        },
+        {
+          "href": "gistemp250_GHCNv4.nc.gz",
+          "name": "gistemp250_GHCNv4.nc.gz",
+          "bytes": null
+        },
+        {
+          "href": "gistemp250_GHCNv4.zarr.tar.gz",
+          "name": "gistemp250_GHCNv4.zarr.tar.gz",
+          "bytes": null
+        }
+      ]
+    },
+    "chirps_v3_monthly_nc": {
+      "url": "https://data.chc.ucsb.edu/products/CHIRPS/v3.0/monthly/global/netcdf/",
+      "final": "https://data.chc.ucsb.edu/products/CHIRPS/v3.0/monthly/global/netcdf/",
+      "status": 200,
+      "n_files": 1,
+      "bytes_sum_listed": null,
+      "files": [
+        {
+          "href": "chirps-v3.0.monthly.nc",
+          "name": "chirps-v3.0.monthly.nc",
+          "bytes": null
+        }
+      ]
+    },
+    "chirps_v3_monthly_cogs": {
+      "url": "https://data.chc.ucsb.edu/products/CHIRPS/v3.0/monthly/global/cogs/",
+      "final": "https://data.chc.ucsb.edu/products/CHIRPS/v3.0/monthly/global/cogs/",
+      "status": 200,
+      "n_files": 550,
+      "bytes_sum_listed": 0,
+      "files_head": [
+        {
+          "href": "chirps-v3.0.1981.01.cog",
+          "name": "chirps-v3.0.1981.01.cog",
+          "bytes": null
+        },
+        {
+          "href": "chirps-v3.0.1981.02.cog",
+          "name": "chirps-v3.0.1981.02.cog",
+          "bytes": null
+        },
+        {
+          "href": "chirps-v3.0.1981.03.cog",
+          "name": "chirps-v3.0.1981.03.cog",
+          "bytes": null
+        },
+        {
+          "href": "chirps-v3.0.1981.04.cog",
+          "name": "chirps-v3.0.1981.04.cog",
+          "bytes": null
+        },
+        {
+          "href": "chirps-v3.0.1981.05.cog",
+          "name": "chirps-v3.0.1981.05.cog",
+          "bytes": null
+        },
+        {
+          "href": "chirps-v3.0.1981.06.cog",
+          "name": "chirps-v3.0.1981.06.cog",
+          "bytes": null
+        },
+        {
+          "href": "chirps-v3.0.1981.07.cog",
+          "name": "chirps-v3.0.1981.07.cog",
+          "bytes": null
+        },
+        {
+          "href": "chirps-v3.0.1981.08.cog",
+          "name": "chirps-v3.0.1981.08.cog",
+          "bytes": null
+        },
+        {
+          "href": "chirps-v3.0.1981.09.cog",
+          "name": "chirps-v3.0.1981.09.cog",
+          "bytes": null
+        },
+        {
+          "href": "chirps-v3.0.1981.10.cog",
+          "name": "chirps-v3.0.1981.10.cog",
+          "bytes": null
+        },
+        {
+          "href": "chirps-v3.0.1981.11.cog",
+          "name": "chirps-v3.0.1981.11.cog",
+          "bytes": null
+        },
+        {
+          "href": "chirps-v3.0.1981.12.cog",
+          "name": "chirps-v3.0.1981.12.cog",
+          "bytes": null
+        },
+        {
+          "href": "chirps-v3.0.1982.01.cog",
+          "name": "chirps-v3.0.1982.01.cog",
+          "bytes": null
+        },
+        {
+          "href": "chirps-v3.0.1982.02.cog",
+          "name": "chirps-v3.0.1982.02.cog",
+          "bytes": null
+        },
+        {
+          "href": "chirps-v3.0.1982.03.cog",
+          "name": "chirps-v3.0.1982.03.cog",
+          "bytes": null
+        },
+        {
+          "href": "chirps-v3.0.1982.04.cog",
+          "name": "chirps-v3.0.1982.04.cog",
+          "bytes": null
+        },
+        {
+          "href": "chirps-v3.0.1982.05.cog",
+          "name": "chirps-v3.0.1982.05.cog",
+          "bytes": null
+        },
+        {
+          "href": "chirps-v3.0.1982.06.cog",
+          "name": "chirps-v3.0.1982.06.cog",
+          "bytes": null
+        },
+        {
+          "href": "chirps-v3.0.1982.07.cog",
+          "name": "chirps-v3.0.1982.07.cog",
+          "bytes": null
+        },
+        {
+          "href": "chirps-v3.0.1982.08.cog",
+          "name": "chirps-v3.0.1982.08.cog",
+          "bytes": null
+        }
+      ],
+      "files_tail": [
+        {
+          "href": "chirps-v3.0.2026.06.cog",
+          "name": "chirps-v3.0.2026.06.cog",
+          "bytes": null
+        },
+        {
+          "href": "chirps-v3.0.2026.07.cog",
+          "name": "chirps-v3.0.2026.07.cog",
+          "bytes": null
+        },
+        {
+          "href": "chirps-v3.0.2026.08.cog",
+          "name": "chirps-v3.0.2026.08.cog",
+          "bytes": null
+        },
+        {
+          "href": "chirps-v3.0.2026.09.cog",
+          "name": "chirps-v3.0.2026.09.cog",
+          "bytes": null
+        },
+        {
+          "href": "chirps-v3.0.2026.10.cog",
+          "name": "chirps-v3.0.2026.10.cog",
+          "bytes": null
+        }
+      ],
+      "n_files_with_size": 0
+    },
+    "gsom_ncei_data": {
+      "url": "https://www.ncei.noaa.gov/data/global-summary-of-the-month/access/",
+      "final": "https://www.ncei.noaa.gov/data/global-summary-of-the-month/access/",
+      "status": 200,
+      "n_files": 0,
+      "bytes_sum_listed": null,
+      "files": []
+    },
+    "gsom_pub": {
+      "url": "https://www.ncei.noaa.gov/pub/data/noaa/gsom/",
+      "status": 404,
+      "error": "list_failed"
+    },
+    "cru_ts_410": {
+      "url": "https://crudata.uea.ac.uk/cru/data/hrg/cru_ts_4.10/",
+      "final": "https://crudata.uea.ac.uk/cru/data/hrg/cru_ts_4.10/",
+      "status": 200,
+      "n_files": 0,
+      "bytes_sum_listed": null,
+      "files": []
+    },
+    "cru_cy_410": {
+      "url": "https://crudata.uea.ac.uk/cru/data/hrg/cru_ts_4.10/crucy.2606161920.v4.10/countries/",
+      "final": "https://crudata.uea.ac.uk/cru/data/hrg/cru_ts_4.10/crucy.2606161920.v4.10/countries/",
+      "status": 200,
+      "n_files": 0,
+      "bytes_sum_listed": null,
+      "files": []
+    }
+  }
+}

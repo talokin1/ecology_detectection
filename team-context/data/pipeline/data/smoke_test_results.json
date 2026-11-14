@@ -1,0 +1,47 @@
+{
+ "tolerance": 0.005,
+ "all_pass": true,
+ "results": [
+  {
+   "check": "POWER T2M annual 1981-2025 OLS (\u00b0C/decade)",
+   "reference": 0.553,
+   "upstream_exact": 0.5527065,
+   "reproduced": 0.5525930272101872,
+   "n": 45,
+   "blocking": true,
+   "diff": -0.0004069727898128317,
+   "pass": true
+  },
+  {
+   "check": "HadCRUT5 overlap annual 1981-2025 OLS (\u00b0C/decade)",
+   "reference": 0.579,
+   "upstream_exact": null,
+   "reproduced": 0.5792800544401188,
+   "n": 45,
+   "blocking": true,
+   "diff": 0.0002800544401188043,
+   "pass": true
+  },
+  {
+   "check": "GRACE production tidy series, overlap weights (cm/decade)",
+   "reference": -11.242,
+   "upstream_exact": -11.24197,
+   "reproduced": -11.24196686273891,
+   "n": 235,
+   "blocking": true,
+   "diff": 3.313726109155368e-05,
+   "pass": true
+  },
+  {
+   "check": "GRACE legacy cell-centre selection (cm/decade) [legacy, non-blocking]",
+   "reference": -11.222,
+   "upstream_exact": -11.222087,
+   "reproduced": -11.222086933087148,
+   "n": 235,
+   "blocking": false,
+   "diff": -8.693308714846637e-05,
+   "pass": true
+  }
+ ],
+ "run_at": "2026-11-14T14:15:21"
+}
