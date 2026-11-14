@@ -11,7 +11,8 @@ Runs forever. On start, and whenever a watched branch gets a new commit (polled 
 The loader always runs from a dedicated *deploy checkout* (never the team's working copy), which
 is only ever fast-forwarded (``git merge --ff-only``) and never touched if it has uncommitted
 changes. A new commit that arrives during a run is picked up between stages (the run restarts).
-One daemon at a time (flock on ``<state>/daemon.lock``); loader runs hold ``<state>/run.lock``.
+One daemon at a time (exclusive lock on ``<state>/daemon.lock``, see file_lock.py); loader runs
+hold ``<state>/run.lock``.
 Status for humans and scripts: ``<state>/status.json``. Logs: ``<logs>/``.
 
 Configuration (environment variables; defaults in brackets):
@@ -37,7 +38,6 @@ SI-assisted (GOD / Grok Bot, data-entry agent, 2026-11-14); pending team review 
 
 from __future__ import annotations
 
-import fcntl
 import json
 import logging
 import logging.handlers
@@ -52,6 +52,8 @@ import time
 import urllib.request
 from datetime import UTC, datetime
 from pathlib import Path
+
+from file_lock import lock  # fcntl on Linux/macOS, msvcrt on Windows
 
 DEFAULT_SOURCES = "github=https://github.com/talokin1/ecology_detectection.git#experimental"
 STAGES = ("ukraine", "world", "ukraine_slow")
@@ -249,7 +251,8 @@ def channel_step(cfg: Config) -> tuple[str, str]:
     except Exception as exc:  # noqa: BLE001
         return (
             "not_running",
-            f"no cloudflared metrics at {cfg.tunnel_url} ({type(exc).__name__}); tunnel not configured or not started",
+            f"no cloudflared metrics at {cfg.tunnel_url} ({type(exc).__name__}); "
+            "tunnel not configured or not started",
         )
 
 
@@ -356,7 +359,7 @@ def main() -> int:
     cfg.state.mkdir(parents=True, exist_ok=True)
     lock_fh = (cfg.state / "daemon.lock").open("w")
     try:
-        fcntl.flock(lock_fh, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        lock(lock_fh, blocking=False)
     except BlockingIOError:
         log.error("another pipeline daemon holds %s; exiting", cfg.state / "daemon.lock")
         return 1

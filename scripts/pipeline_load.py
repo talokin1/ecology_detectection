@@ -551,7 +551,7 @@ def main(argv: list[str] | None = None) -> int:
         "--lock",
         type=Path,
         default=os.environ.get("SPACEAPPS_RUN_LOCK") or None,
-        help="flock file shared with the daemon so runs never overlap (default $SPACEAPPS_RUN_LOCK)",
+        help="lock file shared with the daemon so runs never overlap (default $SPACEAPPS_RUN_LOCK)",
     )
     args = p.parse_args(argv)
     logging.Formatter.converter = time.gmtime  # log times in UTC, marked with Z
@@ -565,14 +565,14 @@ def main(argv: list[str] | None = None) -> int:
 
     lock_fh = None
     if args.lock and not args.dry_run:
-        import fcntl
+        from file_lock import lock  # fcntl on Linux/macOS, msvcrt on Windows
 
         lock_fh = Path(args.lock).open("a")  # noqa: SIM115 - held until the process exits
         try:
-            fcntl.flock(lock_fh, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            lock(lock_fh, blocking=False)
         except BlockingIOError:
             log.info("another loader run holds %s; waiting for it to finish", args.lock)
-            fcntl.flock(lock_fh, fcntl.LOCK_EX)
+            lock(lock_fh)
     has_token = False if args.dry_run else earthdata_available()
     if not args.dry_run:
         log.info("data dir %s; repo %s at %s", data_dir, REPO_ROOT, (_git_commit() or "?")[:10])
