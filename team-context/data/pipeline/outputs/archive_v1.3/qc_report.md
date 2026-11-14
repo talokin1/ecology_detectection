@@ -1,8 +1,8 @@
 # Preprocessing pipeline v1.3 - QC report
 
-Generated 2026-11-14 13:17 (Europe/Kiev). Regions run: ukraine_bbox, ukraine_mask, ukraine_mask_no_crimea.
+Generated 2026-11-14 13:17 (Europe/Kiev). Regions run: ukraine_bbox, ukraine_mask (Ukraine incl. Crimea). The without-Crimea variant was removed on 2026-11-14 (team decision).
 
-Run: `cd team-context/data/pipeline && OMP_NUM_THREADS=2 nice -n 10 python run_pipeline.py --region ukraine_bbox ukraine_mask ukraine_mask_no_crimea && python smoke_test.py`
+Run: `cd team-context/data/pipeline && OMP_NUM_THREADS=2 nice -n 10 python run_pipeline.py --region ukraine_bbox ukraine_mask && python smoke_test.py`
 
 ## Smoke test (blocking, region=ukraine_bbox, tolerance ±0.005)
 
@@ -37,8 +37,8 @@ Natural Earth 5.1.1 (10m admin-0), checked point-in-polygon, not assumed:
 - **Ukraine point-of-view file `ne_10m_admin_0_countries_ukr` assigns Crimea to UKR**: 597,211 km²,
   bounds [22.133, 44.381, 40.16, 52.369]. The difference is 27,033 km² with bounds [32.482, 44.381, 36.638, 46.218]
   (Crimea + Sevastopol only; Donetsk/Luhansk are UKR in both files).
-- **`ukraine_mask` (POV file, internationally recognised borders, Crimea INCLUDED) is the PRIMARY mask.**
-  `ukraine_mask_no_crimea` (default file, Crimea excluded) is a SENSITIVITY variant only.
+- **`ukraine_mask` (POV file, internationally recognised borders, Ukraine incl. Crimea) is the only Ukraine mask.**
+  The default file is used only for this check; there is no without-Crimea variant.
 - `ukraine_bbox` (44.4-52.4N) contains essentially all of Crimea (its southern tip reaches 44.38N).
 - Consistency: every gridded source (POWER, GRACE, HadCRUT5, GISTEMP, Berkeley 1°, CHIRPS, CCI SM, and now MERRA-2,
   GLDAS, IMERG, AIRS, MODIS, GPCC from global files) uses the SAME
@@ -46,7 +46,7 @@ Natural Earth 5.1.1 (10m admin-0), checked point-in-polygon, not assumed:
   Berkeley country file EXCLUDES Crimea (flag `crimea_excluded;mask_mismatch_vs_region` in `ukraine_mask`);
   CRU-CY is undocumented (`crimea_undocumented`). Don't compare those 1:1 with masked series.
 - Stations in Crimea: GHCN (downloaded 28): SIMFEROPOL, KERCH, YALTA; GSOM: 20 of 204 UP stations.
-  They are in `ukraine_mask` and `ukraine_bbox`, and would drop out of `ukraine_mask_no_crimea`.
+  They are in `ukraine_mask` and `ukraine_bbox`.
 - Coarse products: one HadCRUT 5° cell / GRACE mascons straddle Crimea and the Black Sea; overlap weights only.
 
 ## Units and conversions (single targets, config/variables.yaml)
@@ -206,10 +206,6 @@ QC impact (`compare_modis_qc.py`, same cached pass; annual 12/12 OLS 2001-2025 p
 | ukraine_mask | EVI | 8.589 | 90.66 | 22 | 0 | 0.007244 | 0.00518 | 0.006064 | -0.0008834 | 0.005649 | 0.008047 | 0.01142 | 0.01147 | HAC significant; Hamed–Rao anti-conservative (negative residual AR); not treated as robust | robust at 0.05 (HAC and Hamed–Rao) |
 | ukraine_mask | LST_Day | 0.275 | 3.915 | 0 | 0 | -0.002738 | 0.889 | 0.8884 | 0.0005931 | 1.517 | 1.515 | 0.6775 | 0.6776 | robust at 0.05 (HAC and Hamed–Rao) | robust at 0.05 (HAC and Hamed–Rao) |
 | ukraine_mask | LST_Night | 0.2862 | 2.307 | 0 | 0 | -0.008046 | 0.858 | 0.8574 | 0.0006088 | 1.558 | 1.557 | 0.7933 | 0.7927 | robust at 0.05 (HAC and Hamed–Rao) | robust at 0.05 (HAC and Hamed–Rao) |
-| ukraine_mask_no_crimea | NDVI | 8.916 | 93.14 | 23 | 0 | 0.02115 | 0.002732 | 0.005272 | -0.00254 | 0.01921 | 0.02566 | 0.0003066 | 0.0003765 | not significant at 0.05 on HAC and Hamed–Rao | not significant at 0.05 on HAC and Hamed–Rao |
-| ukraine_mask_no_crimea | EVI | 8.916 | 93.14 | 23 | 0 | 0.007258 | 0.005511 | 0.006364 | -0.0008533 | 0.006061 | 0.008267 | 0.01238 | 0.01243 | HAC significant; Hamed–Rao anti-conservative (negative residual AR); not treated as robust | robust at 0.05 (HAC and Hamed–Rao) |
-| ukraine_mask_no_crimea | LST_Day | 0.2302 | 3.828 | 0 | 0 | -0.0008024 | 0.8963 | 0.8958 | 0.0004129 | 1.529 | 1.527 | 0.6692 | 0.6692 | robust at 0.05 (HAC and Hamed–Rao) | robust at 0.05 (HAC and Hamed–Rao) |
-| ukraine_mask_no_crimea | LST_Night | 0.2165 | 2.027 | 0 | 0 | -0.005115 | 0.8623 | 0.862 | 0.0002937 | 1.568 | 1.568 | 0.7915 | 0.791 | robust at 0.05 (HAC and Hamed–Rao) | robust at 0.05 (HAC and Hamed–Rao) |
 
 % of valid area removed by QC, by season:
 
@@ -223,10 +219,6 @@ QC impact (`compare_modis_qc.py`, same cached pass; annual 12/12 OLS 2001-2025 p
 | ukraine_mask | LST_Day | 0.66 | 0.11 | 0.14 | 0.2 |
 | ukraine_mask | LST_Night | 0.65 | 0.17 | 0.15 | 0.18 |
 | ukraine_mask | NDVI | 31.8 | 0.06 | 2.07 | 0.95 |
-| ukraine_mask_no_crimea | EVI | 33 | 0.06 | 2.15 | 0.98 |
-| ukraine_mask_no_crimea | LST_Day | 0.57 | 0.09 | 0.11 | 0.16 |
-| ukraine_mask_no_crimea | LST_Night | 0.49 | 0.14 | 0.11 | 0.14 |
-| ukraine_mask_no_crimea | NDVI | 33 | 0.06 | 2.15 | 0.98 |
 
 Reading: LST QC removes <0.4% of area (the CMG LST is already clear-sky) and moves trends by <=0.001 °C/decade.
 VI QC removes ~32% of the area in DJF (snow/ice and cloud), raises winter NDVI (mean +0.02), and roughly halves the
@@ -250,7 +242,6 @@ Raw-robust but NOT surviving the corrections (do not present as detections):
 
 - `ukraine_bbox`: Bonferroni pass: airs:SurfAirTemp, berkeley:tas_anomaly, ghcn:TAVG_anom, ghcn:TMAX_anom, ghcn:TMIN_anom, gistemp:tas_anomaly, gldas20:Tair_f_inst, gldas21:Tair_f_inst, grace:TWS, gsom:TAVG_anom, gsom:TMAX_anom, gsom:TMIN_anom, hadcrut5:tas_anomaly, merra2:QV2M, merra2:T2M, merra2:T2MMAX, merra2:T2MMIN, modis:LST_Night, nasa_power:QV2M, nasa_power:T2M, nasa_power:T2M_MAX, nasa_power:T2M_MIN. BH only: gldas20:Evap_tavg, gldas21:Qs_acc, gldas21:RootMoist_inst, gldas21:SoilMoi0_10cm_inst, gpcc:precip, modis:EVI (Apr-Sep), modis:LST_Day, nasa_power:ALLSKY_SFC_SW_DWN. Raw-robust but fail BH: gldas20:rainfall_liquid, gldas21:Evap_tavg.
 - `ukraine_mask`: Bonferroni pass: airs:SurfAirTemp, berkeley:tas_anomaly, berkeley_country:tas_anomaly, cru_cy:tmn, cru_cy:tmp, cru_cy:tmp_anom, cru_cy:tmx, cru_cy:vap, ghcn:TAVG_anom, ghcn:TMAX_anom, ghcn:TMIN_anom, gistemp:tas_anomaly, gldas20:Tair_f_inst, gldas21:Tair_f_inst, grace:TWS, gsom:TAVG_anom, gsom:TMAX_anom, gsom:TMIN_anom, hadcrut5:tas_anomaly, merra2:T2M, merra2:T2MMAX, merra2:T2MMIN, modis:LST_Night, nasa_power:T2M, nasa_power:T2M_MAX, nasa_power:T2M_MIN. BH only: cru_cy:dtr, cru_cy:wet, gldas20:Evap_tavg, gldas21:Qs_acc, gldas21:RootMoist_inst, gldas21:SoilMoi0_10cm_inst, merra2:QV2M, modis:EVI (Apr-Sep), modis:LST_Day, nasa_power:QV2M. Raw-robust but fail BH: modis:EVI (JJA), nasa_power:ALLSKY_SFC_SW_DWN.
-- `ukraine_mask_no_crimea`: Bonferroni pass: berkeley:tas_anomaly, berkeley_country:tas_anomaly, cru_cy:tmn, cru_cy:tmp, cru_cy:tmp_anom, cru_cy:tmx, cru_cy:vap, ghcn:TAVG_anom, ghcn:TMAX_anom, ghcn:TMIN_anom, gistemp:tas_anomaly, gldas20:Tair_f_inst, gldas21:Tair_f_inst, grace:TWS, gsom:TAVG_anom, gsom:TMAX_anom, gsom:TMIN_anom, hadcrut5:tas_anomaly, merra2:T2M, merra2:T2MMAX, merra2:T2MMIN, modis:LST_Night, nasa_power:T2M, nasa_power:T2M_MAX, nasa_power:T2M_MIN. BH only: airs:SurfAirTemp, cru_cy:dtr, cru_cy:wet, gldas20:Evap_tavg, gldas21:Qs_acc, gldas21:RootMoist_inst, gldas21:SoilMoi0_10cm_inst, merra2:QV2M, modis:EVI (Apr-Sep), modis:EVI (JJA), modis:LST_Day, nasa_power:QV2M. Raw-robust but fail BH: nasa_power:ALLSKY_SFC_SW_DWN.
 
 ## Growing-season vegetation (QC'd MODIS NDVI/EVI)
 
@@ -275,12 +266,6 @@ and is not a headline. **Results are season-sensitive**: on ukraine_mask JJA EVI
 | ukraine_mask | EVI | annual_ANN_12of12 | 2001-2025 | 25 | +0.00518 | 0.00587 | 0.000866 | annual includes 19 Jan/Feb months with <50% QC coverage (snow) in this | False | True | False |
 | ukraine_mask | EVI | seasonal_JJA_3of3_peak_season | 2001-2025 | 25 | +0.01142 | 0.0325 | 0.0471 | robust at 0.05 (HAC and Hamed–Rao) | False | False | True |
 | ukraine_mask | EVI | seasonal_AprSep_6of6_growing_season | 2001-2025 | 25 | +0.00706 | 0.0158 | 0.000921 | HAC significant; Hamed–Rao anti-conservative (negative residual AR); n | False | True | True |
-| ukraine_mask_no_crimea | NDVI | annual_ANN_12of12 | 2001-2025 | 25 | +0.00273 | 0.336 | 0.498 | annual includes 20 Jan/Feb months with <50% QC coverage (snow) in this | False | False | False |
-| ukraine_mask_no_crimea | NDVI | seasonal_JJA_3of3_peak_season | 2001-2025 | 25 | +0.00031 | 0.958 | 0.591 | not significant at 0.05 on HAC and Hamed–Rao | False | False | True |
-| ukraine_mask_no_crimea | NDVI | seasonal_AprSep_6of6_growing_season | 2001-2025 | 25 | -0.00266 | 0.475 | 0.149 | not significant at 0.05 on HAC and Hamed–Rao | False | False | True |
-| ukraine_mask_no_crimea | EVI | annual_ANN_12of12 | 2001-2025 | 25 | +0.00551 | 0.00633 | 0.0471 | annual includes 20 Jan/Feb months with <50% QC coverage (snow) in this | False | False | False |
-| ukraine_mask_no_crimea | EVI | seasonal_JJA_3of3_peak_season | 2001-2025 | 25 | +0.01238 | 0.0195 | 0.0235 | robust at 0.05 (HAC and Hamed–Rao) | False | True | True |
-| ukraine_mask_no_crimea | EVI | seasonal_AprSep_6of6_growing_season | 2001-2025 | 25 | +0.00762 | 0.0104 | 4.71e-05 | HAC significant; Hamed–Rao anti-conservative (negative residual AR); n | False | True | True |
 
 ## Region `ukraine_bbox`
 
@@ -735,237 +720,6 @@ Bounds [22.13283980300011, 44.38104889500005, 40.1595430910001, 52.3689492800000
 | gsom | TMIN_anom | 1981-2019_station_window | True | 39 |  | 4 | 18 | 0.451 | robust at 0.05 (HAC and Hamed–Rao) |
 | gsom | PRCP_anom | full_gappy | False | 124 | 2021 | 2 | 10 | 10.6 | gappy window: 1 missing years (2021), n=124; not treated as robust - use 1981-2019 station window |
 | gsom | PRCP_anom | 1981-2019_station_window | True | 39 |  | 4 | 10 | 17.5 | not significant at 0.05 on HAC and Hamed–Rao |
-
-## Region `ukraine_mask_no_crimea`
-
-Bounds [22.13283980300011, 45.21356842700004, 40.1595430910001, 52.36894928000008]; 73 series; 19.2 s.
-
-### Source status
-
-| source | status | details |
-|---|---|---|
-| nasa_power | ok | {} |
-| grace | ok | {"file": "$GLOBAL_DATA/grace/GRCTellus.JPL.200204_202609.GLO.RL06.3M.MSCNv04CRI.nc", "n_mascons": 13, "n_land_cells_weight_gt0": 336, "time_center_vs_csv_max_days": 0} |
-| hadcrut5 | ok | {"n_cells_weight_gt0": 9, "sum_frac": 2.821649406799645} |
-| gistemp | ok | {"n_cells_weight_gt0": 34} |
-| berkeley | ok | {"n_cells_weight_gt0": 104, "weight": "area x overlap x land_mask fraction"} |
-| chirps | ok | {"path": "global_grid_overlap_weights", "file": "$GLOBAL_DATA/chirps_v3/chirps-v3.0.monthly.nc", "cache": "chirps_ukraine_mask_no_crimea_4db0ad7d0d866240.parquet"} |
-| cci_sm | ok | {"note": "record 1978-11..1991-12 only"} |
-| merra2 | ok | {"path": "global_grid_overlap_weights", "products": [{"product": "merra2_slv", "dir": "$GLOBAL_DATA/merra2_slv_slim", "n_files": 561, "window_cells": "16x30", "cache": "merra2_slv_ukraine_mask_no_crimea_aa61321b17197e1c.parquet", "status": "cached"}, {"product": "merra2_flx", "dir": "$GLOBAL_DATA/merra2_flx_slim", "n_files": 561, "window_cells": "16x30", "cache": "merra2_flx_uk |
-| gldas20 | ok | {"path": "global_grid_overlap_weights", "products": [{"product": "gldas20", "dir": "$GLOBAL_DATA/gldas20_slim", "n_files": 804, "window_cells": "30x73", "cache": "gldas20_ukraine_mask_no_crimea_9c1e4daabd4ad915.parquet", "status": "cached"}, {"product": "gldas20_rainf", "dir": "$GLOBAL_DATA/gldas20_rainf", "n_files": 804, "window_cells": "30x73", "cache": "gldas20_rainf_ukraine |
-| gldas21 | ok | {"path": "global_grid_overlap_weights", "products": [{"product": "gldas21", "dir": "$GLOBAL_DATA/gldas21_slim", "n_files": 319, "window_cells": "30x73", "cache": "gldas21_ukraine_mask_no_crimea_84eb1de5d083d909.parquet", "status": "cached"}, {"product": "gldas21_rainf", "dir": "$GLOBAL_DATA/gldas21_rainf", "n_files": 319, "window_cells": "30x73", "cache": "gldas21_rainf_ukraine |
-| gpm_imerg | ok | {"path": "global_grid_overlap_weights", "products": [{"product": "gpm_imerg", "dir": "$GLOBAL_DATA/gpm_imerg_slim", "n_files": 333, "window_cells": "72x181", "cache": "gpm_imerg_ukraine_mask_no_crimea_9eb48dfc0ade45fd.parquet", "status": "cached"}]} |
-| airs | ok | {"path": "global_grid_overlap_weights", "products": [{"product": "airs", "dir": "$GLOBAL_DATA/airs3stm_slim", "n_files": 290, "window_cells": "8x19", "cache": "airs_ukraine_mask_no_crimea_de4a01c0cdd1cab8.parquet", "status": "cached"}]} |
-| modis | ok | {"path": "global_grid_overlap_weights", "products": [{"product": "mod13c2_qc", "dir": "$GLOBAL_DATA/mod13c2_slim", "n_files": 321, "window_cells": "144x362", "cache": "mod13c2_qc_ukraine_mask_no_crimea_6dd43cef093614f5.parquet", "status": "cached"}, {"product": "mod11c3_qc", "dir": "$GLOBAL_DATA/mod11c3_slim", "n_files": 321, "window_cells": "144x362", "cache": "mod11c3_qc_ukra |
-| omi | skipped | {"reason": "samples hold only a pre-computed Ukraine-bbox mean (no grid); not valid for this region"} |
-| gpcc | ok | {"path": "global_grid_overlap_weights", "n_files": 47, "cache": "gpcc_ukraine_mask_no_crimea_ae1e98ebed965be8.parquet"} |
-| cru_cy | ok | {"mask": "CRU-CY country mask; Crimea in/out undocumented -> mask mismatch vs region"} |
-| berkeley_country | ok | {"mask": "Berkeley polygon 553,101 km\u00b2, 45.21-52.37N: Crimea EXCLUDED"} |
-| ghcn | ok | {"n_stations_in_region": 24, "n_qflag_values_removed": 3855} |
-| gsom | ok | {"n_stations_in_region": 171} |
-| swot | skipped | {"reason": "samples hold only a pre-computed Ukraine-bbox mean (no grid); not valid for this region"} |
-
-### Per-variable QC
-
-| source | variable | unit | first | last | pct_valid_raw | pct_valid_gap_excluded | n_gaps | longest_gap_months | complete_years | min_coverage_frac | min_n_valid | baseline | flag_counts |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| nasa_power | T2M | °C | 1981-01 | 2025-12 | 100 | 100 | 0 | 0 | 45 | 0.999 | 279 | 1991-2020 |  |
-| nasa_power | T2M_MAX | °C | 1981-01 | 2025-12 | 100 | 100 | 0 | 0 | 45 | 0.999 | 279 | 1991-2020 |  |
-| nasa_power | T2M_MIN | °C | 1981-01 | 2025-12 | 100 | 100 | 0 | 0 | 45 | 0.999 | 279 | 1991-2020 |  |
-| nasa_power | PRECTOTCORR | mm/month | 1981-01 | 2025-12 | 100 | 100 | 0 | 0 | 45 | 0.999 | 279 | 1991-2020 |  |
-| nasa_power | QV2M | g/kg | 1981-01 | 2025-12 | 100 | 100 | 0 | 0 | 45 | 0.999 | 279 | 1991-2020 |  |
-| nasa_power | WS10M | m/s | 1981-01 | 2025-12 | 100 | 100 | 0 | 0 | 45 | 0.999 | 279 | 1991-2020 |  |
-| nasa_power | ALLSKY_SFC_SW_DWN | kWh/m²/day | 2001-01 | 2025-12 | 100 | 100 | 0 | 0 | 25 | 0.991 | 97 | 1991-2020 | partial_year=204; missing_value=204 |
-| derived | DTR | °C | 1981-01 | 2025-12 | 100 | 100 | 0 | 0 | 45 |  | 279 | 1991-2020 | derived_from_POWER_T2M_MAX_minus_T2M_MIN=540 |
-| grace | TWS | cm EWH anomaly | 2002-04 | 2026-09 | 88.8 | 100 | 18 | 11 | 14 | 0.994 | 336 | record_mean | partial_year=126; missing_month_official=33; missing_value=33; grace_gracefo_gap=11 |
-| hadcrut5 | tas_anomaly | °C anomaly (1961-1990) | 1850-01 | 2026-09 | 100 | 100 | 0 | 0 | 176 | 1 | 9 | 1991-2020 | coarse_cells_extend_beyond_region=2121; partial_year=9; outlier_5sigma=2 |
-| gistemp | tas_anomaly | °C anomaly (1951-1980) | 1880-01 | 2026-10 | 100 | 100 | 0 | 0 | 146 | 1 | 34 | 1991-2020 | coarse_cells_extend_beyond_region=1762; partial_year=10; outlier_5sigma=4 |
-| berkeley | tas_anomaly | °C anomaly (1951-1980) | 1750-01 | 2024-12 | 100 | 100 | 1 | 1 | 274 | 0.966 | 102 | 1991-2020 | partial_year=12; outlier_5sigma=2; missing_value=1 |
-| chirps | precip | mm/month | 1981-01 | 2026-09 | 100 | 100 | 0 | 0 | 45 | 1 | 2.91e+04 | 1991-2020 | partial_year=9 |
-| cci_sm | sm | m³/m³ | 1978-11 | 2024-12 | 100 | 100 | 0 | 0 | 46 | 0.107 | 139 | 1991-2020 | partial_record_1978-1991=554; winter_low_coverage=554; partial_year=2 |
-| merra2 | T2M | °C | 1980-01 | 2026-09 | 100 | 100 | 0 | 0 | 46 | 1 | 283 | 1991-2020 | partial_year=9 |
-| merra2 | QV2M | g/kg | 1980-01 | 2026-09 | 100 | 100 | 0 | 0 | 46 | 1 | 283 | 1991-2020 | partial_year=9 |
-| merra2 | SLP | hPa | 1980-01 | 2026-09 | 100 | 100 | 0 | 0 | 46 | 1 | 283 | 1991-2020 | partial_year=9 |
-| merra2 | PRECTOTCORR | mm/month | 1980-01 | 2026-09 | 100 | 100 | 0 | 0 | 46 | 1 | 283 | 1991-2020 | partial_year=9 |
-| merra2 | PRECTOT | mm/month | 1980-01 | 2026-09 | 100 | 100 | 0 | 0 | 46 | 1 | 283 | 1991-2020 | partial_year=9 |
-| merra2 | U10M | m/s | 1980-01 | 2026-09 | 100 | 100 | 0 | 0 | 46 | 1 | 283 | 1991-2020 | partial_year=9 |
-| merra2 | V10M | m/s | 1980-01 | 2026-09 | 100 | 100 | 0 | 0 | 46 | 1 | 283 | 1991-2020 | partial_year=9 |
-| merra2 | WS10M_from_mean_UV | m/s | 1980-01 | 2026-09 | 100 | 100 | 0 | 0 | 46 | 1 | 283 | 1991-2020 | speed_of_monthly_mean_wind_underestimates_mean_speed=561; partial_year=9 |
-| merra2 | T2MMAX | °C | 1980-01 | 2026-09 | 100 | 100 | 0 | 0 | 46 | 1 | 283 | 1991-2020 | partial_year=9 |
-| merra2 | T2MMIN | °C | 1980-01 | 2026-09 | 100 | 100 | 0 | 0 | 46 | 1 | 283 | 1991-2020 | partial_year=9 |
-| merra2 | DTR | °C | 1980-01 | 2026-09 | 100 | 100 | 0 | 0 | 46 | 1 | 283 | 1991-2020 | partial_year=9 |
-| gldas20 | SoilMoi0_10cm_inst | kg/m² (≈mm) | 1948-01 | 2014-12 | 100 | 100 | 0 | 0 | 67 | 0.987 | 1.24e+03 | 1991-2020 |  |
-| gldas20 | RootMoist_inst | kg/m² (≈mm) | 1948-01 | 2014-12 | 100 | 100 | 0 | 0 | 67 | 0.987 | 1.24e+03 | 1991-2020 |  |
-| gldas20 | SWE_inst | kg/m² (≈mm) | 1948-01 | 2014-12 | 100 | 100 | 0 | 0 | 67 | 0.987 | 1.24e+03 | 1991-2020 | outlier_5sigma=10 |
-| gldas20 | Tair_f_inst | °C | 1948-01 | 2014-12 | 100 | 100 | 0 | 0 | 67 | 0.993 | 1.24e+03 | 1991-2020 |  |
-| gldas20 | Evap_tavg | mm/month | 1948-01 | 2014-12 | 100 | 100 | 0 | 0 | 67 | 0.987 | 1.24e+03 | 1991-2020 | outlier_5sigma=1 |
-| gldas20 | Qs_acc | mm/month | 1948-01 | 2014-12 | 100 | 100 | 0 | 0 | 67 | 0.987 | 1.24e+03 | 1991-2020 | outlier_5sigma=6 |
-| gldas20 | Qsb_acc | mm/month | 1948-01 | 2014-12 | 100 | 100 | 0 | 0 | 67 | 0.987 | 1.24e+03 | 1991-2020 | outlier_5sigma=4 |
-| gldas20 | precip_total | mm/month | 1948-01 | 2014-12 | 100 | 100 | 0 | 0 | 67 | 0.993 | 1.24e+03 | 1991-2020 |  |
-| gldas20 | snowfall | mm/month | 1948-01 | 2014-12 | 100 | 100 | 0 | 0 | 67 | 0.987 | 1.24e+03 | 1991-2020 | outlier_5sigma=1 |
-| gldas20 | rainfall_liquid | mm/month | 1948-01 | 2014-12 | 100 | 100 | 0 | 0 | 67 | 0.987 | 1.24e+03 | 1991-2020 |  |
-| gldas21 | SoilMoi0_10cm_inst | kg/m² (≈mm) | 2000-01 | 2026-07 | 100 | 100 | 0 | 0 | 26 | 0.987 | 1.24e+03 | 1991-2020 | partial_year=7 |
-| gldas21 | RootMoist_inst | kg/m² (≈mm) | 2000-01 | 2026-07 | 100 | 100 | 0 | 0 | 26 | 0.987 | 1.24e+03 | 1991-2020 | partial_year=7 |
-| gldas21 | SWE_inst | kg/m² (≈mm) | 2000-01 | 2026-07 | 100 | 100 | 0 | 0 | 26 | 0.987 | 1.24e+03 | 1991-2020 | partial_year=7; outlier_5sigma=2 |
-| gldas21 | Tair_f_inst | °C | 2000-01 | 2026-07 | 100 | 100 | 0 | 0 | 26 | 0.993 | 1.24e+03 | 1991-2020 | partial_year=7 |
-| gldas21 | Evap_tavg | mm/month | 2000-01 | 2026-07 | 100 | 100 | 0 | 0 | 26 | 0.987 | 1.24e+03 | 1991-2020 | partial_year=7 |
-| gldas21 | Qs_acc | mm/month | 2000-01 | 2026-07 | 100 | 100 | 0 | 0 | 26 | 0.987 | 1.24e+03 | 1991-2020 | partial_year=7; outlier_5sigma=3 |
-| gldas21 | Qsb_acc | mm/month | 2000-01 | 2026-07 | 100 | 100 | 0 | 0 | 26 | 0.987 | 1.24e+03 | 1991-2020 | partial_year=7; outlier_5sigma=1 |
-| gldas21 | precip_total | mm/month | 2000-01 | 2026-07 | 100 | 100 | 0 | 0 | 26 | 0.993 | 1.24e+03 | 1991-2020 | partial_year=7 |
-| gldas21 | snowfall | mm/month | 2000-01 | 2026-07 | 100 | 100 | 0 | 0 | 26 | 0.987 | 1.24e+03 | 1991-2020 | partial_year=7 |
-| gldas21 | rainfall_liquid | mm/month | 2000-01 | 2026-07 | 100 | 100 | 0 | 0 | 26 | 0.987 | 1.24e+03 | 1991-2020 | partial_year=7 |
-| gpm_imerg | precipitation | mm/month | 1998-01 | 2025-09 | 100 | 100 | 0 | 0 | 27 | 1 | 7.45e+03 | 1991-2020 | partial_year=9 |
-| airs | SurfAirTemp | °C | 2002-09 | 2026-10 | 100 | 100 | 0 | 0 | 23 | 1 | 104 | record_mean | partial_year=14; airs_2025_bias_unverified=12 |
-| airs | TotH2OVap | kg/m² (≈mm) | 2002-09 | 2026-10 | 100 | 100 | 0 | 0 | 23 | 1 | 104 | record_mean | partial_year=14; airs_2025_bias_unverified=12 |
-| modis | NDVI | index | 2000-02 | 2026-10 | 100 | 100 | 0 | 0 | 25 | 0.0686 | 1.98e+03 | 1991-2020 | qc_pixel_masked=321; terra_only=321; vi_winter_snow_masked_sampling=321; qc_low_coverage_lt50pct=23; partial_year=21 |
-| modis | EVI | index | 2000-02 | 2026-10 | 100 | 100 | 0 | 0 | 25 | 0.0686 | 1.98e+03 | 1991-2020 | qc_pixel_masked=321; terra_only=321; vi_winter_snow_masked_sampling=321; qc_low_coverage_lt50pct=23; partial_year=21 |
-| modis | LST_Day | °C | 2000-02 | 2026-10 | 100 | 100 | 0 | 0 | 25 | 0.867 | 2.51e+04 | 1991-2020 | qc_pixel_masked=321; terra_only=321; lst_clear_sky_winter_bias=321; partial_year=21 |
-| modis | LST_Night | °C | 2000-02 | 2026-10 | 100 | 100 | 0 | 0 | 25 | 0.979 | 2.84e+04 | 1991-2020 | qc_pixel_masked=321; terra_only=321; lst_clear_sky_winter_bias=321; partial_year=21 |
-| modis | LST_Day_clear_days | days | 2000-02 | 2026-10 | 100 | 100 | 0 | 0 | 25 | 0.867 | 2.51e+04 | 1991-2020 | qc_pixel_masked=321; terra_only=321; partial_year=21 |
-| modis | LST_Night_clear_days | days | 2000-02 | 2026-10 | 100 | 100 | 0 | 0 | 25 | 0.979 | 2.84e+04 | 1991-2020 | qc_pixel_masked=321; terra_only=321; partial_year=21 |
-| gpcc | precip | mm/month | 1891-01 | 2026-08 | 100 | 100 | 0 | 0 | 135 | 1 | 104 | 1991-2020 | partial_year=8 |
-| cru_cy | tmp | °C | 1901-01 | 2025-12 | 100 | 100 | 0 | 0 | 125 |  |  | 1991-2020 | own_country_mask=1500; crimea_undocumented=1500; absolute_not_anomaly=1500; outlier_5sigma=1 |
-| cru_cy | tmp_anom | °C anomaly (1961-1990) | 1901-01 | 2025-12 | 100 | 100 | 0 | 0 | 125 |  |  | 1991-2020 | own_country_mask=1500; crimea_undocumented=1500; outlier_5sigma=1 |
-| cru_cy | tmn | °C | 1901-01 | 2025-12 | 100 | 100 | 0 | 0 | 125 |  |  | 1991-2020 | own_country_mask=1500; crimea_undocumented=1500; outlier_5sigma=4 |
-| cru_cy | tmx | °C | 1901-01 | 2025-12 | 100 | 100 | 0 | 0 | 125 |  |  | 1991-2020 | own_country_mask=1500; crimea_undocumented=1500 |
-| cru_cy | dtr | °C | 1901-01 | 2025-12 | 100 | 100 | 0 | 0 | 125 |  |  | 1991-2020 | own_country_mask=1500; crimea_undocumented=1500 |
-| cru_cy | pre | mm/month | 1901-01 | 2025-12 | 100 | 100 | 0 | 0 | 125 |  |  | 1991-2020 | own_country_mask=1500; crimea_undocumented=1500 |
-| cru_cy | pet | mm/month | 1901-01 | 2025-12 | 100 | 100 | 0 | 0 | 125 |  |  | 1991-2020 | own_country_mask=1500; crimea_undocumented=1500 |
-| cru_cy | vap | hPa | 1901-01 | 2025-12 | 100 | 100 | 0 | 0 | 125 |  |  | 1991-2020 | own_country_mask=1500; crimea_undocumented=1500 |
-| cru_cy | wet | days | 1901-01 | 2025-12 | 100 | 100 | 0 | 0 | 125 |  |  | 1991-2020 | own_country_mask=1500; crimea_undocumented=1500 |
-| berkeley_country | tas_anomaly | °C anomaly (1951-1980) | 1750-01 | 2020-12 | 99.8 | 99.8 | 4 | 5 | 267 |  |  | 1991-2020 | own_country_mask=3252; crimea_excluded=3252; partial_year=48; missing_value=8; outlier_5sigma=3 |
-| ghcn | TAVG_anom | °C anomaly (1991-2020) | 1881-01 | 2026-10 | 99.1 | 99.1 | 7 | 3 | 139 | 0.0455 | 1 | 1991-2020 | station_anomaly_mean=1750; UP_stations_only=1750; few_stations_lt3=689; partial_year=82; missing_value=15; outlier_5sigma=3 |
-| ghcn | TMAX_anom | °C anomaly (1991-2020) | 1881-01 | 2026-10 | 99.5 | 99.5 | 5 | 3 | 141 | 0.0435 | 1 | 1991-2020 | station_anomaly_mean=1750; UP_stations_only=1750; few_stations_lt3=189; partial_year=58; missing_value=8 |
-| ghcn | TMIN_anom | °C anomaly (1991-2020) | 1881-01 | 2026-10 | 99.5 | 99.5 | 6 | 3 | 140 | 0.0435 | 1 | 1991-2020 | station_anomaly_mean=1750; UP_stations_only=1750; few_stations_lt3=131; partial_year=70; missing_value=9; outlier_5sigma=3 |
-| ghcn | PRCP_anom | mm/month anomaly (1991-2020) | 1881-01 | 2019-12 | 99.9 | 99.9 | 1 | 1 | 138 | 0.0909 | 1 | 1991-2020 | station_anomaly_mean=1668; UP_stations_only=1668; few_stations_lt3=216; partial_year=12; outlier_5sigma=1; missing_value=1 |
-| gsom | TAVG_anom | °C anomaly (1991-2020) | 1900-01 | 2026-10 | 98.4 | 98.4 | 9 | 5 | 120 | 0.0333 | 1 | 1991-2020 | station_anomaly_mean=1522; UP_stations_only=1522; partial_year=82; few_stations_lt3=27; missing_value=24; outlier_5sigma=2 |
-| gsom | TMAX_anom | °C anomaly (1991-2020) | 1900-01 | 2026-10 | 99.3 | 99.3 | 8 | 3 | 121 | 0.0303 | 1 | 1991-2020 | station_anomaly_mean=1522; UP_stations_only=1522; partial_year=70; missing_value=11; few_stations_lt3=9 |
-| gsom | TMIN_anom | °C anomaly (1991-2020) | 1900-01 | 2026-10 | 98.5 | 98.5 | 8 | 5 | 121 | 0.0323 | 1 | 1991-2020 | station_anomaly_mean=1522; UP_stations_only=1522; partial_year=70; missing_value=23; few_stations_lt3=20; outlier_5sigma=3 |
-| gsom | PRCP_anom | mm/month anomaly (1991-2020) | 1900-01 | 2019-12 | 100 | 100 | 0 | 0 | 120 | 0.125 | 2 | 1991-2020 | station_anomaly_mean=1440; UP_stations_only=1440; few_stations_lt3=10 |
-
-### Headline trends (annual full window; stations 1981-2019; GRACE = headline method, monthly; VI = peak-season JJA and growing-season Apr-Sep)
-
-`mt_bonferroni_pass` / `mt_bh_pass`: the ANNUAL multiple-testing pass requires BOTH HAC lag-1 AND Hamed-Rao to survive the correction; the MONTHLY pass (incl. the GRACE headline) uses HAC lag-3 ONLY. Corrections are Bonferroni / Benjamini-Hochberg (q<0.05) across the whole test family (all windows and roles; family size in `n_tests_in_family`). Forcing/sampling diagnostics, different-convention rows and the annual VI rows are not headlines (column `role` in trends.csv).
-
-| source | variable | unit | series | window | start | end | n | lin_slope_per_decade | lin_ci95_ar1_lo_decade | lin_ci95_ar1_hi_decade | robust_call | mt_bonferroni_pass | mt_bh_pass | test_family | n_tests_in_family | excluded_years |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| nasa_power | T2M | °C | annual_ANN_12of12 | full | 1981 | 2025 | 45 | 0.5565 | 0.3376 | 0.7754 | robust at 0.05 (HAC and Hamed–Rao) | True | True | annual | 161 |  |
-| nasa_power | T2M_MAX | °C | annual_ANN_12of12 | full | 1981 | 2025 | 45 | 0.5711 | 0.3523 | 0.7899 | robust at 0.05 (HAC and Hamed–Rao) | True | True | annual | 161 |  |
-| nasa_power | T2M_MIN | °C | annual_ANN_12of12 | full | 1981 | 2025 | 45 | 0.6209 | 0.276 | 0.9658 | robust at 0.05 (HAC and Hamed–Rao) | True | True | annual | 161 |  |
-| nasa_power | PRECTOTCORR | mm/year | annual_ANN_12of12 | full | 1981 | 2025 | 45 | 9.597 | -5.761 | 24.95 | not significant at 0.05 on HAC and Hamed–Rao | False | False | annual | 161 |  |
-| nasa_power | QV2M | g/kg | annual_ANN_12of12 | full | 1981 | 2025 | 45 | 0.1407 | 0.06533 | 0.2161 | robust at 0.05 (HAC and Hamed–Rao) | False | True | annual | 161 |  |
-| nasa_power | WS10M | m/s | annual_ANN_12of12 | full | 1981 | 2025 | 45 | -0.02378 | -0.05403 | 0.006469 | method-dependent (not treated as a clear detection) | False | False | annual | 161 |  |
-| nasa_power | ALLSKY_SFC_SW_DWN | kWh/m²/day | annual_ANN_12of12 | full | 2001 | 2025 | 25 | 0.04891 | 0.005644 | 0.09217 | robust at 0.05 (HAC and Hamed–Rao) | False | False | annual | 161 |  |
-| derived | DTR | °C | annual_ANN_12of12 | full | 1981 | 2025 | 45 | -0.04977 | -0.2962 | 0.1967 | not significant at 0.05 on HAC and Hamed–Rao | False | False | annual | 161 |  |
-| hadcrut5 | tas_anomaly | °C anomaly (1961-1990) | annual_ANN_12of12 | full | 1850 | 2025 | 176 | 0.09609 | 0.06525 | 0.1269 | robust at 0.05 (HAC and Hamed–Rao) | True | True | annual | 161 |  |
-| gistemp | tas_anomaly | °C anomaly (1951-1980) | annual_ANN_12of12 | full | 1880 | 2025 | 146 | 0.162 | 0.1235 | 0.2005 | robust at 0.05 (HAC and Hamed–Rao) | True | True | annual | 161 |  |
-| berkeley | tas_anomaly | °C anomaly (1951-1980) | annual_ANN_12of12 | full | 1750 | 2024 | 274 | 0.0611 | 0.04486 | 0.07735 | robust at 0.05 (HAC and Hamed–Rao) | True | True | annual | 161 |  |
-| chirps | precip | mm/year | annual_ANN_12of12 | full | 1981 | 2025 | 45 | -5.306 | -24.8 | 14.19 | not significant at 0.05 on HAC and Hamed–Rao | False | False | annual | 161 |  |
-| cci_sm | sm | m³/m³ | annual_ANN_12of12 | full | 1979 | 2024 | 46 | -0.0006559 | -0.002665 | 0.001353 | not significant at 0.05 on HAC and Hamed–Rao | False | False | annual | 161 |  |
-| merra2 | T2M | °C | annual_ANN_12of12 | full | 1980 | 2025 | 46 | 0.591 | 0.3853 | 0.7967 | robust at 0.05 (HAC and Hamed–Rao) | True | True | annual | 161 |  |
-| merra2 | QV2M | g/kg | annual_ANN_12of12 | full | 1980 | 2025 | 46 | 0.1339 | 0.05777 | 0.21 | robust at 0.05 (HAC and Hamed–Rao) | False | True | annual | 161 |  |
-| merra2 | SLP | hPa | annual_ANN_12of12 | full | 1980 | 2025 | 46 | -0.103 | -0.2541 | 0.04808 | not significant at 0.05 on HAC and Hamed–Rao | False | False | annual | 161 |  |
-| merra2 | PRECTOTCORR | mm/year | annual_ANN_12of12 | full | 1980 | 2025 | 46 | 0.8562 | -24.45 | 26.17 | not significant at 0.05 on HAC and Hamed–Rao | False | False | annual | 161 |  |
-| merra2 | PRECTOT | mm/year | annual_ANN_12of12 | full | 1980 | 2025 | 46 | 1.146 | -28.57 | 30.87 | not significant at 0.05 on HAC and Hamed–Rao | False | False | annual | 161 |  |
-| merra2 | U10M | m/s | annual_ANN_12of12 | full | 1980 | 2025 | 46 | -0.03908 | -0.1295 | 0.05133 | not significant at 0.05 on HAC and Hamed–Rao | False | False | annual | 161 |  |
-| merra2 | V10M | m/s | annual_ANN_12of12 | full | 1980 | 2025 | 46 | -0.02562 | -0.06608 | 0.01483 | not significant at 0.05 on HAC and Hamed–Rao | False | False | annual | 161 |  |
-| merra2 | WS10M_from_mean_UV | m/s | annual_ANN_12of12 | full | 1980 | 2025 | 46 | -0.02347 | -0.08718 | 0.04024 | not significant at 0.05 on HAC and Hamed–Rao | False | False | annual | 161 |  |
-| merra2 | T2MMAX | °C | annual_ANN_12of12 | full | 1980 | 2025 | 46 | 0.639 | 0.425 | 0.8529 | robust at 0.05 (HAC and Hamed–Rao) | True | True | annual | 161 |  |
-| merra2 | T2MMIN | °C | annual_ANN_12of12 | full | 1980 | 2025 | 46 | 0.5797 | 0.3566 | 0.8028 | robust at 0.05 (HAC and Hamed–Rao) | True | True | annual | 161 |  |
-| merra2 | DTR | °C | annual_ANN_12of12 | full | 1980 | 2025 | 46 | 0.05928 | -0.02551 | 0.1441 | not significant at 0.05 on HAC and Hamed–Rao | False | False | annual | 161 |  |
-| gldas20 | SoilMoi0_10cm_inst | kg/m² (≈mm) | annual_ANN_12of12 | full | 1948 | 2014 | 67 | 0.06104 | -0.2402 | 0.3623 | not significant at 0.05 on HAC and Hamed–Rao | False | False | annual | 161 |  |
-| gldas20 | RootMoist_inst | kg/m² (≈mm) | annual_ANN_12of12 | full | 1948 | 2014 | 67 | 2.154 | -2.304 | 6.612 | not significant at 0.05 on HAC and Hamed–Rao | False | False | annual | 161 |  |
-| gldas20 | SWE_inst | kg/m² (≈mm) | annual_ANN_12of12 | full | 1948 | 2014 | 67 | -0.1989 | -0.9918 | 0.594 | not significant at 0.05 on HAC and Hamed–Rao | False | False | annual | 161 |  |
-| gldas20 | Tair_f_inst | °C | annual_ANN_12of12 | full | 1948 | 2014 | 67 | 0.2253 | 0.115 | 0.3356 | robust at 0.05 (HAC and Hamed–Rao) | True | True | annual | 161 |  |
-| gldas20 | Evap_tavg | mm/year | annual_ANN_12of12 | full | 1948 | 2014 | 67 | 5.909 | 2.432 | 9.387 | robust at 0.05 (HAC and Hamed–Rao) | False | True | annual | 161 |  |
-| gldas20 | Qs_acc | mm/year | annual_ANN_12of12 | full | 1948 | 2014 | 67 | -0.4363 | -1.394 | 0.5213 | not significant at 0.05 on HAC and Hamed–Rao | False | False | annual | 161 |  |
-| gldas20 | Qsb_acc | mm/year | annual_ANN_12of12 | full | 1948 | 2014 | 67 | 0.929 | -4.474 | 6.332 | not significant at 0.05 on HAC and Hamed–Rao | False | False | annual | 161 |  |
-| gldas20 | precip_total | mm/year | annual_ANN_12of12 | full | 1948 | 2014 | 67 | 4.192 | -3.277 | 11.66 | not significant at 0.05 on HAC and Hamed–Rao | False | False | annual | 161 |  |
-| gldas20 | snowfall | mm/year | annual_ANN_12of12 | full | 1948 | 2014 | 67 | -1.543 | -7.383 | 4.298 | not significant at 0.05 on HAC and Hamed–Rao | False | False | annual | 161 |  |
-| gldas20 | rainfall_liquid | mm/year | annual_ANN_12of12 | full | 1948 | 2014 | 67 | 5.745 | -0.6152 | 12.11 | not significant at 0.05 on HAC and Hamed–Rao | False | False | annual | 161 |  |
-| gldas21 | SoilMoi0_10cm_inst | kg/m² (≈mm) | annual_ANN_12of12 | full | 2000 | 2025 | 26 | -1.44 | -2.335 | -0.5451 | robust at 0.05 (HAC and Hamed–Rao) | False | True | annual | 161 |  |
-| gldas21 | RootMoist_inst | kg/m² (≈mm) | annual_ANN_12of12 | full | 2000 | 2025 | 26 | -16.65 | -28.12 | -5.179 | robust at 0.05 (HAC and Hamed–Rao) | False | True | annual | 161 |  |
-| gldas21 | Tair_f_inst | °C | annual_ANN_12of12 | full | 2000 | 2025 | 26 | 0.9626 | 0.5469 | 1.378 | robust at 0.05 (HAC and Hamed–Rao) | True | True | annual | 161 |  |
-| gldas21 | Evap_tavg | mm/year | annual_ANN_12of12 | full | 2000 | 2025 | 26 | 12.8 | 2.049 | 23.54 | not significant at 0.05 on HAC and Hamed–Rao | False | False | annual | 161 |  |
-| gldas21 | Qs_acc | mm/year | annual_ANN_12of12 | full | 2000 | 2025 | 26 | -11.28 | -15.93 | -6.63 | robust at 0.05 (HAC and Hamed–Rao) | False | True | annual | 161 |  |
-| gldas21 | Qsb_acc | mm/year | annual_ANN_12of12 | full | 2000 | 2025 | 26 | -10.41 | -32.6 | 11.78 | not significant at 0.05 on HAC and Hamed–Rao | False | False | annual | 161 |  |
-| gldas21 | precip_total | mm/year | annual_ANN_12of12 | full | 2000 | 2025 | 26 | -16.66 | -52.03 | 18.71 | not significant at 0.05 on HAC and Hamed–Rao | False | False | annual | 161 |  |
-| gldas21 | rainfall_liquid | mm/year | annual_ANN_12of12 | full | 2000 | 2025 | 26 | 6.03 | -29.79 | 41.85 | not significant at 0.05 on HAC and Hamed–Rao | False | False | annual | 161 |  |
-| gpm_imerg | precipitation | mm/year | annual_ANN_12of12 | full | 1998 | 2024 | 27 | -6.137 | -29.83 | 17.56 | not significant at 0.05 on HAC and Hamed–Rao | False | False | annual | 161 |  |
-| airs | SurfAirTemp | °C | annual_ANN_12of12 | full | 2003 | 2024 | 22 | 0.828 | 0.4804 | 1.176 | robust at 0.05 (HAC and Hamed–Rao) | False | True | annual | 161 | 2025 |
-| airs | TotH2OVap | kg/m² (≈mm) | annual_ANN_12of12 | full | 2003 | 2024 | 22 | 0.1264 | -0.07259 | 0.3255 | not significant at 0.05 on HAC and Hamed–Rao | False | False | annual | 161 | 2025 |
-| modis | NDVI | index | seasonal_JJA_3of3_peak_season | 2001-2025_JJA | 2001 | 2025 | 25 | 0.0003066 | -0.01001 | 0.01062 | not significant at 0.05 on HAC and Hamed–Rao [peak season (JJA); season-sensitive: compare | False | False | annual | 161 |  |
-| modis | NDVI | index | seasonal_AprSep_6of6_growing_season | 2001-2025_AMJJAS | 2001 | 2025 | 25 | -0.002657 | -0.007988 | 0.002673 | not significant at 0.05 on HAC and Hamed–Rao [growing season (Apr-Sep); season-sensitive:  | False | False | annual | 161 |  |
-| modis | EVI | index | seasonal_JJA_3of3_peak_season | 2001-2025_JJA | 2001 | 2025 | 25 | 0.01238 | 0.003881 | 0.02088 | robust at 0.05 (HAC and Hamed–Rao) [peak season (JJA); season-sensitive: compare the JJA ( | False | True | annual | 161 |  |
-| modis | EVI | index | seasonal_AprSep_6of6_growing_season | 2001-2025_AMJJAS | 2001 | 2025 | 25 | 0.007622 | 0.003628 | 0.01162 | HAC significant; Hamed–Rao anti-conservative (negative residual AR); not treated as robust | False | True | annual | 161 |  |
-| modis | LST_Day | °C | annual_ANN_12of12 | full | 2001 | 2025 | 25 | 0.8963 | 0.4454 | 1.347 | robust at 0.05 (HAC and Hamed–Rao) | False | True | annual | 161 |  |
-| modis | LST_Night | °C | annual_ANN_12of12 | full | 2001 | 2025 | 25 | 0.8623 | 0.5134 | 1.211 | robust at 0.05 (HAC and Hamed–Rao) | True | True | annual | 161 |  |
-| gpcc | precip | mm/year | annual_ANN_12of12 | full | 1891 | 2025 | 135 | 2.448 | -0.4379 | 5.333 | not significant at 0.05 on HAC and Hamed–Rao | False | False | annual | 161 |  |
-| cru_cy | tmp | °C | annual_ANN_12of12 | full | 1901 | 2025 | 125 | 0.1701 | 0.1177 | 0.2226 | robust at 0.05 (HAC and Hamed–Rao) | True | True | annual | 161 |  |
-| cru_cy | tmp_anom | °C anomaly (1961-1990) | annual_ANN_12of12 | full | 1901 | 2025 | 125 | 0.1701 | 0.1177 | 0.2226 | robust at 0.05 (HAC and Hamed–Rao) | True | True | annual | 161 |  |
-| cru_cy | tmn | °C | annual_ANN_12of12 | full | 1901 | 2025 | 125 | 0.194 | 0.1465 | 0.2416 | robust at 0.05 (HAC and Hamed–Rao) | True | True | annual | 161 |  |
-| cru_cy | tmx | °C | annual_ANN_12of12 | full | 1901 | 2025 | 125 | 0.1464 | 0.08641 | 0.2064 | robust at 0.05 (HAC and Hamed–Rao) | True | True | annual | 161 |  |
-| cru_cy | dtr | °C | annual_ANN_12of12 | full | 1901 | 2025 | 125 | -0.04758 | -0.07227 | -0.02289 | robust at 0.05 (HAC and Hamed–Rao) | False | True | annual | 161 |  |
-| cru_cy | pre | mm/year | annual_ANN_12of12 | full | 1901 | 2025 | 125 | 2.225 | -0.8143 | 5.265 | not significant at 0.05 on HAC and Hamed–Rao | False | False | annual | 161 |  |
-| cru_cy | pet | mm/year | annual_ANN_12of12 | full | 1901 | 2025 | 125 | 3.832 | 0.5317 | 7.132 | method-dependent (not treated as a clear detection) | False | False | annual | 161 |  |
-| cru_cy | vap | hPa | annual_ANN_12of12 | full | 1901 | 2025 | 125 | 0.07141 | 0.0535 | 0.08932 | robust at 0.05 (HAC and Hamed–Rao) | True | True | annual | 161 |  |
-| cru_cy | wet | days | annual_ANN_12of12 | full | 1901 | 2025 | 125 | -0.7726 | -1.385 | -0.1607 | robust at 0.05 (HAC and Hamed–Rao) | False | True | annual | 161 |  |
-| berkeley_country | tas_anomaly | °C anomaly (1951-1980) | annual_ANN_12of12 | full | 1751 | 2020 | 267 | 0.05422 | 0.03808 | 0.07037 | robust at 0.05 (HAC and Hamed–Rao) | True | True | annual | 161 |  |
-| ghcn | TAVG_anom | °C anomaly (1991-2020) | annual_ANN_12of12 | 1981-2019_station_window | 1981 | 2019 | 36 | 0.5525 | 0.2697 | 0.8353 | robust at 0.05 (HAC and Hamed–Rao) [headline window; note missing years 2007-2009, n=36] | True | True | annual | 161 |  |
-| ghcn | TMAX_anom | °C anomaly (1991-2020) | annual_ANN_12of12 | 1981-2019_station_window | 1981 | 2019 | 39 | 0.692 | 0.426 | 0.958 | robust at 0.05 (HAC and Hamed–Rao) | True | True | annual | 161 |  |
-| ghcn | TMIN_anom | °C anomaly (1991-2020) | annual_ANN_12of12 | 1981-2019_station_window | 1981 | 2019 | 39 | 0.4286 | 0.1826 | 0.6746 | robust at 0.05 (HAC and Hamed–Rao) | True | True | annual | 161 |  |
-| ghcn | PRCP_anom | mm/year anomaly (1991-2020) | annual_ANN_12of12 | 1981-2019_station_window | 1981 | 2019 | 39 | 15.78 | -12.87 | 44.43 | method-dependent (not treated as a clear detection) | False | False | annual | 161 |  |
-| gsom | TAVG_anom | °C anomaly (1991-2020) | annual_ANN_12of12 | 1981-2019_station_window | 1981 | 2019 | 39 | 0.52 | 0.2794 | 0.7606 | robust at 0.05 (HAC and Hamed–Rao) | True | True | annual | 161 |  |
-| gsom | TMAX_anom | °C anomaly (1991-2020) | annual_ANN_12of12 | 1981-2019_station_window | 1981 | 2019 | 39 | 0.6511 | 0.3977 | 0.9045 | robust at 0.05 (HAC and Hamed–Rao) | True | True | annual | 161 |  |
-| gsom | TMIN_anom | °C anomaly (1991-2020) | annual_ANN_12of12 | 1981-2019_station_window | 1981 | 2019 | 39 | 0.4443 | 0.1986 | 0.69 | robust at 0.05 (HAC and Hamed–Rao) | True | True | annual | 161 |  |
-| gsom | PRCP_anom | mm/year anomaly (1991-2020) | annual_ANN_12of12 | 1981-2019_station_window | 1981 | 2019 | 39 | 12.75 | -14.16 | 39.66 | not significant at 0.05 on HAC and Hamed–Rao | False | False | annual | 161 |  |
-| grace | TWS | cm EWH anomaly | monthly_deseasonalised_grace_headline_method | headline_grace_method | 2003.04 | 2025.96 | 235 | -12.36 | -15.16 | -9.567 | robust at 0.05 (HAC lag-3 and Hamed–Rao) | True | True | monthly | 74 | 2002,2017,2018,2026 |
-
-### Station baseline coverage (v1 limitation: no baseline fallback)
-
-| source | variable | stations_with_data | stations_with_any_baseline_month | stations_with_full_12month_baseline | stations_dropped_no_baseline | stations_ending_before_2006 | station_months_failing_day_rule |
-|---|---|---|---|---|---|---|---|
-| ghcn | TAVG | 24 | 22 | 22 | 2 | 0 | 1.09e+03 |
-| ghcn | TMAX | 24 | 23 | 17 | 1 | 0 | 2.95e+03 |
-| ghcn | TMIN | 24 | 23 | 18 | 1 | 0 | 3.55e+03 |
-| ghcn | PRCP | 24 | 11 | 4 | 13 | 20 | 7.01e+03 |
-| gsom | TAVG | 156 | 30 | 7 | 126 | 44 |  |
-| gsom | TMAX | 158 | 33 | 10 | 125 | 39 |  |
-| gsom | TMIN | 159 | 31 | 7 | 128 | 11 |  |
-| gsom | PRCP | 168 | 16 | 7 | 152 | 161 |  |
-
-### Station counts per trend window (annual 12/12)
-
-| source | variable | window | headline | n | missing_years | stations_min | stations_median | lin_slope_per_decade | robust_call |
-|---|---|---|---|---|---|---|---|---|---|
-| ghcn | TAVG_anom | full_gappy | False | 139 | 1941,1943,2007,2008,2009,2022 | 1 | 9 | 0.14 | gappy window: 6 missing years (1941, 1943, 2007-2009, 2022), n=139; not treated as robust - use 1981-2019 station window |
-| ghcn | TAVG_anom | 1981-2025_gappy | False | 41 | 2007,2008,2009,2022 | 7 | 22 | 0.639 | gappy window: 4 missing years (2007-2009, 2022), n=41; not treated as robust - use 1981-2019 station window |
-| ghcn | TAVG_anom | 2001-2025_gappy | False | 21 | 2007,2008,2009,2022 | 7 | 20 | 1.02 | gappy window: 4 missing years (2007-2009, 2022), n=21; not treated as robust - use 1981-2019 station window |
-| ghcn | TAVG_anom | 1981-2019_station_window | True | 36 | 2007,2008,2009 | 7 | 22 | 0.552 | robust at 0.05 (HAC and Hamed–Rao) [headline window; note missing years 2007-2009, n=36] |
-| ghcn | TMAX_anom | full_gappy | False | 141 | 1883,1884,2022 | 1 | 10 | 0.17 | gappy window: 3 missing years (1883-1884, 2022), n=141; not treated as robust - use 1981-2019 station window |
-| ghcn | TMAX_anom | 1981-2025_gappy | False | 44 | 2022 | 1 | 17 | 0.732 | gappy window: 1 missing years (2022), n=44; not treated as robust - use 1981-2019 station window |
-| ghcn | TMAX_anom | 2001-2025_gappy | False | 24 | 2022 | 1 | 16 | 0.897 | gappy window: 1 missing years (2022), n=24; not treated as robust - use 1981-2019 station window |
-| ghcn | TMAX_anom | 1981-2019_station_window | True | 39 |  | 4 | 18 | 0.692 | robust at 0.05 (HAC and Hamed–Rao) |
-| ghcn | TMIN_anom | full_gappy | False | 140 | 1883,1884,2021,2022 | 1 | 10 | 0.175 | gappy window: 4 missing years (1883-1884, 2021-2022), n=140; not treated as robust - use 1981-2019 station window |
-| ghcn | TMIN_anom | 1981-2025_gappy | False | 43 | 2021,2022 | 1 | 17 | 0.532 | gappy window: 2 missing years (2021-2022), n=43; not treated as robust - use 1981-2019 station window |
-| ghcn | TMIN_anom | 2001-2025_gappy | False | 23 | 2021,2022 | 1 | 14 | 0.694 | gappy window: 2 missing years (2021-2022), n=23; not treated as robust - use 1981-2019 station window |
-| ghcn | TMIN_anom | 1981-2019_station_window | True | 39 |  | 3 | 18 | 0.429 | robust at 0.05 (HAC and Hamed–Rao) |
-| ghcn | PRCP_anom | full_gappy | False | 138 | 1942 | 1 | 4 | 8.52 | gappy window: 1 missing years (1942), n=138; not treated as robust - use 1981-2019 station window |
-| ghcn | PRCP_anom | 1981-2019_station_window | True | 39 |  | 1 | 4 | 15.8 | method-dependent (not treated as a clear detection) |
-| gsom | TAVG_anom | full_gappy | False | 120 | 1941,2020,2021,2022,2023,2024 | 1 | 9 | 0.17 | gappy window: 6 missing years (1941, 2020-2024), n=120; not treated as robust - use 1981-2019 station window |
-| gsom | TAVG_anom | 1981-2025_gappy | False | 40 | 2020,2021,2022,2023,2024 | 1 | 14 | 0.52 | gappy window: 5 missing years (2020-2024), n=40; not treated as robust - use 1981-2019 station window |
-| gsom | TAVG_anom | 2001-2025_gappy | False | 20 | 2020,2021,2022,2023,2024 | 1 | 8 | 0.574 | gappy window: 5 missing years (2020-2024), n=20; not treated as robust - use 1981-2019 station window |
-| gsom | TAVG_anom | 1981-2019_station_window | True | 39 |  | 4 | 14 | 0.52 | robust at 0.05 (HAC and Hamed–Rao) |
-| gsom | TMAX_anom | full_gappy | False | 121 | 2020,2021,2022,2023,2024 | 1 | 14 | 0.17 | gappy window: 5 missing years (2020-2024), n=121; not treated as robust - use 1981-2019 station window |
-| gsom | TMAX_anom | 1981-2025_gappy | False | 40 | 2020,2021,2022,2023,2024 | 1 | 22.5 | 0.621 | gappy window: 5 missing years (2020-2024), n=40; not treated as robust - use 1981-2019 station window |
-| gsom | TMAX_anom | 2001-2025_gappy | False | 20 | 2020,2021,2022,2023,2024 | 1 | 20 | 0.65 | gappy window: 5 missing years (2020-2024), n=20; not treated as robust - use 1981-2019 station window |
-| gsom | TMAX_anom | 1981-2019_station_window | True | 39 |  | 4 | 23 | 0.651 | robust at 0.05 (HAC and Hamed–Rao) |
-| gsom | TMIN_anom | full_gappy | False | 121 | 2020,2021,2022,2023,2024 | 1 | 9 | 0.175 | gappy window: 5 missing years (2020-2024), n=121; not treated as robust - use 1981-2019 station window |
-| gsom | TMIN_anom | 1981-2025_gappy | False | 40 | 2020,2021,2022,2023,2024 | 1 | 14 | 0.47 | gappy window: 5 missing years (2020-2024), n=40; not treated as robust - use 1981-2019 station window |
-| gsom | TMIN_anom | 2001-2025_gappy | False | 20 | 2020,2021,2022,2023,2024 | 1 | 9 | 0.563 | gappy window: 5 missing years (2020-2024), n=20; not treated as robust - use 1981-2019 station window |
-| gsom | TMIN_anom | 1981-2019_station_window | True | 39 |  | 4 | 14 | 0.444 | robust at 0.05 (HAC and Hamed–Rao) |
-| gsom | PRCP_anom | full | False | 120 |  | 2 | 7 | 13.2 | robust at 0.05 (HAC and Hamed–Rao) |
-| gsom | PRCP_anom | 1981-2019_station_window | True | 39 |  | 4 | 7 | 12.8 | not significant at 0.05 on HAC and Hamed–Rao |
 
 ## Flag legend
 

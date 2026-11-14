@@ -23,9 +23,9 @@ def p(*a):
     print(s, flush=True)
 
 def cache(prefix, region):
-    # exact region, not prefix-matching ukraine_mask_no_crimea
+    # exact region match (no prefix matching of longer region names)
     files=list(Path("team-context/data/pipeline/data/cache/series").glob(f"{prefix}_{region}_*.parquet"))
-    files=[f for f in files if f.name.startswith(f"{prefix}_{region}_") and "_no_crimea_" not in f.name]
+    files=[f for f in files if f.name.startswith(f"{prefix}_{region}_")]
     files=sorted(files, key=lambda p: p.stat().st_mtime, reverse=True)
     return pd.read_parquet(files[0]), files[0]
 

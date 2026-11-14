@@ -12,13 +12,13 @@ No precipitation detection. POWER bbox Yue–Wang p = 0.019 disagrees with OLS n
 Archive precipitation and flux series are monthly **sums in mm/month** (annual mm/year); POWER solar is kWh/m²/day here, while the product displays MJ/m²/day via the catalog `convert` (Q1). POWER monthly-store `T2M_MAX`/`T2M_MIN` are the hottest/coldest hour of the month, not mean daily max/min, so archive Tmax runs 5–7 °C above the mean daily max and archive DTR is overstated by up to 10.6 °C. Product DTR = mean(daily Tmax) − mean(daily Tmin) (Q3). Anomalies here use a 1991–2020 baseline, a recorded deviation from 1981–2010 (ADR-003).
 
 ## Wind
-No wind-speed detection. POWER `WS10M` annual is Yue–Wang significant in all three regions (p = 0.024 / 0.033 / 0.034) but the OLS n_eff cross-check is not (p = 0.092 / 0.153 / 0.121). The conservative verdict is method-dependent, not a detection (B-3). Do not quote "stilling" as a finding.
+No wind-speed detection. POWER `WS10M` annual is Yue–Wang significant on the bbox and on the mask (Ukraine incl. Crimea) (p = 0.024 / 0.033) but the OLS n_eff cross-check is not (p = 0.092 / 0.153). The conservative verdict is method-dependent, not a detection (B-3). Do not quote "stilling" as a finding.
 
 ## GPCC gauges
 Gauges inside the bbox fell from about 500 in the 1980s to about 230 in 2020–2025 (`gpcc_gauge_counts.md`). Early decades are sparse (about 60 gauges in 1891–1929).
 
 ## GRACE
-Headline is the overlap-weight monthly series: bbox −11.242 cm/decade, mask −12.120 cm/decade, mask without Crimea −12.364 cm/decade, n = 235, drop 2002/2017/2018/2026, time at the solution centre. Not groundwater. The dictionary lines that say GRACE was not downloaded are stale. The product uses `backend/.../grace.py` (cell centres, JPL land mask); this archive series differs from it by about 4%, which is within the product uncertainty at its ~3° (≈300 km) real resolution (Q5). The archive still drops whole years (2002/2017/2018/2026) instead of setting only the gap months to NaN (A1-08); that rerun needs the tidy inputs and is open.
+Headline is the overlap-weight monthly series: bbox −11.242 cm/decade, mask (Ukraine incl. Crimea) −12.120 cm/decade, n = 235, drop 2002/2017/2018/2026, time at the solution centre. Not groundwater. The dictionary lines that say GRACE was not downloaded are stale. The product uses `backend/.../grace.py` (cell centres, JPL land mask); this archive series differs from it by about 4%, which is within the product uncertainty at its ~3° (≈300 km) real resolution (Q5). The archive still drops whole years (2002/2017/2018/2026) instead of setting only the gap months to NaN (A1-08); that rerun needs the tidy inputs and is open.
 
 ## AIRS 2025
 2025 is excluded from AIRS trends (`airs_2025_bias_unverified`). The annual window is 2003–2024, n = 22.
@@ -36,7 +36,7 @@ CCI COMBINED v09.2 is break-adjusted and scaled to GLDAS-Noah. Not an independen
 OMI and SWOT are bbox-only. OMI trends: `omi_bbox_trends.md`. Ozone ends in 2018-12. SWOT is about three years and is not a climate trend; the Kherson step is not a confirmed dam-break signal. The Kyiv 1 km urban-heat task was still processing, so there is no urban-minus-rural series. ERA5 was not downloaded (`CDSAPI_KEY` was unset).
 
 ## Masks
-`ukraine_mask` uses Natural Earth 10m Ukraine point-of-view (Crimea included, 597,211 km²). `ukraine_mask_no_crimea` uses the default file (570,178 km²). Country series (Berkeley, CRU) use the producer's own mask. Shapefiles are fetched with `data/pipeline/fetch_natural_earth.py`, not committed.
+`ukraine_mask` uses Natural Earth 10m Ukraine point-of-view (Ukraine incl. Crimea, 597,211 km²); there is no without-Crimea variant. Country series (Berkeley, CRU) use the producer's own mask. Shapefiles are fetched with `data/pipeline/fetch_natural_earth.py`, not committed.
 
 ## CHIRPS
 Use the global monthly NetCDF only (1981-01 through 2026-09 in the archive file). Do not splice the bbox COG extract from 2025-10 onward.

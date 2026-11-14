@@ -136,7 +136,7 @@ berkeley:
 berkeley_country:
   group: station family (GHCN/CLIMAT)
   country_series: true
-  note: "Berkeley Earth country file (2021 run); polygon 553,101 km², lat 45.21-52.37 -> EXCLUDES Crimea (same as NE default de-facto UKR)"
+  note: "Berkeley Earth country file (2021 run); polygon 553,101 km², lat 45.21-52.37 -> EXCLUDES Crimea, so it does not match ukraine_mask (Ukraine incl. Crimea)"
   variables:
     TAVG: {raw_unit: "°C anomaly", conversion: none, unit: "°C anomaly (1951-1980)", agg: mean, valid_range: [-25, 25], out_name: tas_anomaly}
 

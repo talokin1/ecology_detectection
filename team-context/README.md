@@ -5,7 +5,7 @@ Analysis archive for the NASA Space Apps 2026 challenge "Be An Earth System Tren
 ## What is official
 
 - Trend test: repository Mann–Kendall with the Yue–Wang AR(1) correction. See `../docs/decisions/ADR-003-yue-wang-official-for-ukraine-archive.md` and `../docs/10-methods.md`. HAC and Hamed–Rao lag-3 are sensitivity columns.
-- Ukraine case (archive alternates; the canonical product region is the catalog `ukraine` [22.0, 44.0, 40.5, 52.5], land-only, ADR-005): bbox 22.1–40.2°E, 44.4–52.4°N (`ukraine_sa_bbox` in the catalog, `ukraine_bbox` here), plus `ukraine_mask` (Crimea included, primary) and `ukraine_mask_no_crimea`.
+- Ukraine case (archive alternates; the canonical product region is the catalog `ukraine` [22.0, 44.0, 40.5, 52.5], land-only, ADR-005): bbox 22.1–40.2°E, 44.4–52.4°N (`ukraine_sa_bbox` in the catalog, `ukraine_bbox` here), plus `ukraine_mask` (Ukraine incl. Crimea).
 - Smoke test (OLS slopes, tolerance ±0.005): POWER T2M **+0.5526** °C/decade, HadCRUT5 **+0.5793** °C/decade, GRACE production overlap weights **−11.242** cm/decade.
 
 ## Layout
@@ -34,7 +34,7 @@ If those directories sit next to the repository, the pipeline finds them without
 
 ```bash
 python fetch_natural_earth.py
-nice -n 10 python run_pipeline.py --region ukraine_bbox ukraine_mask ukraine_mask_no_crimea
+nice -n 10 python run_pipeline.py --region ukraine_bbox ukraine_mask
 python smoke_test.py
 ```
 

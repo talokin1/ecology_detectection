@@ -3,7 +3,7 @@
 
     cd team-context/data/pipeline
     export OMP_NUM_THREADS=2 UKRAINE_SAMPLES=... GLOBAL_DATA=...
-    nice -n 10 python run_pipeline.py --region ukraine_bbox ukraine_mask ukraine_mask_no_crimea
+    nice -n 10 python run_pipeline.py --region ukraine_bbox ukraine_mask
     python smoke_test.py            # blocking check (needs ukraine_bbox run)
 
 Outputs per region in data/tidy/<region>/ ; QC report in qc_report.md (all regions run so far).

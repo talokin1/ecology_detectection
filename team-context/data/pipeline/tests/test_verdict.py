@@ -40,7 +40,7 @@ def test_idempotent_and_rename():
 
 
 def test_committed_v14_tables_pass_gate():
-    for reg in ("ukraine_bbox", "ukraine_mask", "ukraine_mask_no_crimea"):
+    for reg in ("ukraine_bbox", "ukraine_mask"):
         t = pd.read_csv(PIPE / "outputs" / "v1.4" / f"{reg}_trends.csv")
         assert v.violations(t).empty, reg
         assert "mk_yw_p" not in t.columns

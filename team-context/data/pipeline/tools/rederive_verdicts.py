@@ -24,7 +24,7 @@ import pandas as pd
 
 PIPE = Path(__file__).resolve().parents[1]
 OUT = PIPE / "outputs" / "v1.4"
-REGIONS = ["ukraine_bbox", "ukraine_mask", "ukraine_mask_no_crimea"]
+REGIONS = ["ukraine_bbox", "ukraine_mask"]  # Ukraine is analysed only incl. Crimea (no without-Crimea variant)
 PROVENANCE = "re-derived, not recomputed (B-3 conservative rule applied to committed v1.4 table, 2026-11-14)"
 MARK_START, MARK_END = "<!-- B-3 re-derivation: start -->", "<!-- B-3 re-derivation: end -->"
 
@@ -123,7 +123,7 @@ tables and the multiple-testing lists were patched to match.
 |---|---|---|---|---|---|---|---|
 {rows}
 
-Reworded claims: POWER PRECTOTCORR (bbox), POWER WS10M (all three regions) and GLDAS-2.0 rainfall (bbox)
+Reworded claims: POWER PRECTOTCORR (bbox), POWER WS10M (bbox and mask) and GLDAS-2.0 rainfall (bbox)
 are **not detections**. Precipitation and wind trends are method-dependent; quote them only as
 "Yue-Wang p<0.05 but the OLS cross-check is not significant, so the methods disagree".
 {MARK_END}

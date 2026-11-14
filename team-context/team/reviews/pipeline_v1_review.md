@@ -42,7 +42,7 @@ POWER 0.5° centres run 44.5–52.0°N, 22.5–40.0°E, so cell edges are 44.25�
 
 ### 7. Verified as requested (nits one line each)
 
-Crimea polygons differ: Natural Earth 5.1.1 Ukraine-POV UKR is 597,211 km² (bounds [22.133, 44.381, 40.16, 52.369]); default de-facto UKR is 570,178 km² (lat min 45.214); difference 27,033 km², bounds [32.482, 44.381, 36.638, 46.218]. Simferopol, Sevastopol and Kerch are in the POV polygon and in default RUS, not default UKR; Kyiv / Donetsk / Luhansk are UKR in both. Mask vs no-Crimea series are not identical (POWER T2M max |d| = 0.552 °C, mean |d| = 0.166 °C; CHIRPS precip max |d| = 4.30 mm/month; n_eff 235.33 vs 225.38). DJF year is the Jan/Feb year (Dec 2020 + Jan/Feb 2021 = DJF 2021, exact). 2026 monthly rows are flagged `partial_year` (GSOM’s NaN March 2026 is the only unflagged 2026 row); there are no 2026 ANN rows; trends are cut at `LAST_FULL_YEAR=2025`. `coverage_frac` and `n_effective_cells` are written (HadCRUT n_eff median 5.79 of 15 overlapping 5° cells). Independence groups are present on every tidy row (0 empty of 40,788); CHIRPS is tagged “uses GTS/GHCN/GPCC normals + ERA5 fill”; trend notes say “same independence_group = not independent confirmation.” Annual = 12/12 only, as the Worker stated. `lst_clear_sky_winter_bias` is also attached to NDVI/EVI (nit). The qc_report smoke table rounds slopes to 0.553 / −11.2 with `.3g`, but the diff and pass columns are honest and the JSON keeps full precision.
+Crimea polygons differ: Natural Earth 5.1.1 Ukraine-POV UKR is 597,211 km² (bounds [22.133, 44.381, 40.16, 52.369]); default de-facto UKR is 570,178 km² (lat min 45.214); difference 27,033 km², bounds [32.482, 44.381, 36.638, 46.218]. Simferopol, Sevastopol and Kerch are in the POV polygon and in default RUS, not default UKR; Kyiv / Donetsk / Luhansk are UKR in both. (A without-Crimea comparison checked here was removed with that variant on 2026-11-14.) DJF year is the Jan/Feb year (Dec 2020 + Jan/Feb 2021 = DJF 2021, exact). 2026 monthly rows are flagged `partial_year` (GSOM’s NaN March 2026 is the only unflagged 2026 row); there are no 2026 ANN rows; trends are cut at `LAST_FULL_YEAR=2025`. `coverage_frac` and `n_effective_cells` are written (HadCRUT n_eff median 5.79 of 15 overlapping 5° cells). Independence groups are present on every tidy row (0 empty of 40,788); CHIRPS is tagged “uses GTS/GHCN/GPCC normals + ERA5 fill”; trend notes say “same independence_group = not independent confirmation.” Annual = 12/12 only, as the Worker stated. `lst_clear_sky_winter_bias` is also attached to NDVI/EVI (nit). The qc_report smoke table rounds slopes to 0.553 / −11.2 with `.3g`, but the diff and pass columns are honest and the JSON keeps full precision.
 
 ## What I could not verify
 
@@ -79,7 +79,7 @@ The updated smoke test is as Worker described. Blocking check = production tidy 
 3. **Station baseline is documented as a v1 limitation** in README, qc_report (“Station baseline coverage”) and the deviations list, with the computed counts (see item 5).
 4. **GRACE overlap-weight production check** — see item 1. Present and independently reproduced.
 5. **`coverage_frac` is honest.** POWER T2M on the bbox is a constant 0.978 (n_eff=452.47), not 1.0; CHIRPS bbox 0.948 (sea fill); GLDAS bbox ~0.895–0.898 (land-only grid); GPCC bbox 0.975. On `ukraine_mask` (primary) CHIRPS/IMERG/MERRA-2 are 1.0, POWER 0.999, GLDAS 0.987, GPCC/AIRS ~1.0.
-6. **`ukraine_mask` is stated as the primary Crimea mask** in README, the Crimea section, and the flag legend (POV file, 597,211 km², Crimea included; `ukraine_mask_no_crimea` is a sensitivity variant).
+6. **`ukraine_mask` is stated as the primary Crimea mask** in README, the Crimea section, and the flag legend (POV file, 597,211 km², Ukraine incl. Crimea). The without-Crimea variant reviewed at the time was removed on 2026-11-14.
 
 v1 nits are also fixed: `lst_clear_sky_winter_bias` is only on LST_Day/LST_Night (NDVI/EVI have `no_qc;terra_only` only); the smoke table prints four decimals (+0.5530, +0.5790, −11.2420, −11.2220); GSOM TAVG March 2026 is NaN and flagged `partial_year;missing_value`.
 
@@ -117,7 +117,7 @@ No other variable is near a 5% slope gap or a robustness flip. IMERG is an exact
 
 **Land mask.** Every gridded global loader uses the same region polygon and overlap weights. Residual coverage gaps are product-inherent (GLDAS land-only coastal cells; CHIRPS sea fill on the bbox; MERRA-2/IMERG have data over sea, so bbox coverage=1). On the primary `ukraine_mask` those differences shrink to a few percent at most (GLDAS 0.987). Do not treat a bbox MERRA-2 (land+sea) mean as the same domain as bbox CHIRPS or GLDAS.
 
-**Regions in `tidy/`:** only `ukraine_bbox`, `ukraine_mask`, and `ukraine_mask_no_crimea`. No other countries. Trend tables are sane (153 / 187 / 187 rows, no null slopes, n_min=14, AIRS full ends in 2024 on all three). Mask vs bbox shifts are small and in the expected direction (POWER T2M 1981–2025 +0.553 bbox / +0.556 mask / +0.556 no-Crimea). GRACE is more sensitive to the polygon, as expected.
+**Regions in `tidy/`:** `ukraine_bbox` and `ukraine_mask` (Ukraine incl. Crimea). No other countries. Trend tables are sane (153 / 187 rows, no null slopes, n_min=14, AIRS full ends in 2024 on both). Mask vs bbox shifts are small and in the expected direction (POWER T2M 1981–2025 +0.553 bbox / +0.556 mask). GRACE is more sensitive to the polygon, as expected.
 
 ### Nits (one line each)
 
@@ -247,7 +247,7 @@ Two mask headlines are called “robust at 0.05” and fail **both** Bonferroni 
 
 ### 3. GRACE −12.12 (mask) vs −11.242 (bbox) are region-labelled (verified)
 
-Recomputed with `grace_headline_trend` (same function as the blocking smoke test): `ukraine_mask` **−12.1199** cm/decade (n=235), `ukraine_bbox` **−11.2420**, `ukraine_mask_no_crimea` **−12.3637**. Every GRACE row carries the `region` column; headline tables are under per-region headings; both headline rows pass Bonferroni and BH. The generic 12/12 and record-mean monthly GRACE rows stay `role=different_convention`, `headline=False`.
+Recomputed with `grace_headline_trend` (same function as the blocking smoke test): `ukraine_mask` **−12.1199** cm/decade (n=235), `ukraine_bbox` **−11.2420**. Every GRACE row carries the `region` column; headline tables are under per-region headings; both headline rows pass Bonferroni and BH. The generic 12/12 and record-mean monthly GRACE rows stay `role=different_convention`, `headline=False`.
 
 ### Nits (one line each)
 

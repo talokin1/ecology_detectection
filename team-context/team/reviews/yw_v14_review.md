@@ -2,7 +2,7 @@
 
 **Verdict: the pipeline rerun is consistent with ADR-003. Do not add a precipitation detection.**
 
-The v1.4 code was run for `ukraine_bbox`, `ukraine_mask`, and `ukraine_mask_no_crimea`. The blocking smoke test passed (POWER T2M +0.5526, HadCRUT5 +0.5793, GRACE −11.242, tolerance ±0.005). An independent call to `trend_stats.py` reproduced the pipeline Yue–Wang and OLS n_eff p-values exactly on POWER T2M, POWER precipitation, HadCRUT5, and the GRACE headline anomalies.
+The v1.4 code was run for `ukraine_bbox` and `ukraine_mask` (Ukraine incl. Crimea; a without-Crimea run from that day was removed on 2026-11-14). The blocking smoke test passed (POWER T2M +0.5526, HadCRUT5 +0.5793, GRACE −11.242, tolerance ±0.005). An independent call to `trend_stats.py` reproduced the pipeline Yue–Wang and OLS n_eff p-values exactly on POWER T2M, POWER precipitation, HadCRUT5, and the GRACE headline anomalies.
 
 Primary columns are repository Yue–Wang. `mt_bonferroni_pass` and `mt_bh_pass` are Bonferroni and Benjamini–Hochberg on `yw_p` (bbox annual family n = 135, monthly n = 65; mask annual n = 161). A row is a detection only when Yue–Wang and the OLS n_eff cross-check both sit under 0.05 and the correction being quoted passes. HAC and Hamed–Rao lag-3 stay in the sensitivity columns.
 
