@@ -99,3 +99,21 @@ describe('exporters', () => {
     expect(csv).toContain('1981-02,,');
   });
 });
+
+describe('map filters (production UX plan A3)', async () => {
+  const { cellVisible, countVisible } = await import('./filter');
+  it('hides only what the filter excludes', () => {
+    expect(cellVisible(0.3, 0, 'all')).toBe(true);
+    expect(cellVisible(0.3, 0, 'clear')).toBe(false);
+    expect(cellVisible(0.3, 1, 'clear')).toBe(true);
+    expect(cellVisible(-0.3, 1, 'clear_pos')).toBe(false);
+    expect(cellVisible(-0.3, 1, 'clear_neg')).toBe(true);
+    expect(cellVisible(null, 0, 'clear')).toBe(true); // no-data hatching stays
+  });
+  it('leaves no coloured non-significant square under "clear trends only"', () => {
+    const layer = { slope_per_decade: [0.2, -0.1, null, 0.5], significant: [1, 0, 0, 0] } as unknown as MapLayer;
+    expect(countVisible(layer, 'all')).toBe(3);
+    expect(countVisible(layer, 'clear')).toBe(1);
+    expect(countVisible(layer, 'clear_neg')).toBe(0);
+  });
+});

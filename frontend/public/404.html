@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Trend Detective</title>
+    <script>
+      // GitHub Pages serves this file for unknown paths. The app uses hash routes, so send the
+      // visitor to the app root of this site (the first path segment is the repository name).
+      (function () {
+        var seg = location.pathname.split('/').filter(Boolean)[0];
+        var root = location.hostname.endsWith('github.io') && seg ? '/' + seg + '/' : '/';
+        location.replace(root + '#/');
+      })();
+    </script>
+  </head>
+  <body>
+    <p>Redirecting to <a href="./">Trend Detective</a>…</p>
+  </body>
+</html>

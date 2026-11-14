@@ -7,6 +7,7 @@ import '@fontsource/inter/600.css';
 import '@fontsource/inter/700.css';
 import './theme/tokens.css';
 import './styles.css';
+import './styles-ux.css';
 import { initTheme } from './state/theme';
 import { ErrorState, Loading, RouteError, Shell } from './components/Shell';
 import { S } from './strings/en';
@@ -27,6 +28,7 @@ const RegionRoute = lazy(() => import('./pages/CasePage').then((m) => ({ default
 const CompareRoute = lazy(() => import('./pages/ComparePage').then((m) => ({ default: m.CompareRoute })));
 const CatalogPage = lazy(() => import('./pages/CatalogPage').then((m) => ({ default: m.CatalogPage })));
 const MethodsPage = lazy(() => import('./pages/MethodsPage').then((m) => ({ default: m.MethodsPage })));
+const AboutPage = lazy(() => import('./pages/AboutPage').then((m) => ({ default: m.AboutPage })));
 
 const wrap = (el: JSX.Element) => <Suspense fallback={<Loading />}>{el}</Suspense>;
 
@@ -42,6 +44,7 @@ const router = createHashRouter([
       { path: 'compare/:a/:b', element: wrap(<CompareRoute />), errorElement: <RouteError /> },
       { path: 'catalog', element: wrap(<CatalogPage />), errorElement: <RouteError /> },
       { path: 'methods', element: wrap(<MethodsPage />), errorElement: <RouteError /> },
+      { path: 'about', element: wrap(<AboutPage />), errorElement: <RouteError /> },
       { path: '*', element: <ErrorState>{S.errors.notFound}</ErrorState> },
     ],
   },

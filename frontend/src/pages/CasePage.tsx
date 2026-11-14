@@ -3,11 +3,12 @@ import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { api, DataError } from '../data/load';
 import { useData } from '../data/useData';
 import type { AnalysisResult, Case, Index, MapLayer, Region, VariableRef } from '../data/types.gen';
-import { MapLegend } from '../components/MapLegend';
-import { EvidenceScale, Readout, VerdictDetails } from '../components/VerdictCard';
+import { LegendChip } from '../components/MapLegend';
+import { Readout, VerdictDetails } from '../components/VerdictCard';
 import { InsightList } from '../components/InsightList';
 import { TrendChart, type ChartBars, type ChartHandle } from '../components/SeriesChart';
 import { ExtremesChart, MonthChart, SeasonChart } from '../components/SmallCharts';
+import { Disclosure, InfoPopover } from '../components/Panel';
 import { ErrorState, Loading, useScreenContext } from '../components/Shell';
 import { CompareView } from './ComparePage';
 import { download, seriesCsv } from '../lib/exporters';
@@ -39,9 +40,9 @@ export function RegionRoute() {
   return <CaseView index={index.data} regionId={rid ?? ''} variableId={varId} />;
 }
 
-/** Section kicker "02 · Where"; numbers follow one order array so they never drift. */
-export function Kicker({ n, children }: { n: number; children: string }) {
-  return <h2 className="kicker-h"><span className="kicker-h__n">{String(n).padStart(2, '0')}</span>{children}</h2>;
+/** Plain section heading (no step numbers, plan A13). */
+export function Kicker({ children }: { n?: number; children: string }) {
+  return <h2 className="kicker-h">{children}</h2>;
 }
 
 function CaseView({ index, regionId, variableId, theCase }: { index: Index; regionId: string; variableId: string; theCase?: Case }) {
@@ -66,9 +67,6 @@ function CaseView({ index, regionId, variableId, theCase }: { index: Index; regi
 }
 
 type View = 'year' | 'month' | 'raw';
-const SECTIONS = ['overTime', 'where', 'found', 'sure', 'closer', 'keep'] as const;
-const num = (s: (typeof SECTIONS)[number]) => SECTIONS.indexOf(s) + 1;
-
 const signed = (v: number) => `${v > 0 ? '+' : v < 0 ? '−' : ''}${Math.abs(v)}`;
 
 function chartProps(a: AnalysisResult, variable: VariableRef, view: View) {
@@ -91,13 +89,44 @@ function chartProps(a: AnalysisResult, variable: VariableRef, view: View) {
   };
 }
 
+/** Breadcrumb with region and variable selects (replaces "Case 0X" and the chip lists). */
+export function Breadcrumb({ index, region, variable, extra }: { index: Index; region?: Region; variable: VariableRef; extra?: string }) {
+  const navigate = useNavigate();
+  const catalog = useData(api.catalog, 'catalog');
+  const entry = catalog.data?.variables.find((c) => c.id === variable.catalog_id);
+  const back = region ? `/?var=${variable.id}&panel=quick&region=${region.id}` : `/?var=${variable.id}`;
+  return (
+    <nav className="crumbs" aria-label="Breadcrumb">
+      <Link to={back}>{S.case.breadcrumbRoot}</Link>
+      <span aria-hidden="true">/</span>
+      {region ? (
+        <label className="crumbs__field">
+          <select aria-label={S.case.region} value={region.id} onChange={(e) => navigate(`/region/${e.target.value}?var=${variable.id}`)}>
+            {index.regions.map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}
+          </select>
+        </label>
+      ) : <span>{extra}</span>}
+      <span aria-hidden="true">/</span>
+      <label className="crumbs__field">
+        <select aria-label={S.case.variable} value={variable.id} onChange={(e) => navigate(region ? `/region/${region.id}?var=${e.target.value}` : `/?var=${e.target.value}`)}>
+          {index.variables.map((v) => <option key={v.id} value={v.id}>{v.name}</option>)}
+        </select>
+      </label>
+      <InfoPopover label={S.explore.about(variable.name)}>
+        <strong>{variable.long_name}</strong>, {variable.units_long}.{' '}
+        {entry && <>{entry.definition} <em>{S.explore.whyTrends}</em> {entry.why_it_trends}</>}
+      </InfoPopover>
+    </nav>
+  );
+}
+
 function CaseBody({ index, a, region, variable, theCase, layer }: {
   index: Index; a: AnalysisResult; region: Region; variable: VariableRef; theCase?: Case; layer?: MapLayer;
 }) {
   const [view, setView] = useState<View>('year');
   const [detail, setDetail] = useState<'season' | 'month'>('season');
+  const [legendOpen, setLegendOpen] = useState(true);
   const chart = useRef<ChartHandle>(null);
-  const navigate = useNavigate();
   const pal = variable.palette as PaletteName;
   const t = a.trend.display;
   const period = `${a.period.start.slice(0, 4)}–${a.period.end.slice(0, 4)}`;
@@ -105,19 +134,14 @@ function CaseBody({ index, a, region, variable, theCase, layer }: {
   const fileBase = `trend-detective_${region.id}_${variable.id}`;
   const props = useMemo(() => chartProps(a, variable, view), [a, variable, view]);
   const footer = `${variable.long_name}, ${region.name}, ${period}. ${a.provenance.dataset}${a.provenance.synthetic ? ' (SYNTHETIC DEMO DATA, not a result)' : ''}. Trend Detective.`;
+  const seasonInsight = a.insights.find((i) => i.kind === 'season' || i.kind === 'season_unresolved');
 
   return (
     <article className="case">
       <header className="case__header">
-        <div className="kicker">{theCase ? `${S.case.caseLabel} ${theCase.id} · ${theCase.title}` : `${S.case.regionLabel} · ${region.name}`}</div>
+        <Breadcrumb index={index} region={region} variable={variable} />
         <h1 className="case__question">{question}</h1>
         {theCase?.teaser && <p className="case__teaser">{theCase.teaser}</p>}
-        <p className="case__meta">
-          <span>{variable.long_name}, {variable.units_long}</span>
-          <span>{region.name}</span>
-          <span>{period}</span>
-          <span>{a.provenance.synthetic ? S.case.syntheticMeta : a.provenance.dataset}</span>
-        </p>
       </header>
 
       <Readout value={t.rate_value} unit={t.rate_unit} headline={a.verdict.headline} level={a.verdict.level}
@@ -126,16 +150,13 @@ function CaseBody({ index, a, region, variable, theCase, layer }: {
       <div className="grid75">
         <section className="sec">
           <div className="sec__head">
-            <Kicker n={num('overTime')}>{S.case.sections.overTime}</Kicker>
+            <Kicker>{S.case.sections.overTime}</Kicker>
             <div className="segmented" role="group" aria-label="Chart view">
               {(['year', 'month', 'raw'] as View[]).map((k) => (
                 <button key={k} type="button" aria-pressed={view === k} className={view === k ? 'is-active' : ''} onClick={() => setView(k)}>{S.case.views[k]}</button>
               ))}
             </div>
           </div>
-          {view !== 'raw' && a.verdict.level !== 'insufficient' && (
-            <p className="chart-caption"><strong>{S.case.trendTitle}:</strong> {t.annotation}</p>
-          )}
           <TrendChart ref={chart} {...props} footer={footer}
             ariaLabel={`${variable.long_name} in ${region.name}, ${period}. ${a.verdict.headline}. ${t.annotation}.`} />
           {view !== 'raw' ? (
@@ -146,102 +167,64 @@ function CaseBody({ index, a, region, variable, theCase, layer }: {
             </div>
           ) : null}
           <p className="help">
-            {view === 'year' ? S.case.yearHelp : view === 'month' ? S.case.monthHelp : S.case.rawHelp}
-            {view !== 'raw' && a.emergence.label ? ` ${a.emergence.label}` : ''}
+            {view === 'year' ? (a.emergence.label ?? S.case.yearHelp) : view === 'month' ? S.case.monthHelp : S.case.rawHelp}
           </p>
         </section>
 
         <section className="sec">
-          <Kicker n={num('where')}>{S.case.sections.where}</Kicker>
+          <Kicker>{S.case.sections.where}</Kicker>
           <div className="where-map">
             <Suspense fallback={<Loading height={300} />}>
-              <TrendMap layer={layer} regions={[region]} activeRegionIds={[region.id]} fit={region.bbox} scrollZoom={false}
+              <TrendMap layer={layer} regions={[region]} activeRegionIds={[region.id]} fit={region.bbox} scrollZoom={false} attribution={false}
                 ariaLabel={`Map of ${region.name} showing the trend of ${variable.long_name.toLowerCase()} in each grid square.`} />
             </Suspense>
           </div>
-          {layer && <MapLegend layer={layer} caption={S.map.caseMapCaption} />}
+          {layer && legendOpen && <LegendChip layer={layer} synthetic={layer.provenance.synthetic} caption={S.map.caseMapCaption} onClose={() => setLegendOpen(false)} />}
+          {layer && !legendOpen && <button type="button" className="btn btn--quiet" onClick={() => setLegendOpen(true)}>{S.explore.legend}</button>}
         </section>
       </div>
 
       <div className="grid75">
         <section className="sec">
-          <Kicker n={num('found')}>{S.case.sections.found}</Kicker>
+          <Kicker>{S.case.sections.found}</Kicker>
           <InsightList a={a} variableId={variable.id} />
         </section>
         <section className="sec">
-          <Kicker n={num('sure')}>{S.case.sections.sure}</Kicker>
-          <VerdictDetails a={a} />
+          <Kicker>{S.case.sections.sure}</Kicker>
+          <p className="vdetails__sure"><strong>{S.verdict.howSure}</strong> {a.verdict.how_sure}</p>
+          {a.verdict.disagree_text && <p className="vdetails__disagree">{a.verdict.disagree_text}</p>}
+          <Disclosure title="Details" summary={`${t.total_label}: ${t.total} (${t.total_range})`}>
+            <VerdictDetails a={a} />
+          </Disclosure>
         </section>
       </div>
 
-      <div className="grid75">
-        <section className="sec">
+      <div className="stack">
+        <Disclosure title={S.case.sections.closer} summary={seasonInsight?.text ?? `${S.case.bySeason}, ${S.case.byMonth.toLowerCase()}`}>
           <div className="sec__head">
-            <Kicker n={num('closer')}>{`${S.case.sections.closer}: ${detail === 'season' ? S.case.bySeason.toLowerCase() : S.case.byMonth.toLowerCase()}`}</Kicker>
+            <p className="sec__units">{variable.rate_units}</p>
             <div className="segmented" role="group" aria-label="Season or month">
               <button type="button" aria-pressed={detail === 'season'} className={detail === 'season' ? 'is-active' : ''} onClick={() => setDetail('season')}>{S.case.bySeason}</button>
               <button type="button" aria-pressed={detail === 'month'} className={detail === 'month' ? 'is-active' : ''} onClick={() => setDetail('month')}>{S.case.byMonth}</button>
             </div>
           </div>
-          <p className="sec__units">{variable.rate_units}</p>
           {detail === 'season' ? <SeasonChart a={a} variable={variable} /> : <MonthChart a={a} variable={variable} />}
           <p className="help">{detail === 'season' ? S.case.seasonHelp : S.case.monthHelp2}</p>
-        </section>
+        </Disclosure>
         {a.extremes && (
-          <section className="sec">
-            <h3 className="h3">{a.extremes.label} per year</h3>
+          <Disclosure title={`${S.case.sections.extremes}: ${a.extremes.label.toLowerCase()}`} summary={a.extremes.display.trend_text}>
             <p className="sec__units">{a.extremes.display.subtitle}</p>
             <ExtremesChart a={a} variable={variable} />
-            <p className="help">{a.extremes.display.trend_text}</p>
-          </section>
+          </Disclosure>
         )}
+        <Disclosure title={S.case.sections.data} summary={`${S.case.source}: ${a.provenance.dataset}`}>
+          <div className="case__downloads">
+            <button type="button" className="btn" onClick={() => download(`${fileBase}.csv`, seriesCsv(a, variable.long_name, region.name, variable))}>{S.case.csv}</button>
+            <button type="button" className="btn" onClick={() => chart.current?.downloadPng(fileBase)}>{S.case.png}</button>
+          </div>
+          <p className="case__prov">{a.provenance.processing.join('; ')}. {a.provenance.caveat} <Link to="/methods?s=data">{S.case.dataMethods}</Link></p>
+        </Disclosure>
       </div>
-
-      <section className="sec keep">
-        <Kicker n={num('keep')}>{S.case.sections.keep}</Kicker>
-        <div className="grid75 grid75--flat">
-          <div>
-            <h3 className="h3">{S.case.otherVariables}</h3>
-            <div className="chips">
-              {index.variables.map((v) => {
-                const s = index.verdicts[`${region.id}__${v.id}`];
-                return (
-                  <Link key={v.id} to={`/region/${region.id}?var=${v.id}`} className={`chip chip--rich${v.id === variable.id ? ' is-active' : ''}`} aria-current={v.id === variable.id ? 'page' : undefined}>
-                    <span className="chip__name">{v.name}</span>
-                    {s && <span className="chip__meta"><EvidenceScale level={s.level} word size="sm" /> · {s.rate_text}</span>}
-                  </Link>
-                );
-              })}
-            </div>
-          </div>
-          <div>
-            <h3 className="h3">{S.case.otherRegions}</h3>
-            <div className="chips">
-              {index.regions.map((r) => {
-                const s = index.verdicts[`${r.id}__${variable.id}`];
-                return (
-                  <button key={r.id} type="button" onClick={() => navigate(`/region/${r.id}?var=${variable.id}`)}
-                    className={`chip chip--rich${r.id === region.id ? ' is-active' : ''}`} aria-current={r.id === region.id ? 'page' : undefined}>
-                    <span className="chip__name">{r.name}</span>
-                    {s && <span className="chip__meta"><EvidenceScale level={s.level} word size="sm" /> · {s.rate_text}</span>}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <footer className="case__footer">
-        <div className="case__downloads">
-          <span className="muted">{S.case.download}:</span>
-          <button type="button" className="btn" onClick={() => download(`${fileBase}.csv`, seriesCsv(a, variable.long_name, region.name, variable))}>{S.case.csv}</button>
-          <button type="button" className="btn" onClick={() => chart.current?.downloadPng(fileBase)}>{S.case.png}</button>
-        </div>
-        <p className="case__prov">
-          {S.case.source}: {a.provenance.dataset}. {a.provenance.processing.join('; ')}. <Link to="/methods?s=data">{S.case.dataMethods}</Link>
-        </p>
-      </footer>
     </article>
   );
 }
