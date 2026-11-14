@@ -1,0 +1,313 @@
+========================================================================
+A. OLD EXTRACT vs TIDY GPCC/CHIRPS (ukraine_bbox)
+========================================================================
+  old GPCC extract 1981-2025 ANN mean=586.3902 n=45 months=540
+  chirps csv cols ['time', 'precip_mm', 'n_valid_pixels']
+  old CHIRPS extract 1981-2025 ANN mean=686.6896 n=45 months=540 last=2026-10-01 00:00:00 n_all=550
+  gpcc tidy ANN 1981-2025=585.3496 old=586.3902 diff=-1.0406
+    monthly n_common=1628 corr=0.998254 mean_diff=-0.1636 maxabs=5.2608
+    1981-2025 monthly mean_diff=-0.0867 *12=-1.0406 maxabs=5.2608
+  chirps tidy ANN 1981-2025=686.7771 old=686.6896 diff=+0.0876
+    monthly n_common=549 corr=0.999655 mean_diff=-0.0143 maxabs=15.0676
+    1981-2025 monthly mean_diff=+0.0073 *12=+0.0876 maxabs=1.9756
+
+========================================================================
+B. GLDAS unit conversion + overlap + forcing windows
+========================================================================
+  CORE: def days_in_month(dates: pd.Series | pd.DatetimeIndex) -> np.ndarray:
+  CORE:     return np.asarray(pd.DatetimeIndex(dates).days_in_month, dtype=float)
+  CORE: def convert(values, dates, sp: dict) -> np.ndarray:
+  CORE:     d = days_in_month(dates)
+  CORE:     if c == "per_s_to_month":
+  CORE:         return v * 86400.0 * d
+  rainf cache gldas21_rainf_ukraine_mask_4732f96b3f3fc176.parquet cols ['date', 'file', 'Rainf_f_tavg', 'Rainf_f_tavg__n', 'Rainf_f_tavg__ne', 'Rainf_f_tavg__cov', 'Snowf_tavg', 'Snowf_tavg__n', 'Snowf_tavg__ne', 'Snowf_tavg__cov', 'Rain_liquid', 'Rain_liquid__n', 'Rain_liquid__ne', 'Rain_liquid__cov'] n 319
+  cache Snowf_tavg mean (raw units?) 3.7033939039225845e-06 {'date': {0: Timestamp('2000-01-01 00:00:00'), 1: Timestamp('2000-02-01 00:00:00')}, 'file': {0: 'GLDAS_NOAH025_M.A200001.021.nc4', 1: 'GLDAS_NOAH025_M.A200002.021.nc4'}, 'Rainf_f_tavg': {0: 2.58156021666391e-05, 1: 2.212001874606655e-05}, 'Rainf_f_tavg__n': {0: 1288, 1: 1288}, 'Rainf_f_tavg__ne': {0: 1164.4322800753057, 1: 1164.4322800753057}, 'Rainf_f_tavg__cov': {0: 0.9874294606755, 1: 0.9874294606755}, 'Snowf_tavg': {0: 2.028554109910629e-05, 1: 9.45989791215618e-06}, 'Snowf_tavg__n': {0: 1281, 1: 1281}, 'Snowf_tavg__ne': {0: 1157.9067827139925, 1: 1157.9067827139925}, 'Snowf_tavg__cov': {0: 0.9818692814903225, 1: 0.9818692814903225}, 'Rain_liquid': {0: 5.520899602496853e-06, 1: 1.2672420720961137e-05}, 'Rain_liquid__n': {0: 1281, 1: 1281}, 'Rain_liquid__ne': {0: 1157.9067827139925, 1: 1157.9067827139925}, 'Rain_liquid__cov': {0: 0.9818692814903225, 1: 0.9818692814903225}}
+  first row cache {'date': Timestamp('2000-01-01 00:00:00'), 'file': 'GLDAS_NOAH025_M.A200001.021.nc4', 'Rainf_f_tavg': 2.58156021666391e-05, 'Rainf_f_tavg__n': 1288, 'Rainf_f_tavg__ne': 1164.4322800753057, 'Rainf_f_tavg__cov': 0.9874294606755, 'Snowf_tavg': 2.028554109910629e-05, 'Snowf_tavg__n': 1281, 'Snowf_tavg__ne': 1157.9067827139925, 'Snowf_tavg__cov': 0.9818692814903225, 'Rain_liquid': 5.520899602496853e-06, 'Rain_liquid__n': 1281, 'Rain_liquid__ne': 1157.9067827139925, 'Rain_liquid__cov': 0.9818692814903225}
+  Jan 2010 cache raw=3.0366522636752906e-05 tidy=81.333694230279 raw*86400=2.6237 raw*86400*31=81.3337 match_days=True match_daily=False
+  all months raw*86400*days vs tidy: maxabs=0.000000e+00 n=319
+  2.0 1948-01-01 00:00:00..2014-12-01 00:00:00 n=804 mean mm/mo=7.027
+  2.1 2000-01-01 00:00:00..2026-07-01 00:00:00 n=319 mean mm/mo=9.682
+  overlap n=180 2000-01..2014-12 corr=0.9624 mean20=6.488 mean21=10.884 diff21-20=4.397
+  ANN 2000-2014 mean20=77.85 mean21=130.61
+  slope20=14.617 hac=0.2495 hr=0.5526 not significant at 0.05 on HAC and Hamed–Rao
+  slope21=-0.920 hac=0.954 hr=0.8431 not significant at 0.05 on HAC and Hamed–Rao
+  2.1 annual mm/yr: {2000: 121.7, 2001: 174.3, 2002: 82.6, 2003: 135.6, 2004: 151.6, 2005: 172.9, 2006: 126.9, 2007: 96.5, 2008: 52.1, 2009: 115.4, 2010: 217.9, 2011: 90.3, 2012: 169.5, 2013: 154.2, 2014: 97.8, 2015: 49.8, 2016: 126.1, 2017: 91.6, 2018: 188.4, 2019: 81.9, 2020: 48.3, 2021: 140.8, 2022: 115.2, 2023: 85.1, 2024: 78.0, 2025: 39.3}
+  2.0 annual 2000-2014: {2000: 56.6, 2001: 82.7, 2002: 32.8, 2003: 83.8, 2004: 87.9, 2005: 99.0, 2006: 83.0, 2007: 55.8, 2008: 44.1, 2009: 89.9, 2010: 140.0, 2011: 54.6, 2012: 118.9, 2013: 81.9, 2014: 56.7}
+  2.1 2001-2010 n=10 slope=-0.421 hac=0.9944 hr=0.7205 not significant at 0.05 on HAC and Hamed–Rao
+  2.1 2011-2025 AGRMET n=15 slope=-38.353 hac=0.07229 hr=0.07482 not significant at 0.05 on HAC and Hamed–Rao
+  2.1 2000-2025 full n=26 slope=-22.696 hac=0.01441 hr=0.02751 not significant at 0.05 on HAC and Hamed–Rao
+  2.1 2002-2024 n=23 slope=-16.000 hac=0.1646 hr=0.1538 not significant at 0.05 on HAC and Hamed–Rao
+  2.1 2000-2010 n=11 slope=4.619 hac=0.9244 hr=0.8763 not significant at 0.05 on HAC and Hamed–Rao
+  2.1 2012-2024 n=13 slope=-39.394 hac=0.1302 hr=0.1272 not significant at 0.05 on HAC and Hamed–Rao
+  gldas20 identity maxabs=2.751636e-01 mean=-1.746068e-02 n=804
+    liquid min=0.1640 snow min=0.0000 total mean mm/mo=46.361
+  gldas21 identity maxabs=2.930551e-01 mean=8.782400e-03 n=319
+    liquid min=3.8415 snow min=0.0000 total mean mm/mo=60.575
+  unique sources with snowfall ['gldas20', 'gldas21']
+  2.1 months in 2025-26:       date     value
+2025-01-01  7.228486
+2025-02-01 10.371348
+2025-03-01  1.302418
+2025-04-01  1.514588
+2025-05-01  0.041737
+2025-06-01  0.000000
+2025-07-01  0.000000
+2025-08-01  0.000000
+2025-09-01  0.000000
+2025-10-01  0.078614
+2025-11-01  0.783859
+2025-12-01 17.986402
+2026-01-01 42.735399
+2026-02-01 41.369714
+2026-03-01  0.559220
+2026-04-01  0.071741
+2026-05-01  0.007667
+2026-06-01  0.000000
+2026-07-01  0.000000
+  merra2 variables: ['DTR', 'PRECTOT', 'PRECTOTCORR', 'QV2M', 'SLP', 'T2M', 'T2MMAX', 'T2MMIN', 'U10M', 'V10M', 'WS10M_from_mean_UV']
+  station snow vars? ['snowfall']
+
+========================================================================
+C. MODIS IMPACT from correct ukraine_mask cache + flags
+========================================================================
+  VI cache mod13c2_qc_ukraine_mask_4cf3c5064736f0f2.parquet
+  LST cache mod11c3_qc_ukraine_mask_73cdd1e538dd1383.parquet
+  NDVI: area_removed_mean=8.5890 csv=8.5890  max=90.6587 csv=90.6587
+    lt50 cov=22 kept=22 csv=22
+    trend_qc=0.002140 csv=0.002140 match=True
+    trend_noqc=0.004742 csv=0.004742 match=True
+    robust_qc=not significant at 0.05 on HAC and Hamed–Rao | csv=not significant at 0.05 on HAC and Hamed–Rao
+    robust_noqc=not significant at 0.05 on HAC and Hamed–Rao | csv=not significant at 0.05 on HAC and Hamed–Rao
+    DJF qc=0.017829 noqc=0.024716
+    JJA qc=-0.000603 noqc=-0.000538
+    kept weighted: mean=0.914 DJF=0.683 JJA=0.999
+  EVI: area_removed_mean=8.5890 csv=8.5890  max=90.6587 csv=90.6587
+    lt50 cov=22 kept=22 csv=22
+    trend_qc=0.005180 csv=0.005180 match=True
+    trend_noqc=0.006064 csv=0.006064 match=True
+    robust_qc=HAC significant; Hamed–Rao anti-conservative (negative residual AR); not treated as robust | csv=HAC significant; Hamed–Rao anti-conservative (negative residual AR); not treated as robust
+    robust_noqc=robust at 0.05 (HAC and Hamed–Rao) | csv=robust at 0.05 (HAC and Hamed–Rao)
+    DJF qc=0.005649 noqc=0.008047
+    JJA qc=0.011420 noqc=0.011470
+    kept weighted: mean=0.914 DJF=0.683 JJA=0.999
+  LST_Day: area_removed_mean=0.2750 csv=0.2750  max=3.9152 csv=3.9152
+    lt50 cov=0 kept=0 csv=0
+    trend_qc=0.889037 csv=0.889037 match=True
+    trend_noqc=0.888444 csv=0.888444 match=True
+    robust_qc=robust at 0.05 (HAC and Hamed–Rao) | csv=robust at 0.05 (HAC and Hamed–Rao)
+    robust_noqc=robust at 0.05 (HAC and Hamed–Rao) | csv=robust at 0.05 (HAC and Hamed–Rao)
+    DJF qc=1.517299 noqc=1.514935
+    JJA qc=0.677466 noqc=0.677558
+    kept weighted: mean=0.997 DJF=0.993 JJA=0.999
+  LST_Night: area_removed_mean=0.2862 csv=0.2862  max=2.3069 csv=2.3069
+    lt50 cov=0 kept=0 csv=0
+    trend_qc=0.858016 csv=0.858016 match=True
+    trend_noqc=0.857407 csv=0.857407 match=True
+    robust_qc=robust at 0.05 (HAC and Hamed–Rao) | csv=robust at 0.05 (HAC and Hamed–Rao)
+    robust_noqc=robust at 0.05 (HAC and Hamed–Rao) | csv=robust at 0.05 (HAC and Hamed–Rao)
+    DJF qc=1.558167 noqc=1.556903
+    JJA qc=0.793279 noqc=0.792678
+    kept weighted: mean=0.997 DJF=0.993 JJA=0.998
+  tidy EVI: n=321 cov min/med=0.093/0.996 qc_pixel_masked=321 no_qc=0 lt50=22 flags={'qc_pixel_masked': 321, 'terra_only': 321, 'vi_winter_snow_masked_sampling': 321, 'partial_year': 21, 'qc_low_coverage_lt50pct': 22}
+    lt50 by month {1: 13, 2: 9} n_years=17
+  tidy LST_Day: n=321 cov min/med=0.870/0.998 qc_pixel_masked=321 no_qc=0 lt50=0 flags={'qc_pixel_masked': 321, 'terra_only': 321, 'lst_clear_sky_winter_bias': 321, 'partial_year': 21}
+  tidy LST_Day_clear_days: n=321 cov min/med=0.870/0.998 qc_pixel_masked=321 no_qc=0 lt50=0 flags={'qc_pixel_masked': 321, 'terra_only': 321, 'partial_year': 21}
+  tidy LST_Night: n=321 cov min/med=0.975/0.998 qc_pixel_masked=321 no_qc=0 lt50=0 flags={'qc_pixel_masked': 321, 'terra_only': 321, 'lst_clear_sky_winter_bias': 321, 'partial_year': 21}
+  tidy LST_Night_clear_days: n=321 cov min/med=0.975/0.998 qc_pixel_masked=321 no_qc=0 lt50=0 flags={'qc_pixel_masked': 321, 'terra_only': 321, 'partial_year': 21}
+  tidy NDVI: n=321 cov min/med=0.093/0.996 qc_pixel_masked=321 no_qc=0 lt50=22 flags={'qc_pixel_masked': 321, 'terra_only': 321, 'vi_winter_snow_masked_sampling': 321, 'partial_year': 21, 'qc_low_coverage_lt50pct': 22}
+    lt50 by month {1: 13, 2: 9} n_years=17
+  NDVI years with lt50 month: [2000, 2003, 2004, 2006, 2009, 2010, 2011, 2012, 2013, 2015, 2016, 2017, 2018, 2019, 2021, 2024, 2026] n=17; of those in 12/12 ANN: 15
+  LST_Day_clear_days mean=15.50 by month {1: 8.7, 2: 9.1, 3: 14.3, 4: 17.4, 5: 20.1, 6: 19.9, 7: 22.0, 8: 22.8, 9: 18.8, 10: 15.2, 11: 9.1, 12: 8.0}
+  LST_Night_clear_days mean=15.81 by month {1: 11.7, 2: 11.5, 3: 15.4, 4: 16.6, 5: 18.1, 6: 17.1, 7: 18.9, 8: 21.2, 9: 19.0, 10: 16.4, 11: 11.9, 12: 11.4}
+
+========================================================================
+D. MERRA-2 DTR/wind remainder
+========================================================================
+  DTR identity maxabs=2.486900e-13
+  Jul 1980 bbox: {'T2M': 19.56892459544531, 'T2MMAX': 24.13531922360869, 'T2MMIN': 14.455603774670806, 'DTR': 9.679715448937769}
+  Jul 1980 mask: {'T2M': 19.250662815347937, 'T2MMAX': 24.00672250522217, 'T2MMIN': 13.840783752281652, 'DTR': 10.165938752940493}
+  mean WS=1.634 mean hypot(reg U,V)=1.406 POWER WS=4.344
+  WS>=hypot always True
+  U10M: n=561 unit=m/s flags={'': 552, 'partial_year': 9}
+  V10M: n=561 unit=m/s flags={'': 552, 'partial_year': 9}
+  WS10M_from_mean_UV: n=561 unit=m/s flags={'speed_of_monthly_mean_wind_underestimates_mean_speed': 552, 'speed_of_monthly_mean_wind_underestimates_mean_speed;partial_year': 9}
+  T2MMAX: n=561 unit=°C flags={'': 552, 'partial_year': 9}
+  T2MMIN: n=561 unit=°C flags={'': 552, 'partial_year': 9}
+  DTR: n=561 unit=°C flags={'': 552, 'partial_year': 9}
+
+========================================================================
+E. MULTIPLE TESTING
+========================================================================
+  [ukraine_mask] rows=231 annual=157 finite hac1=157 family=157 match=True
+    monthly n=74 family unique=[74] finite hac3=74
+    new-var annual rows=31 vars=['DTR', 'LST_Day_clear_days', 'LST_Night_clear_days', 'T2MMAX', 'T2MMIN', 'U10M', 'V10M', 'WS10M_from_mean_UV', 'precip_total', 'rainfall_liquid', 'snowfall']
+    family without new-var rows would be 126
+ source             variable  n  lin_slope_per_decade       hac1_p hac1_bonferroni_reject hac1_bh_reject      mk_hr_p mk_hr_bonferroni_reject mk_hr_bh_reject  n_tests_in_family                                                                                robust_call
+derived                  DTR 45             -0.050758 7.095118e-01                  False          False 3.839581e-01                   False           False                157                                               not significant at 0.05 on HAC and Hamed–Rao
+ merra2                 U10M 46             -0.039893 3.862121e-01                  False          False 5.699745e-01                   False           False                157                                               not significant at 0.05 on HAC and Hamed–Rao
+ merra2                 V10M 46             -0.025191 1.471022e-01                  False          False 2.113741e-01                   False           False                157                                               not significant at 0.05 on HAC and Hamed–Rao
+ merra2   WS10M_from_mean_UV 46             -0.021207 5.018049e-01                  False          False 4.602010e-01                   False           False                157                                               not significant at 0.05 on HAC and Hamed–Rao
+ merra2               T2MMAX 46              0.635841 8.584887e-08                   True           True 1.031409e-07                    True            True                157                                                         robust at 0.05 (HAC and Hamed–Rao)
+ merra2               T2MMIN 46              0.578357 5.121411e-07                   True           True 1.407303e-07                    True            True                157                                                         robust at 0.05 (HAC and Hamed–Rao)
+ merra2                  DTR 46              0.057484 2.148499e-01                  False          False 1.448143e-01                   False           False                157                                               not significant at 0.05 on HAC and Hamed–Rao
+gldas20         precip_total 67              4.070499 2.377394e-01                  False          False 2.296123e-01                   False           False                157                                               not significant at 0.05 on HAC and Hamed–Rao
+gldas20             snowfall 67             -1.567187 4.273690e-01                  False          False 6.369034e-01                   False           False                157                                               not significant at 0.05 on HAC and Hamed–Rao
+gldas20      rainfall_liquid 67              5.647265 5.693544e-02                  False          False 1.216956e-01                   False           False                157                                               not significant at 0.05 on HAC and Hamed–Rao
+gldas21         precip_total 26            -18.333059 3.473310e-01                  False          False 3.779596e-01                   False           False                157                                               not significant at 0.05 on HAC and Hamed–Rao
+gldas21             snowfall 26            -22.696023 1.440666e-02                  False           True 2.751344e-02                   False            True                157                                                         robust at 0.05 (HAC and Hamed–Rao)
+gldas21      rainfall_liquid 26              4.288699 7.670465e-01                  False          False 7.576397e-01                   False           False                157                                               not significant at 0.05 on HAC and Hamed–Rao
+  modis                 NDVI 25              0.002140 4.155632e-01                  False          False 6.238124e-01                   False           False                157                                               not significant at 0.05 on HAC and Hamed–Rao
+  modis                  EVI 25              0.005180 5.873460e-03                  False           True 8.657684e-04                   False            True                157 HAC significant; Hamed–Rao anti-conservative (negative residual AR); not treated as robust
+  modis              LST_Day 25              0.889037 7.853949e-04                  False           True 3.016211e-03                   False            True                157                                                         robust at 0.05 (HAC and Hamed–Rao)
+  modis            LST_Night 25              0.858016 1.493435e-04                   True           True 2.945801e-04                    True            True                157                                                         robust at 0.05 (HAC and Hamed–Rao)
+  modis   LST_Day_clear_days 25              0.305780 7.392035e-02                  False          False 2.157853e-01                   False           False                157                                               not significant at 0.05 on HAC and Hamed–Rao
+  modis LST_Night_clear_days 25              0.425647 2.946135e-02                  False           True 2.650564e-02                   False            True                157                                                         robust at 0.05 (HAC and Hamed–Rao)
+  [ukraine_bbox] rows=197 annual=131 finite hac1=131 family=131 match=True
+    monthly n=66 family unique=[66] finite hac3=66
+    new-var annual rows=31 vars=['DTR', 'LST_Day_clear_days', 'LST_Night_clear_days', 'T2MMAX', 'T2MMIN', 'U10M', 'V10M', 'WS10M_from_mean_UV', 'precip_total', 'rainfall_liquid', 'snowfall']
+    family without new-var rows would be 100
+ source             variable  n  lin_slope_per_decade       hac1_p hac1_bonferroni_reject hac1_bh_reject      mk_hr_p mk_hr_bonferroni_reject mk_hr_bh_reject  n_tests_in_family                                                                                robust_call
+derived                  DTR 45             -0.044659 7.041594e-01                  False          False 4.396388e-01                   False           False                131                                               not significant at 0.05 on HAC and Hamed–Rao
+ merra2                 U10M 46             -0.043626 2.946809e-01                  False          False 4.717839e-01                   False           False                131                                               not significant at 0.05 on HAC and Hamed–Rao
+ merra2                 V10M 46             -0.021840 1.397368e-01                  False          False 2.183753e-01                   False           False                131                                               not significant at 0.05 on HAC and Hamed–Rao
+ merra2   WS10M_from_mean_UV 46             -0.019575 4.622850e-01                  False          False 4.602010e-01                   False           False                131                                               not significant at 0.05 on HAC and Hamed–Rao
+ merra2               T2MMAX 46              0.616938 1.974170e-08                   True           True 6.102113e-08                    True            True                131                                                         robust at 0.05 (HAC and Hamed–Rao)
+ merra2               T2MMIN 46              0.570222 6.717562e-08                   True           True 1.110223e-14                    True            True                131                                                         robust at 0.05 (HAC and Hamed–Rao)
+ merra2                  DTR 46              0.046716 2.472389e-01                  False          False 1.396671e-01                   False           False                131                                               not significant at 0.05 on HAC and Hamed–Rao
+gldas20         precip_total 67              5.040793 1.416405e-01                  False          False 1.500188e-01                   False           False                131                                               not significant at 0.05 on HAC and Hamed–Rao
+gldas20             snowfall 67             -1.560659 3.891109e-01                  False          False 5.757832e-01                   False           False                131                                               not significant at 0.05 on HAC and Hamed–Rao
+gldas20      rainfall_liquid 67              6.611148 2.588482e-02                  False           True 3.974604e-02                   False           False                131                                                         robust at 0.05 (HAC and Hamed–Rao)
+gldas21         precip_total 26            -12.433749 5.174074e-01                  False          False 6.593353e-01                   False           False                131                                               not significant at 0.05 on HAC and Hamed–Rao
+gldas21             snowfall 26            -21.811580 1.194251e-02                  False           True 3.434575e-02                   False           False                131                                                         robust at 0.05 (HAC and Hamed–Rao)
+gldas21      rainfall_liquid 26              9.350081 5.089562e-01                  False          False 6.277373e-01                   False           False                131                                               not significant at 0.05 on HAC and Hamed–Rao
+  modis                 NDVI 25              0.004572 7.676581e-02                  False          False 7.705093e-03                   False            True                131                                        method-dependent (not treated as a clear detection)
+  modis                  EVI 25              0.006542 2.415287e-04                   True           True 0.000000e+00                    True            True                131 HAC significant; Hamed–Rao anti-conservative (negative residual AR); not treated as robust
+  modis              LST_Day 25              0.821450 1.339589e-03                  False           True 3.507385e-03                   False            True                131                                                         robust at 0.05 (HAC and Hamed–Rao)
+  modis            LST_Night 25              0.868596 7.025900e-05                   True           True 1.407425e-04                    True            True                131                                                         robust at 0.05 (HAC and Hamed–Rao)
+  modis   LST_Day_clear_days 25              0.317309 5.307974e-02                  False          False 1.176338e-01                   False           False                131                                               not significant at 0.05 on HAC and Hamed–Rao
+  modis LST_Night_clear_days 25              0.417925 2.923738e-02                  False           True 1.833157e-02                   False            True                131                                                         robust at 0.05 (HAC and Hamed–Rao)
+  official series types: ['annual_ANN_12of12', 'monthly_deseasonalised_1991-2020', 'monthly_deseasonalised_record_mean', 'monthly_deseasonalised_grace_headline_method']
+  any JJA/growing in window or series? False
+
+========================================================================
+F. MODIS BIT SPOT-DECODE
+========================================================================
+  CMG lat 89.9750..-89.9750 n=3600 lon -179.9750..179.9750 n=7200
+  window 160x362
+
+  === Jan 2003 === VI=MOD13C2.A2003001.061.2020090105033.nc4 LST=MOD11C3.A2003001.061.2020149221031.nc4
+    rel unique {np.int16(-1): np.int64(5083), np.int16(0): np.int64(8485), np.int16(1): np.int64(14799), np.int16(2): np.int64(26243), np.int16(4): np.int64(3310)}
+    mand unique {np.uint32(0): np.int64(9376), np.uint32(1): np.int64(43458), np.uint32(2): np.int64(4), np.uint32(3): np.int64(5082)}
+    _vi_good 23281/57920=0.402
+      rel=-1 n=5083 mand {np.uint32(2): np.int64(4), np.uint32(3): np.int64(5079)} good_frac=0.000
+      rel=0 n=8485 mand {np.uint32(0): np.int64(8297), np.uint32(1): np.int64(188)} good_frac=1.000
+      rel=1 n=14799 mand {np.uint32(0): np.int64(722), np.uint32(1): np.int64(14074), np.uint32(3): np.int64(3)} good_frac=1.000
+      rel=2 n=26243 mand {np.uint32(0): np.int64(357), np.uint32(1): np.int64(25886)} good_frac=0.000
+      rel=4 n=3310 mand {np.uint32(1): np.int64(3310)} good_frac=0.000
+    inconsistent rel 0/1 & mand 10/11=3; rel 2-4 & mand 00/01=29553
+      ex good_rel0_mand00: lat=48.675 lon=34.875 rel=0 VIQ=51268 bits0-1=00 NDVI_raw=3352 good=True
+      ex marginal_rel1: lat=49.625 lon=29.525 rel=1 VIQ=2525 bits0-1=01 NDVI_raw=3198 good=True
+      ex snow_rel2: lat=48.375 lon=33.525 rel=2 VIQ=51213 bits0-1=01 NDVI_raw=-108 good=False
+      no pixel cloud_rel3
+      ex estimated_rel4: lat=50.475 lon=35.875 rel=4 VIQ=2097 bits0-1=01 NDVI_raw=1782 good=False
+    LST_Day: mand {np.uint8(0): np.int64(32466), np.uint8(1): np.int64(20649), np.uint8(2): np.int64(66), np.uint8(3): np.int64(4739)} err {np.uint8(0): np.int64(37561), np.uint8(1): np.int64(19923), np.uint8(2): np.int64(387), np.uint8(3): np.int64(49)} good=0.910 fill0=0.083
+      mand=00 n=32466 fill0=0.000 err={np.uint8(0): np.int64(32466)} good=1.000
+      mand=01 n=20649 fill0=0.000 err={np.uint8(0): np.int64(290), np.uint8(1): np.int64(19923), np.uint8(2): np.int64(387), np.uint8(3): np.int64(49)} good=0.979
+      mand=10 n=66 fill0=1.000 err={np.uint8(0): np.int64(66)} good=0.000
+      mand=11 n=4739 fill0=1.000 err={np.uint8(0): np.int64(4739)} good=0.000
+      ex mand00: lat=48.675 lon=26.875 QC=8 mand=00 err=00 LST_K=267.60 good=True
+      ex mand01_err<=2K: lat=48.925 lon=25.375 QC=73 mand=01 err=01 LST_K=268.16 good=True
+      ex mand01_err>2K: lat=46.475 lon=31.675 QC=137 mand=01 err=10 LST_K=269.72 good=False
+      ex mand10/11: lat=45.475 lon=31.275 QC=3 mand=11 err=00 LST_K=0.00 good=False
+      QC==0 n=13163 all_good=True
+      fill attrs {'_FillValue': np.uint8(0)}
+    LST_Night: mand {np.uint8(0): np.int64(21233), np.uint8(1): np.int64(31841), np.uint8(2): np.int64(107), np.uint8(3): np.int64(4739)} err {np.uint8(0): np.int64(27011), np.uint8(1): np.int64(30264), np.uint8(2): np.int64(640), np.uint8(3): np.int64(5)} good=0.905 fill0=0.084
+      mand=00 n=21233 fill0=0.000 err={np.uint8(0): np.int64(21233)} good=1.000
+      mand=01 n=31841 fill0=0.000 err={np.uint8(0): np.int64(932), np.uint8(1): np.int64(30264), np.uint8(2): np.int64(640), np.uint8(3): np.int64(5)} good=0.980
+      mand=10 n=107 fill0=1.000 err={np.uint8(0): np.int64(107)} good=0.000
+      mand=11 n=4739 fill0=1.000 err={np.uint8(0): np.int64(4739)} good=0.000
+      ex mand00: lat=49.375 lon=33.875 QC=8 mand=00 err=00 LST_K=257.40 good=True
+      ex mand01_err<=2K: lat=48.425 lon=39.625 QC=73 mand=01 err=01 LST_K=261.62 good=True
+      ex mand01_err>2K: lat=46.475 lon=32.275 QC=137 mand=01 err=10 LST_K=266.72 good=False
+      ex mand10/11: lat=45.475 lon=31.275 QC=3 mand=11 err=00 LST_K=0.00 good=False
+      QC==0 n=3499 all_good=True
+      fill attrs {'_FillValue': np.uint8(0)}
+
+  === Jul 2003 === VI=MOD13C2.A2003182.061.2020106113135.nc4 LST=MOD11C3.A2003182.061.2020150042221.nc4
+    rel unique {np.int16(-1): np.int64(4929), np.int16(0): np.int64(38026), np.int16(1): np.int64(14956), np.int16(4): np.int64(9)}
+    mand unique {np.uint32(0): np.int64(38537), np.uint32(1): np.int64(14437), np.uint32(3): np.int64(4946)}
+    _vi_good 52965/57920=0.914
+      rel=-1 n=4929 mand {np.uint32(3): np.int64(4929)} good_frac=0.000
+      rel=0 n=38026 mand {np.uint32(0): np.int64(37585), np.uint32(1): np.int64(441)} good_frac=1.000
+      rel=1 n=14956 mand {np.uint32(0): np.int64(952), np.uint32(1): np.int64(13987), np.uint32(3): np.int64(17)} good_frac=0.999
+      rel=4 n=9 mand {np.uint32(1): np.int64(9)} good_frac=0.000
+    inconsistent rel 0/1 & mand 10/11=17; rel 2-4 & mand 00/01=9
+      ex good_rel0_mand00: lat=48.275 lon=26.025 rel=0 VIQ=51268 bits0-1=00 NDVI_raw=6629 good=True
+      ex marginal_rel1: lat=49.625 lon=28.325 rel=1 VIQ=51341 bits0-1=01 NDVI_raw=6898 good=True
+      no pixel snow_rel2
+      no pixel cloud_rel3
+      ex estimated_rel4: lat=46.075 lon=34.325 rel=4 VIQ=14385 bits0-1=01 NDVI_raw=-176 good=False
+    LST_Day: mand {np.uint8(0): np.int64(42765), np.uint8(1): np.int64(10400), np.uint8(2): np.int64(16), np.uint8(3): np.int64(4739)} err {np.uint8(0): np.int64(47541), np.uint8(1): np.int64(10309), np.uint8(2): np.int64(70)} good=0.917 fill0=0.082
+      mand=00 n=42765 fill0=0.000 err={np.uint8(0): np.int64(42765)} good=1.000
+      mand=01 n=10400 fill0=0.000 err={np.uint8(0): np.int64(21), np.uint8(1): np.int64(10309), np.uint8(2): np.int64(70)} good=0.993
+      mand=10 n=16 fill0=1.000 err={np.uint8(0): np.int64(16)} good=0.000
+      mand=11 n=4739 fill0=1.000 err={np.uint8(0): np.int64(4739)} good=0.000
+      ex mand00: lat=48.525 lon=31.175 QC=8 mand=00 err=00 LST_K=300.00 good=True
+      ex mand01_err<=2K: lat=49.625 lon=31.825 QC=73 mand=01 err=01 LST_K=296.92 good=True
+      ex mand01_err>2K: lat=46.075 lon=30.425 QC=133 mand=01 err=10 LST_K=301.48 good=False
+      ex mand10/11: lat=45.475 lon=32.325 QC=3 mand=11 err=00 LST_K=0.00 good=False
+      QC==0 n=13422 all_good=True
+      fill attrs {'_FillValue': np.uint8(0)}
+    LST_Night: mand {np.uint8(0): np.int64(45461), np.uint8(1): np.int64(7674), np.uint8(2): np.int64(46), np.uint8(3): np.int64(4739)} err {np.uint8(0): np.int64(50266), np.uint8(1): np.int64(7477), np.uint8(2): np.int64(155), np.uint8(3): np.int64(22)} good=0.914 fill0=0.083
+      mand=00 n=45461 fill0=0.000 err={np.uint8(0): np.int64(45461)} good=1.000
+      mand=01 n=7674 fill0=0.000 err={np.uint8(0): np.int64(20), np.uint8(1): np.int64(7477), np.uint8(2): np.int64(155), np.uint8(3): np.int64(22)} good=0.977
+      mand=10 n=46 fill0=1.000 err={np.uint8(0): np.int64(46)} good=0.000
+      mand=11 n=4739 fill0=1.000 err={np.uint8(0): np.int64(4739)} good=0.000
+      ex mand00: lat=49.025 lon=31.975 QC=8 mand=00 err=00 LST_K=288.32 good=True
+      ex mand01_err<=2K: lat=47.325 lon=31.625 QC=73 mand=01 err=01 LST_K=289.46 good=True
+      ex mand01_err>2K: lat=46.175 lon=34.175 QC=133 mand=01 err=10 LST_K=291.78 good=False
+      ex mand10/11: lat=45.475 lon=32.075 QC=3 mand=11 err=00 LST_K=0.00 good=False
+      QC==0 n=4117 all_good=True
+      fill attrs {'_FillValue': np.uint8(0)}
+
+  === Jan 2010 === VI=MOD13C2.A2010001.061.2021152184804.nc4 LST=MOD11C3.A2010001.061.2021156012829.nc4
+    rel unique {np.int16(-1): np.int64(5049), np.int16(0): np.int64(2939), np.int16(1): np.int64(8815), np.int16(2): np.int64(28833), np.int16(4): np.int64(12284)}
+    mand unique {np.uint32(0): np.int64(3466), np.uint32(1): np.int64(49405), np.uint32(2): np.int64(3), np.uint32(3): np.int64(5046)}
+    _vi_good 11754/57920=0.203
+      rel=-1 n=5049 mand {np.uint32(2): np.int64(3), np.uint32(3): np.int64(5046)} good_frac=0.000
+      rel=0 n=2939 mand {np.uint32(0): np.int64(2840), np.uint32(1): np.int64(99)} good_frac=1.000
+      rel=1 n=8815 mand {np.uint32(0): np.int64(438), np.uint32(1): np.int64(8377)} good_frac=1.000
+      rel=2 n=28833 mand {np.uint32(0): np.int64(188), np.uint32(1): np.int64(28645)} good_frac=0.000
+      rel=4 n=12284 mand {np.uint32(1): np.int64(12284)} good_frac=0.000
+    inconsistent rel 0/1 & mand 10/11=0; rel 2-4 & mand 00/01=41117
+      ex good_rel0_mand00: lat=45.675 lon=39.125 rel=0 VIQ=53324 bits0-1=00 NDVI_raw=3829 good=True
+      ex marginal_rel1: lat=46.575 lon=39.225 rel=1 VIQ=51345 bits0-1=01 NDVI_raw=3722 good=True
+      ex snow_rel2: lat=50.175 lon=29.975 rel=2 VIQ=18461 bits0-1=01 NDVI_raw=819 good=False
+      no pixel cloud_rel3
+      ex estimated_rel4: lat=48.175 lon=36.825 rel=4 VIQ=2097 bits0-1=01 NDVI_raw=2794 good=False
+    LST_Day: mand {np.uint8(0): np.int64(34490), np.uint8(1): np.int64(18656), np.uint8(2): np.int64(35), np.uint8(3): np.int64(4739)} err {np.uint8(0): np.int64(40592), np.uint8(1): np.int64(16380), np.uint8(2): np.int64(568), np.uint8(3): np.int64(380)} good=0.901 fill0=0.082
+      mand=00 n=34490 fill0=0.000 err={np.uint8(0): np.int64(34490)} good=1.000
+      mand=01 n=18656 fill0=0.000 err={np.uint8(0): np.int64(1328), np.uint8(1): np.int64(16380), np.uint8(2): np.int64(568), np.uint8(3): np.int64(380)} good=0.949
+      mand=10 n=35 fill0=1.000 err={np.uint8(0): np.int64(35)} good=0.000
+      mand=11 n=4739 fill0=1.000 err={np.uint8(0): np.int64(4739)} good=0.000
+      ex mand00: lat=48.875 lon=34.275 QC=0 mand=00 err=00 LST_K=258.60 good=True
+      ex mand01_err<=2K: lat=48.525 lon=33.725 QC=73 mand=01 err=01 LST_K=257.62 good=True
+      ex mand01_err>2K: lat=47.975 lon=31.075 QC=129 mand=01 err=10 LST_K=255.00 good=False
+      ex mand10/11: lat=45.475 lon=32.125 QC=3 mand=11 err=00 LST_K=0.00 good=False
+      QC==0 n=12436 all_good=True
+      fill attrs {'_FillValue': np.uint8(0)}
+    LST_Night: mand {np.uint8(0): np.int64(10287), np.uint8(1): np.int64(42803), np.uint8(2): np.int64(91), np.uint8(3): np.int64(4739)} err {np.uint8(0): np.int64(28569), np.uint8(1): np.int64(28528), np.uint8(2): np.int64(822), np.uint8(3): np.int64(1)} good=0.902 fill0=0.083
+      mand=00 n=10287 fill0=0.000 err={np.uint8(0): np.int64(10287)} good=1.000
+      mand=01 n=42803 fill0=0.000 err={np.uint8(0): np.int64(13452), np.uint8(1): np.int64(28528), np.uint8(2): np.int64(822), np.uint8(3): np.int64(1)} good=0.981
+      mand=10 n=91 fill0=1.000 err={np.uint8(0): np.int64(91)} good=0.000
+      mand=11 n=4739 fill0=1.000 err={np.uint8(0): np.int64(4739)} good=0.000
+      ex mand00: lat=48.075 lon=32.375 QC=8 mand=00 err=00 LST_K=255.52 good=True
+      ex mand01_err<=2K: lat=48.975 lon=34.575 QC=5 mand=01 err=00 LST_K=256.06 good=True
+      ex mand01_err>2K: lat=46.625 lon=37.925 QC=141 mand=01 err=10 LST_K=261.64 good=False
+      ex mand10/11: lat=45.475 lon=31.625 QC=3 mand=11 err=00 LST_K=0.00 good=False
+      QC==0 n=2520 all_good=True
+      fill attrs {'_FillValue': np.uint8(0)}
+
+  popcount check vs Clear_sky_days (Jan 2003, few pixels)
+    popcount vs bin().count maxabs=0 mean pc=7.46 max=19
+    mid pixel raw=268960001 bits=0b10000000010000000000100000001 pop=4.0 py=4

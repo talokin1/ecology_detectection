@@ -1,3 +1,4 @@
+# Case boxes and land_only: docs/decisions/ADR-005-case-region-boxes-and-land-only.md
 # Region presets — Earth System Trend Detective
 # A region is a latitude/longitude box: bbox = [west, south, east, north] in degrees,
 # longitudes -180..180 (west > east means the box crosses the antimeridian).
@@ -12,8 +13,21 @@ regions:
   - id: ukraine
     name: Ukraine
     bbox: [22.0, 44.0, 40.5, 52.5]
+    land_only: true  # Q2 (merge plan v2): canonical Ukraine box, land cells only
     biomes: [steppe, agriculture]
     description: Eastern European plains, mostly farmland, with a cold-winter climate.
+
+  # ---- Named alternates from the stats-archive pipeline (team-context/data/pipeline/config/regions.yaml).
+  # ---- Not offered in the app (app: false); kept so archive numbers can be reproduced by name.
+  # ---- The polygon mask `ukraine_mask` (Natural Earth 10m UKR POV file, Crimea included) is a
+  # ---- polygon, not a box, so it stays in the archive config. Ukraine is always viewed with
+  # ---- Crimea; the canonical app region is the `ukraine` box above (ADR-005, Q2).
+  - id: ukraine_sa_bbox
+    name: Ukraine (stats-archive box)
+    bbox: [22.1, 44.4, 40.2, 52.4]
+    app: false
+    biomes: [steppe, agriculture]
+    description: The stats-archive "approved-numbers" box (about 2x Ukraine; includes neighbours and the NW Black Sea).
 
   - id: sahel
     name: Sahel (West and Central Africa)
@@ -24,12 +38,14 @@ regions:
   - id: arctic_cap
     name: Arctic (north of 70°N)
     bbox: [-180.0, 70.0, 180.0, 90.0]
+    app: false  # test preset, not shown in the app
     biomes: [arctic, ocean]
     description: The Arctic Ocean and surrounding coasts, where sea ice forms and melts each year.
 
   - id: nw_india
     name: North-west India (Punjab, Haryana, Rajasthan)
     bbox: [72.0, 26.0, 78.0, 32.0]
+    app: false  # test preset, not shown in the app
     biomes: [agriculture, aquifer]
     description: Heavily irrigated farmland that pumps large amounts of groundwater.
 

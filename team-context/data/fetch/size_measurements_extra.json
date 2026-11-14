@@ -1,0 +1,1023 @@
+{
+  "generated": "2026-11-14T11:44:11+0000",
+  "listings": {
+    "gpcc_v2025_1deg": {
+      "url": "https://opendata.dwd.de/climate_environment/GPCC/GPCC_Precipitation_Analysis_Monthly/Version_2025/100_degree/",
+      "status": 200,
+      "n": 94,
+      "bytes_sum": 1052,
+      "files_head": [
+        {
+          "href": "gpcc_precipitation_analysis_monthly_1891_1895_v2025_100.nc.gz",
+          "name": "gpcc_precipitation_analysis_monthly_1891_1895_v2025_100.nc.gz",
+          "date": "19-Dec-2025",
+          "bytes": 11
+        },
+        {
+          "href": "gpcc_precipitation_analysis_monthly_1896_1900_v2025_100.nc.gz",
+          "name": "gpcc_precipitation_analysis_monthly_1896_1900_v2025_100.nc.gz",
+          "date": "19-Dec-2025",
+          "bytes": 11
+        },
+        {
+          "href": "gpcc_precipitation_analysis_monthly_1901_1905_v2025_100.nc.gz",
+          "name": "gpcc_precipitation_analysis_monthly_1901_1905_v2025_100.nc.gz",
+          "date": "19-Dec-2025",
+          "bytes": 11
+        },
+        {
+          "href": "gpcc_precipitation_analysis_monthly_1906_1910_v2025_100.nc.gz",
+          "name": "gpcc_precipitation_analysis_monthly_1906_1910_v2025_100.nc.gz",
+          "date": "19-Dec-2025",
+          "bytes": 11
+        },
+        {
+          "href": "gpcc_precipitation_analysis_monthly_1911_1915_v2025_100.nc.gz",
+          "name": "gpcc_precipitation_analysis_monthly_1911_1915_v2025_100.nc.gz",
+          "date": "19-Dec-2025",
+          "bytes": 11
+        },
+        {
+          "href": "gpcc_precipitation_analysis_monthly_1916_1920_v2025_100.nc.gz",
+          "name": "gpcc_precipitation_analysis_monthly_1916_1920_v2025_100.nc.gz",
+          "date": "19-Dec-2025",
+          "bytes": 11
+        },
+        {
+          "href": "gpcc_precipitation_analysis_monthly_1921_1925_v2025_100.nc.gz",
+          "name": "gpcc_precipitation_analysis_monthly_1921_1925_v2025_100.nc.gz",
+          "date": "19-Dec-2025",
+          "bytes": 11
+        },
+        {
+          "href": "gpcc_precipitation_analysis_monthly_1926_1930_v2025_100.nc.gz",
+          "name": "gpcc_precipitation_analysis_monthly_1926_1930_v2025_100.nc.gz",
+          "date": "19-Dec-2025",
+          "bytes": 11
+        }
+      ],
+      "files_tail": [
+        {
+          "href": "readme_md5_2026_05_v2025_100.txt",
+          "name": "readme_md5_2026_05_v2025_100.txt",
+          "date": "31-Jul-2026",
+          "bytes": 10
+        },
+        {
+          "href": "readme_md5_2026_06_v2025_100.txt",
+          "name": "readme_md5_2026_06_v2025_100.txt",
+          "date": "31-Aug-2026",
+          "bytes": 15
+        },
+        {
+          "href": "readme_md5_2026_07_v2025_100.txt",
+          "name": "readme_md5_2026_07_v2025_100.txt",
+          "date": "29-Sep-2026",
+          "bytes": 12
+        },
+        {
+          "href": "readme_md5_2026_08_v2025_100.txt",
+          "name": "readme_md5_2026_08_v2025_100.txt",
+          "date": "30-Oct-2026",
+          "bytes": 15
+        }
+      ]
+    },
+    "gpcc_v2025_05deg": {
+      "url": "https://opendata.dwd.de/climate_environment/GPCC/GPCC_Precipitation_Analysis_Monthly/Version_2025/050_degree/",
+      "status": 200,
+      "n": 94,
+      "bytes_sum": 1052,
+      "files_head": [
+        {
+          "href": "gpcc_precipitation_analysis_monthly_1891_1895_v2025_050.nc.gz",
+          "name": "gpcc_precipitation_analysis_monthly_1891_1895_v2025_050.nc.gz",
+          "date": "19-Dec-2025",
+          "bytes": 11
+        },
+        {
+          "href": "gpcc_precipitation_analysis_monthly_1896_1900_v2025_050.nc.gz",
+          "name": "gpcc_precipitation_analysis_monthly_1896_1900_v2025_050.nc.gz",
+          "date": "19-Dec-2025",
+          "bytes": 11
+        },
+        {
+          "href": "gpcc_precipitation_analysis_monthly_1901_1905_v2025_050.nc.gz",
+          "name": "gpcc_precipitation_analysis_monthly_1901_1905_v2025_050.nc.gz",
+          "date": "19-Dec-2025",
+          "bytes": 11
+        },
+        {
+          "href": "gpcc_precipitation_analysis_monthly_1906_1910_v2025_050.nc.gz",
+          "name": "gpcc_precipitation_analysis_monthly_1906_1910_v2025_050.nc.gz",
+          "date": "19-Dec-2025",
+          "bytes": 11
+        },
+        {
+          "href": "gpcc_precipitation_analysis_monthly_1911_1915_v2025_050.nc.gz",
+          "name": "gpcc_precipitation_analysis_monthly_1911_1915_v2025_050.nc.gz",
+          "date": "19-Dec-2025",
+          "bytes": 11
+        },
+        {
+          "href": "gpcc_precipitation_analysis_monthly_1916_1920_v2025_050.nc.gz",
+          "name": "gpcc_precipitation_analysis_monthly_1916_1920_v2025_050.nc.gz",
+          "date": "19-Dec-2025",
+          "bytes": 11
+        },
+        {
+          "href": "gpcc_precipitation_analysis_monthly_1921_1925_v2025_050.nc.gz",
+          "name": "gpcc_precipitation_analysis_monthly_1921_1925_v2025_050.nc.gz",
+          "date": "19-Dec-2025",
+          "bytes": 11
+        },
+        {
+          "href": "gpcc_precipitation_analysis_monthly_1926_1930_v2025_050.nc.gz",
+          "name": "gpcc_precipitation_analysis_monthly_1926_1930_v2025_050.nc.gz",
+          "date": "19-Dec-2025",
+          "bytes": 11
+        }
+      ],
+      "files_tail": [
+        {
+          "href": "readme_md5_2026_05_v2025_050.txt",
+          "name": "readme_md5_2026_05_v2025_050.txt",
+          "date": "31-Jul-2026",
+          "bytes": 10
+        },
+        {
+          "href": "readme_md5_2026_06_v2025_050.txt",
+          "name": "readme_md5_2026_06_v2025_050.txt",
+          "date": "31-Aug-2026",
+          "bytes": 15
+        },
+        {
+          "href": "readme_md5_2026_07_v2025_050.txt",
+          "name": "readme_md5_2026_07_v2025_050.txt",
+          "date": "29-Sep-2026",
+          "bytes": 12
+        },
+        {
+          "href": "readme_md5_2026_08_v2025_050.txt",
+          "name": "readme_md5_2026_08_v2025_050.txt",
+          "date": "30-Oct-2026",
+          "bytes": 15
+        }
+      ]
+    },
+    "gpcc_v2025_025deg": {
+      "url": "https://opendata.dwd.de/climate_environment/GPCC/GPCC_Precipitation_Analysis_Monthly/Version_2025/025_degree/",
+      "status": 200,
+      "n": 95,
+      "bytes_sum": 1063,
+      "files_head": [
+        {
+          "href": "gpcc_precipitation_analysis_monthly_1891_1895_v2025_025.nc.gz",
+          "name": "gpcc_precipitation_analysis_monthly_1891_1895_v2025_025.nc.gz",
+          "date": "19-Dec-2025",
+          "bytes": 11
+        },
+        {
+          "href": "gpcc_precipitation_analysis_monthly_1896_1900_v2025_025.nc.gz",
+          "name": "gpcc_precipitation_analysis_monthly_1896_1900_v2025_025.nc.gz",
+          "date": "19-Dec-2025",
+          "bytes": 11
+        },
+        {
+          "href": "gpcc_precipitation_analysis_monthly_1901_1905_v2025_025.nc.gz",
+          "name": "gpcc_precipitation_analysis_monthly_1901_1905_v2025_025.nc.gz",
+          "date": "19-Dec-2025",
+          "bytes": 11
+        },
+        {
+          "href": "gpcc_precipitation_analysis_monthly_1906_1910_v2025_025.nc.gz",
+          "name": "gpcc_precipitation_analysis_monthly_1906_1910_v2025_025.nc.gz",
+          "date": "19-Dec-2025",
+          "bytes": 11
+        },
+        {
+          "href": "gpcc_precipitation_analysis_monthly_1911_1915_v2025_025.nc.gz",
+          "name": "gpcc_precipitation_analysis_monthly_1911_1915_v2025_025.nc.gz",
+          "date": "19-Dec-2025",
+          "bytes": 11
+        },
+        {
+          "href": "gpcc_precipitation_analysis_monthly_1916_1920_v2025_025.nc.gz",
+          "name": "gpcc_precipitation_analysis_monthly_1916_1920_v2025_025.nc.gz",
+          "date": "19-Dec-2025",
+          "bytes": 11
+        },
+        {
+          "href": "gpcc_precipitation_analysis_monthly_1921_1925_v2025_025.nc.gz",
+          "name": "gpcc_precipitation_analysis_monthly_1921_1925_v2025_025.nc.gz",
+          "date": "19-Dec-2025",
+          "bytes": 11
+        },
+        {
+          "href": "gpcc_precipitation_analysis_monthly_1926_1930_v2025_025.nc.gz",
+          "name": "gpcc_precipitation_analysis_monthly_1926_1930_v2025_025.nc.gz",
+          "date": "19-Dec-2025",
+          "bytes": 11
+        }
+      ],
+      "files_tail": [
+        {
+          "href": "readme_md5_2026_06_v2025_025.txt",
+          "name": "readme_md5_2026_06_v2025_025.txt",
+          "date": "31-Aug-2026",
+          "bytes": 15
+        },
+        {
+          "href": "readme_md5_2026_07_v2025_025.txt",
+          "name": "readme_md5_2026_07_v2025_025.txt",
+          "date": "29-Sep-2026",
+          "bytes": 12
+        },
+        {
+          "href": "readme_md5_2026_08_v2025_025.txt",
+          "name": "readme_md5_2026_08_v2025_025.txt",
+          "date": "30-Oct-2026",
+          "bytes": 15
+        },
+        {
+          "href": "test.txt",
+          "name": "test.txt",
+          "date": "19-Dec-2025",
+          "bytes": 11
+        }
+      ]
+    },
+    "gpcc_v2025_25deg": {
+      "url": "https://opendata.dwd.de/climate_environment/GPCC/GPCC_Precipitation_Analysis_Monthly/Version_2025/250_degree/",
+      "status": 200,
+      "n": 94,
+      "bytes_sum": 1052,
+      "files_head": [
+        {
+          "href": "gpcc_precipitation_analysis_monthly_1891_1895_v2025_250.nc.gz",
+          "name": "gpcc_precipitation_analysis_monthly_1891_1895_v2025_250.nc.gz",
+          "date": "19-Dec-2025",
+          "bytes": 11
+        },
+        {
+          "href": "gpcc_precipitation_analysis_monthly_1896_1900_v2025_250.nc.gz",
+          "name": "gpcc_precipitation_analysis_monthly_1896_1900_v2025_250.nc.gz",
+          "date": "19-Dec-2025",
+          "bytes": 11
+        },
+        {
+          "href": "gpcc_precipitation_analysis_monthly_1901_1905_v2025_250.nc.gz",
+          "name": "gpcc_precipitation_analysis_monthly_1901_1905_v2025_250.nc.gz",
+          "date": "19-Dec-2025",
+          "bytes": 11
+        },
+        {
+          "href": "gpcc_precipitation_analysis_monthly_1906_1910_v2025_250.nc.gz",
+          "name": "gpcc_precipitation_analysis_monthly_1906_1910_v2025_250.nc.gz",
+          "date": "19-Dec-2025",
+          "bytes": 11
+        },
+        {
+          "href": "gpcc_precipitation_analysis_monthly_1911_1915_v2025_250.nc.gz",
+          "name": "gpcc_precipitation_analysis_monthly_1911_1915_v2025_250.nc.gz",
+          "date": "19-Dec-2025",
+          "bytes": 11
+        },
+        {
+          "href": "gpcc_precipitation_analysis_monthly_1916_1920_v2025_250.nc.gz",
+          "name": "gpcc_precipitation_analysis_monthly_1916_1920_v2025_250.nc.gz",
+          "date": "19-Dec-2025",
+          "bytes": 11
+        },
+        {
+          "href": "gpcc_precipitation_analysis_monthly_1921_1925_v2025_250.nc.gz",
+          "name": "gpcc_precipitation_analysis_monthly_1921_1925_v2025_250.nc.gz",
+          "date": "19-Dec-2025",
+          "bytes": 11
+        },
+        {
+          "href": "gpcc_precipitation_analysis_monthly_1926_1930_v2025_250.nc.gz",
+          "name": "gpcc_precipitation_analysis_monthly_1926_1930_v2025_250.nc.gz",
+          "date": "19-Dec-2025",
+          "bytes": 11
+        }
+      ],
+      "files_tail": [
+        {
+          "href": "readme_md5_2026_05_v2025_250.txt",
+          "name": "readme_md5_2026_05_v2025_250.txt",
+          "date": "31-Jul-2026",
+          "bytes": 10
+        },
+        {
+          "href": "readme_md5_2026_06_v2025_250.txt",
+          "name": "readme_md5_2026_06_v2025_250.txt",
+          "date": "31-Aug-2026",
+          "bytes": 15
+        },
+        {
+          "href": "readme_md5_2026_07_v2025_250.txt",
+          "name": "readme_md5_2026_07_v2025_250.txt",
+          "date": "29-Sep-2026",
+          "bytes": 12
+        },
+        {
+          "href": "readme_md5_2026_08_v2025_250.txt",
+          "name": "readme_md5_2026_08_v2025_250.txt",
+          "date": "30-Oct-2026",
+          "bytes": 15
+        }
+      ]
+    },
+    "ghcn_daily": {
+      "url": "https://www.ncei.noaa.gov/pub/data/ghcn/daily/",
+      "status": 200,
+      "n": 32,
+      "bytes_sum": 4375798648,
+      "files_head": [
+        {
+          "href": "..",
+          "name": "..",
+          "date": "",
+          "bytes": null,
+          "size_raw": "-"
+        },
+        {
+          "href": "all",
+          "name": "all",
+          "date": "2026-10-23 01:13",
+          "bytes": null,
+          "size_raw": "-"
+        },
+        {
+          "href": "by_station",
+          "name": "by_station",
+          "date": "2026-10-23 20:24",
+          "bytes": null,
+          "size_raw": "-"
+        },
+        {
+          "href": "by_year",
+          "name": "by_year",
+          "date": "2026-08-17 14:52",
+          "bytes": null,
+          "size_raw": "-"
+        },
+        {
+          "href": "figures",
+          "name": "figures",
+          "date": "2020-04-29 12:28",
+          "bytes": null,
+          "size_raw": "-"
+        },
+        {
+          "href": "grid",
+          "name": "grid",
+          "date": "2026-11-13 12:26",
+          "bytes": null,
+          "size_raw": "-"
+        },
+        {
+          "href": "gsn",
+          "name": "gsn",
+          "date": "2026-10-06 10:05",
+          "bytes": null,
+          "size_raw": "-"
+        },
+        {
+          "href": "hcn",
+          "name": "hcn",
+          "date": "2020-06-06 22:50",
+          "bytes": null,
+          "size_raw": "-"
+        }
+      ],
+      "files_tail": [
+        {
+          "href": "readme-by_station.txt",
+          "name": "readme-by_station.txt",
+          "date": "2023-01-03 19:49",
+          "bytes": 1210,
+          "size_raw": "1210"
+        },
+        {
+          "href": "readme-by_year.txt",
+          "name": "readme-by_year.txt",
+          "date": "2021-03-08 10:06",
+          "bytes": 1106,
+          "size_raw": "1106"
+        },
+        {
+          "href": "readme.txt",
+          "name": "readme.txt",
+          "date": "2026-10-05 18:14",
+          "bytes": 29587,
+          "size_raw": "29587"
+        },
+        {
+          "href": "status.txt",
+          "name": "status.txt",
+          "date": "2026-09-30 17:53",
+          "bytes": 38016,
+          "size_raw": "38016"
+        }
+      ]
+    },
+    "gsom_archive": {
+      "url": "https://www.ncei.noaa.gov/data/global-summary-of-the-month/archive/",
+      "status": 200,
+      "n": 2,
+      "bytes_sum": 1511537790,
+      "files": [
+        {
+          "href": "..",
+          "name": "..",
+          "date": "",
+          "bytes": null,
+          "size_raw": "-"
+        },
+        {
+          "href": "gsom-latest.tar.gz",
+          "name": "gsom-latest.tar.gz",
+          "date": "2026-11-06 07:24",
+          "bytes": 1511537790,
+          "size_raw": "1511537790"
+        }
+      ]
+    },
+    "chirps_v3_nc_dir": {
+      "url": "https://data.chc.ucsb.edu/products/CHIRPS/v3.0/monthly/global/netcdf/",
+      "status": 200,
+      "n": 2,
+      "bytes_sum": 8912057139,
+      "files": [
+        {
+          "href": "?C=N&amp;O=A",
+          "name": "?C=N&amp;O=A",
+          "date": "-",
+          "bytes": null,
+          "size_raw": "-"
+        },
+        {
+          "href": "chirps-v3.0.monthly.nc",
+          "name": "chirps-v3.0.monthly.nc",
+          "date": "2026-Oct-15 22:45",
+          "bytes": 8912057139,
+          "size_raw": "8.3 GiB"
+        }
+      ]
+    },
+    "chirps_v3_cogs_dir": {
+      "url": "https://data.chc.ucsb.edu/products/CHIRPS/v3.0/monthly/global/cogs/",
+      "status": 200,
+      "n": 551,
+      "bytes_sum": 16551247650,
+      "files_head": [
+        {
+          "href": "?C=N&amp;O=A",
+          "name": "?C=N&amp;O=A",
+          "date": "-",
+          "bytes": null,
+          "size_raw": "-"
+        },
+        {
+          "href": "chirps-v3.0.1981.01.cog",
+          "name": "chirps-v3.0.1981.01.cog",
+          "date": "2025-Feb-25 18:21",
+          "bytes": 30094131,
+          "size_raw": "28.7 MiB"
+        },
+        {
+          "href": "chirps-v3.0.1981.02.cog",
+          "name": "chirps-v3.0.1981.02.cog",
+          "date": "2025-Feb-25 18:21",
+          "bytes": 30198988,
+          "size_raw": "28.8 MiB"
+        },
+        {
+          "href": "chirps-v3.0.1981.03.cog",
+          "name": "chirps-v3.0.1981.03.cog",
+          "date": "2025-Feb-25 18:21",
+          "bytes": 29569843,
+          "size_raw": "28.2 MiB"
+        },
+        {
+          "href": "chirps-v3.0.1981.04.cog",
+          "name": "chirps-v3.0.1981.04.cog",
+          "date": "2025-Feb-25 18:21",
+          "bytes": 29884416,
+          "size_raw": "28.5 MiB"
+        },
+        {
+          "href": "chirps-v3.0.1981.05.cog",
+          "name": "chirps-v3.0.1981.05.cog",
+          "date": "2025-Feb-25 18:21",
+          "bytes": 30618419,
+          "size_raw": "29.2 MiB"
+        },
+        {
+          "href": "chirps-v3.0.1981.06.cog",
+          "name": "chirps-v3.0.1981.06.cog",
+          "date": "2025-Feb-25 18:21",
+          "bytes": 29884416,
+          "size_raw": "28.5 MiB"
+        },
+        {
+          "href": "chirps-v3.0.1981.07.cog",
+          "name": "chirps-v3.0.1981.07.cog",
+          "date": "2025-Feb-25 18:21",
+          "bytes": 29674700,
+          "size_raw": "28.3 MiB"
+        }
+      ],
+      "files_tail": [
+        {
+          "href": "chirps-v3.0.2026.07.cog",
+          "name": "chirps-v3.0.2026.07.cog",
+          "date": "2026-Nov-10 00:12",
+          "bytes": 30618419,
+          "size_raw": "29.2 MiB"
+        },
+        {
+          "href": "chirps-v3.0.2026.08.cog",
+          "name": "chirps-v3.0.2026.08.cog",
+          "date": "2026-Nov-10 00:16",
+          "bytes": 30723276,
+          "size_raw": "29.3 MiB"
+        },
+        {
+          "href": "chirps-v3.0.2026.09.cog",
+          "name": "chirps-v3.0.2026.09.cog",
+          "date": "2026-Nov-10 00:20",
+          "bytes": 31142707,
+          "size_raw": "29.7 MiB"
+        },
+        {
+          "href": "chirps-v3.0.2026.10.cog",
+          "name": "chirps-v3.0.2026.10.cog",
+          "date": "2026-Nov-13 22:26",
+          "bytes": 31037849,
+          "size_raw": "29.6 MiB"
+        }
+      ]
+    },
+    "giss_gistemp": {
+      "url": "https://data.giss.nasa.gov/pub/gistemp/",
+      "status": 200,
+      "n": 44,
+      "bytes_sum": 435,
+      "files_head": [
+        {
+          "href": "antarc1.list",
+          "name": "antarc1.list",
+          "date": "2020-03-09",
+          "bytes": 11
+        },
+        {
+          "href": "antarc1.txt",
+          "name": "antarc1.txt",
+          "date": "2026-11-05",
+          "bytes": 8
+        },
+        {
+          "href": "antarc2.list",
+          "name": "antarc2.list",
+          "date": "2020-03-09",
+          "bytes": 11
+        },
+        {
+          "href": "antarc2.txt",
+          "name": "antarc2.txt",
+          "date": "2017-04-10",
+          "bytes": 9
+        },
+        {
+          "href": "antarc3.list",
+          "name": "antarc3.list",
+          "date": "2020-03-09",
+          "bytes": 11
+        },
+        {
+          "href": "antarc3.txt",
+          "name": "antarc3.txt",
+          "date": "2026-11-05",
+          "bytes": 8
+        },
+        {
+          "href": "ghcnm.tavg.qcf.dat",
+          "name": "ghcnm.tavg.qcf.dat",
+          "date": "2026-11-10",
+          "bytes": 2
+        },
+        {
+          "href": "ghcnm.tavg.qcu.dat",
+          "name": "ghcnm.tavg.qcu.dat",
+          "date": "2026-11-10",
+          "bytes": 2
+        }
+      ],
+      "files_tail": [
+        {
+          "href": "ushcn2.tbl",
+          "name": "ushcn2.tbl",
+          "date": "2010-10-13",
+          "bytes": 10
+        },
+        {
+          "href": "ushcn3.tbl",
+          "name": "ushcn3.tbl",
+          "date": "2011-04-19",
+          "bytes": 14
+        },
+        {
+          "href": "v4.inv",
+          "name": "v4.inv",
+          "date": "2026-11-10",
+          "bytes": 2
+        },
+        {
+          "href": "wrld-rad.data.txt",
+          "name": "wrld-rad.data.txt",
+          "date": "2016-05-25",
+          "bytes": 11
+        }
+      ]
+    },
+    "ghcnm_v4": {
+      "url": "https://www.ncei.noaa.gov/pub/data/ghcn/v4/",
+      "status": 200,
+      "n": 11,
+      "bytes_sum": 135018751,
+      "files": [
+        {
+          "href": "..",
+          "name": "..",
+          "date": "",
+          "bytes": null,
+          "size_raw": "-"
+        },
+        {
+          "href": "documentation",
+          "name": "documentation",
+          "date": "2025-08-20 08:49",
+          "bytes": null,
+          "size_raw": "-"
+        },
+        {
+          "href": "products",
+          "name": "products",
+          "date": "2020-05-26 10:33",
+          "bytes": null,
+          "size_raw": "-"
+        },
+        {
+          "href": "source_code",
+          "name": "source_code",
+          "date": "2025-08-20 08:51",
+          "bytes": null,
+          "size_raw": "-"
+        },
+        {
+          "href": "ghcnm-countries.txt",
+          "name": "ghcnm-countries.txt",
+          "date": "2025-08-20 08:49",
+          "bytes": 4028,
+          "size_raw": "4028"
+        },
+        {
+          "href": "ghcnm-flags.txt",
+          "name": "ghcnm-flags.txt",
+          "date": "2025-08-20 08:49",
+          "bytes": 6108,
+          "size_raw": "6108"
+        },
+        {
+          "href": "ghcnm.tavg.latest.qcf.tar.gz",
+          "name": "ghcnm.tavg.latest.qcf.tar.gz",
+          "date": "2026-11-14 02:39",
+          "bytes": 44201497,
+          "size_raw": "44201497"
+        },
+        {
+          "href": "ghcnm.tavg.latest.qcu.tar.gz",
+          "name": "ghcnm.tavg.latest.qcu.tar.gz",
+          "date": "2026-11-14 02:39",
+          "bytes": 45974740,
+          "size_raw": "45974740"
+        },
+        {
+          "href": "ghcnm.tavg.latest.qfe.tar.gz",
+          "name": "ghcnm.tavg.latest.qfe.tar.gz",
+          "date": "2026-11-14 02:39",
+          "bytes": 44813152,
+          "size_raw": "44813152"
+        },
+        {
+          "href": "readme.txt",
+          "name": "readme.txt",
+          "date": "2025-08-20 08:49",
+          "bytes": 11978,
+          "size_raw": "11978"
+        },
+        {
+          "href": "status.txt",
+          "name": "status.txt",
+          "date": "2026-10-06 08:43",
+          "bytes": 7248,
+          "size_raw": "7248"
+        }
+      ]
+    }
+  },
+  "heads": {
+    "chirps_v3_monthly_nc": {
+      "url": "https://data.chc.ucsb.edu/products/CHIRPS/v3.0/monthly/global/netcdf/chirps-v3.0.monthly.nc",
+      "status": 200,
+      "bytes": 8960342547,
+      "method": "head"
+    },
+    "chirps_v3_cog_sample": {
+      "url": "https://data.chc.ucsb.edu/products/CHIRPS/v3.0/monthly/global/cogs/chirps-v3.0.1981.01.cog",
+      "status": 200,
+      "bytes": 30142896,
+      "method": "head"
+    },
+    "gsom_latest_tar_gz": {
+      "url": "https://www.ncei.noaa.gov/data/global-summary-of-the-month/archive/gsom-latest.tar.gz",
+      "status": 200,
+      "bytes": 1511537790,
+      "method": "head"
+    },
+    "ghcnd_all_tar_gz": {
+      "url": "https://www.ncei.noaa.gov/pub/data/ghcn/daily/ghcnd_all.tar.gz",
+      "status": 200,
+      "bytes": 3825867971,
+      "method": "head"
+    },
+    "cci_sm_sample_19781101": {
+      "url": "https://dap.ceda.ac.uk/neodc/esacci/soil_moisture/data/daily_files/COMBINED/v09.2/1978/ESACCI-SOILMOISTURE-L3S-SSMV-COMBINED-19781101000000-fv09.2.nc",
+      "status": 200,
+      "bytes": 617734,
+      "method": "head"
+    },
+    "cci_sm_sample_20000101": {
+      "url": "https://dap.ceda.ac.uk/neodc/esacci/soil_moisture/data/daily_files/COMBINED/v09.2/2000/ESACCI-SOILMOISTURE-L3S-SSMV-COMBINED-20000101000000-fv09.2.nc",
+      "status": 200,
+      "bytes": 1071793,
+      "method": "head"
+    },
+    "cci_sm_sample_20241231": {
+      "url": "https://dap.ceda.ac.uk/neodc/esacci/soil_moisture/data/daily_files/COMBINED/v09.2/2024/ESACCI-SOILMOISTURE-L3S-SSMV-COMBINED-20241231000000-fv09.2.nc",
+      "status": 200,
+      "bytes": 1458973,
+      "method": "head"
+    }
+  },
+  "cmr_extra": {
+    "swot_riversp_reach_D": {
+      "concept_id": "C3233942283-POCLOUD",
+      "hits": 73308,
+      "sample_n": 400,
+      "mean": 4061312.7275,
+      "median": 3681666,
+      "min": 240155,
+      "max": 19008374,
+      "total_est": 297726713427,
+      "names_head": [
+        "SWOT_L2_HR_RiverSP_Reach_474_001_EU_20230328T223755_20230328T223818_PGD0_01_swot",
+        "SWOT_L2_HR_RiverSP_Reach_474_003_AF_20230329T002001_20230329T002047_PGD0_01_swot",
+        "SWOT_L2_HR_RiverSP_Reach_474_003_EU_20230329T002106_20230329T003109_PGD0_01_swot"
+      ]
+    },
+    "swot_riversp_node_D": {
+      "concept_id": "C3233942282-POCLOUD",
+      "hits": 73288,
+      "sample_n": 400,
+      "mean": 25513671.3,
+      "median": 19056169,
+      "min": 196908,
+      "max": 142482286,
+      "total_est": 1869845942234,
+      "names_head": [
+        "SWOT_L2_HR_RiverSP_Node_474_001_EU_20230328T223755_20230328T223818_PGD0_01_swot",
+        "SWOT_L2_HR_RiverSP_Node_474_003_AF_20230329T002001_20230329T002047_PGD0_01_swot",
+        "SWOT_L2_HR_RiverSP_Node_474_003_EU_20230329T002106_20230329T003109_PGD0_01_swot"
+      ]
+    },
+    "swot_riversp_D_all": {
+      "concept_id": "C3233944997-POCLOUD",
+      "hits": 166444,
+      "sample_n": 200,
+      "mean": 9041552.67,
+      "median": 1466430,
+      "min": 197307,
+      "max": 93086283,
+      "total_est": 1504912192605,
+      "names_head": [
+        "SWOT_L2_HR_RiverSP_Node_474_001_EU_20230328T223755_20230328T223818_PGD0_01",
+        "SWOT_L2_HR_RiverSP_Reach_474_001_EU_20230328T223755_20230328T223818_PGD0_01",
+        "SWOT_L2_HR_RiverSP_Node_474_003_AF_20230329T002001_20230329T002047_PGD0_01"
+      ]
+    }
+  },
+  "power": {
+    "local_total_bytes": 12360582,
+    "files": [
+      {
+        "name": "POWER_monthly_ALLSKY_SFC_SW_DWN_east_1981-2025.csv",
+        "bytes": 329434
+      },
+      {
+        "name": "POWER_monthly_ALLSKY_SFC_SW_DWN_west_1981-2025.csv",
+        "bytes": 411596
+      },
+      {
+        "name": "POWER_monthly_PRECTOTCORR_east_1981-2025.csv",
+        "bytes": 860205
+      },
+      {
+        "name": "POWER_monthly_PRECTOTCORR_west_1981-2025.csv",
+        "bytes": 1059649
+      },
+      {
+        "name": "POWER_monthly_QV2M_east_1981-2025.csv",
+        "bytes": 807608
+      },
+      {
+        "name": "POWER_monthly_QV2M_west_1981-2025.csv",
+        "bytes": 991194
+      },
+      {
+        "name": "POWER_monthly_T2M_MAX_east_1981-2025.csv",
+        "bytes": 922273
+      },
+      {
+        "name": "POWER_monthly_T2M_MAX_west_1981-2025.csv",
+        "bytes": 1137340
+      },
+      {
+        "name": "POWER_monthly_T2M_MIN_east_1981-2025.csv",
+        "bytes": 946928
+      },
+      {
+        "name": "POWER_monthly_T2M_MIN_west_1981-2025.csv",
+        "bytes": 1162137
+      },
+      {
+        "name": "POWER_monthly_T2M_east_1981-2025.csv",
+        "bytes": 870612
+      },
+      {
+        "name": "POWER_monthly_T2M_west_1981-2025.csv",
+        "bytes": 1066812
+      },
+      {
+        "name": "POWER_monthly_WS10M_east_1981-2025.csv",
+        "bytes": 804081
+      },
+      {
+        "name": "POWER_monthly_WS10M_west_1981-2025.csv",
+        "bytes": 990713
+      }
+    ],
+    "met_local_bytes": 11619552,
+    "solar_local_bytes": 741030,
+    "ukraine_met_cells": 464,
+    "ukraine_met_nlats": 16,
+    "ukraine_met_nlons": 29,
+    "ukraine_solar_cells": 144,
+    "merra_global_cells": 207936,
+    "ceres_global_cells": 64800,
+    "slim_csv_global_bytes_est": 5540625492.827586,
+    "met_global_bytes_est": 5207161992.827586,
+    "solar_global_bytes_est": 333463500.0,
+    "params_used": 7,
+    "note": "Scale-up of the on-disk POWER CSVs (same layout, 7 parameters) by official grid cell counts."
+  },
+  "slim_probes": {
+    "merra2_slv": {
+      "ok": true,
+      "status": 200,
+      "bytes": 1477419,
+      "seconds": 1.54,
+      "dest": "/tmp/slim_probes/merra2_slv_slim_month.nc4",
+      "producer": "MERRA2_100.tavgM_2d_slv_Nx.198001.nc4",
+      "native_head": {
+        "url": "https://data.gesdisc.earthdata.nasa.gov/data/MERRA2_MONTHLY/M2TMNXSLV.5.12.4/1980/MERRA2_100.tavgM_2d_slv_Nx.198001.nc4",
+        "status": 200,
+        "bytes": 54403871,
+        "method": "head"
+      }
+    },
+    "merra2_flx": {
+      "ok": true,
+      "status": 200,
+      "bytes": 1332793,
+      "seconds": 1.73,
+      "dest": "/tmp/slim_probes/merra2_flx_slim_month.nc4",
+      "producer": "MERRA2_100.tavgM_2d_flx_Nx.198001.nc4",
+      "native_head": {
+        "url": "https://data.gesdisc.earthdata.nasa.gov/data/MERRA2_MONTHLY/M2TMNXFLX.5.12.4/1980/MERRA2_100.tavgM_2d_flx_Nx.198001.nc4",
+        "status": 200,
+        "bytes": 54620369,
+        "method": "head"
+      }
+    },
+    "gldas21": {
+      "ok": true,
+      "status": 200,
+      "bytes": 4921336,
+      "seconds": 1.44,
+      "dest": "/tmp/slim_probes/gldas21_slim_month.nc4",
+      "producer": "GLDAS_NOAH025_M.A200001.021.nc4",
+      "native_head": {
+        "url": "https://data.gesdisc.earthdata.nasa.gov/data/GLDAS/GLDAS_NOAH025_M.2.1/2000/GLDAS_NOAH025_M.A200001.021.nc4",
+        "status": 200,
+        "bytes": 25032463,
+        "method": "head"
+      }
+    },
+    "gldas20": {
+      "ok": true,
+      "status": 200,
+      "bytes": 4826189,
+      "seconds": 2.26,
+      "dest": "/tmp/slim_probes/gldas20_slim_month.nc4",
+      "producer": "GLDAS_NOAH025_M.A194801.020.nc4",
+      "native_head": {
+        "url": "https://data.gesdisc.earthdata.nasa.gov/data/GLDAS/GLDAS_NOAH025_M.2.0/1948/GLDAS_NOAH025_M.A194801.020.nc4",
+        "status": 200,
+        "bytes": 24679267,
+        "method": "head"
+      }
+    },
+    "imerg": {
+      "ok": true,
+      "status": 200,
+      "bytes": 6729857,
+      "seconds": 1.49,
+      "dest": "/tmp/slim_probes/imerg_slim_month.nc4",
+      "producer": "3B-MO.MS.MRG.3IMERG.20000601-S000000-E235959.06.V07B.HDF5",
+      "native_head": {
+        "url": "https://data.gesdisc.earthdata.nasa.gov/data/GPM_L3/GPM_3IMERGM.07/2000/3B-MO.MS.MRG.3IMERG.20000601-S000000-E235959.06.V07B.HDF5",
+        "status": 200,
+        "bytes": 18887286,
+        "method": "head"
+      }
+    },
+    "airs": {
+      "ok": true,
+      "status": 200,
+      "bytes": 826859,
+      "seconds": 2.07,
+      "dest": "/tmp/slim_probes/airs_slim_month.nc4",
+      "producer": "AIRS.2002.09.01.L3.RetStd_IR030.v7.0.3.0.G20175163230.hdf",
+      "native_head": {
+        "url": "https://data.gesdisc.earthdata.nasa.gov/data/Aqua_AIRS_Level3/AIRS3STM.7.0/2002/AIRS.2002.09.01.L3.RetStd_IR030.v7.0.3.0.G20175163230.hdf",
+        "status": 200,
+        "bytes": 211145334,
+        "method": "head"
+      }
+    },
+    "mod13c2": {
+      "ok": false,
+      "status": 404,
+      "error": "HTTPError",
+      "body_head": "\n\n\n\n\n\n\n\n<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\">\n\n\n<html xmlns=\"http://www.w3.org/1999/xhtml\">\n<head>\n    <meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\"/>\n    <link rel='stylesheet' href='/docs/css/c",
+      "seconds": 0.42,
+      "producer": "MOD13C2.A2000032.061.2020042083108",
+      "native_head": {
+        "url": "https://data.lpdaac.earthdatacloud.nasa.gov/lp-prod-protected/MOD13C2.061/MOD13C2.A2000032.061.2020042083108/MOD13C2.A2000032.061.2020042083108.hdf",
+        "status": 200,
+        "bytes": 99208820,
+        "method": "head"
+      }
+    },
+    "mod11c3": {
+      "ok": false,
+      "status": 404,
+      "error": "HTTPError",
+      "body_head": "\n\n\n\n\n\n\n\n<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\">\n\n\n<html xmlns=\"http://www.w3.org/1999/xhtml\">\n<head>\n    <meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\"/>\n    <link rel='stylesheet' href='/docs/css/c",
+      "seconds": 0.38,
+      "producer": "MOD11C3.A2000032.061.2020048181639",
+      "native_head": {
+        "url": "https://data.lpdaac.earthdatacloud.nasa.gov/lp-prod-protected/MOD11C3.061/MOD11C3.A2000032.061.2020048181639/MOD11C3.A2000032.061.2020048181639.hdf",
+        "status": 200,
+        "bytes": 56510651,
+        "method": "head"
+      }
+    }
+  },
+  "cci_sm": {
+    "ndays": 16863,
+    "sample_bytes": [
+      617734,
+      1071793,
+      1458973
+    ],
+    "mean_sample_bytes": 1049500.0,
+    "total_est_bytes": 17697718500,
+    "period": "1978-11-01 to 2024-12-31",
+    "version": "v09.2 COMBINED daily"
+  }
+}

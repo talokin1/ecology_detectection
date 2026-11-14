@@ -96,5 +96,8 @@
     "Snowy or cloudy months are dropped, so winter months may be missing in cold regions."
   ],
   "script": "backend/trend_detective/modis_ndvi.py",
-  "git_commit": "b47dff5"
+  "git_commit": "b47dff5",
+  "land_only": true,
+  "n_rows": 321,
+  "n_valid_months": 275
 }

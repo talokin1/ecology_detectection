@@ -20,6 +20,10 @@ node_modules/
 dist/
 .vite/
 .next/
+frontend/test-results/
+*.tsbuildinfo
+build/
+frontend/playwright-report/
 
 # Data (large raw files are rebuilt by scripts/; small curated outputs may be committed)
 data/cache/raw/
@@ -27,8 +31,12 @@ data/cache/**/*.nc
 data/cache/**/*.zarr/
 data/cache/**/*.hdf
 data/cache/**/*.h5
+data/cache/**/*.nc4
+*.nc4
+.cdsapirc
+cookies.txt
 !data/cache/**/*.provenance.json
-# World-map grids committed on purpose (data plan D2: only grids the map uses; rebuild others
+# World-map grids committed on purpose (ADR-006, data plan D2: only grids the map uses; rebuild others
 # with scripts/fetch_grid.py). List each file explicitly so local test grids never slip in.
 !data/cache/grids/merra2_T2M_2deg.nc
 
@@ -38,5 +46,11 @@ Thumbs.db
 .vscode/
 .idea/
 
+# Local translations for team discussion (repo is English-only)
+*.uk.md
+
 # Claude Code local overrides
 .claude/settings.local.json
+
+# Natural Earth downloads (rebuilt by scripts/make_geo.py)
+data/cache/naturalearth/

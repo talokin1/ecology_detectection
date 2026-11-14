@@ -18,7 +18,7 @@ Examples (PowerShell or bash):
     python scripts/build_data.py --with-earthdata
     python scripts/build_data.py --manifest-only
 
-SI-assisted (Claude, Anthropic); reviewed by the team (see docs/08-si-usage-log.md).
+SI-assisted (Claude, Anthropic); pending team review (see docs/08-si-usage-log.md).
 """
 
 from __future__ import annotations
@@ -39,12 +39,13 @@ import yaml
 REPO_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO_ROOT / "backend"))
 
-from trend_detective import acquire, power_zarr  # noqa: E402
-from trend_detective.earthdata import NotCachedError  # noqa: E402
+from trend_detective import acquire, power_zarr
+from trend_detective.earthdata import NotCachedError
 
 DEFAULT_JOBS = REPO_ROOT / "data" / "catalog" / "build.yaml"
 MANIFEST_NAME = "MANIFEST.json"
-MANIFEST_DIRS = ("power_zarr", "earthdata")  # data/cache/raw is deliberately not frozen
+MANIFEST_DIRS = ("power_zarr", "earthdata", "grids")  # data/cache/raw is deliberately not frozen
+GRID_SUFFIXES = (".nc",)  # committed map grids (ADR-006); listed with their sidecar time range
 ASSESSMENT_STATUSES = ("ok", "caution", "too_short", "no_variation")
 NOT_ERRORS = (*ASSESSMENT_STATUSES, "no data", "not cached", "skipped")
 
@@ -80,6 +81,7 @@ class Result:
 
 # --- job list ---------------------------------------------------------------------------------
 
+
 def load_jobs(path: Path) -> dict:
     """Read and validate the YAML job list."""
     spec = yaml.safe_load(Path(path).read_text(encoding="utf-8")) or {}
@@ -98,8 +100,9 @@ def load_jobs(path: Path) -> dict:
     return spec
 
 
-def expand_jobs(spec: dict, catalog: dict[str, acquire.Variable] | None = None,
-                only: Sequence[str] | None = None) -> list[Job]:
+def expand_jobs(
+    spec: dict, catalog: dict[str, acquire.Variable] | None = None, only: Sequence[str] | None = None
+) -> list[Job]:
     """Matrix (available catalog variables x regions) followed by the method inputs.
 
     ``catalog`` defaults to ``acquire.list_variables(available_only=True)``. ``only`` restricts
@@ -122,17 +125,20 @@ def expand_jobs(spec: dict, catalog: dict[str, acquire.Variable] | None = None,
     matrix_regions = list(only) if only else list(matrix.get("regions") or regions)
     for region in matrix_regions:
         for vid in ids:
-            jobs.append(Job("variable", region, vid, needs_login=catalog[vid].needs_login,
-                            excluded=vid in excluded))
+            jobs.append(
+                Job("variable", region, vid, needs_login=catalog[vid].needs_login, excluded=vid in excluded)
+            )
     for item in spec.get("inputs") or []:
         item_regions = list(only) if only else list(item.get("regions") or regions)
         for region in item_regions:
-            jobs.append(Job("input", region, item["parameter"], store=item["store"],
-                            how=item.get("how", "mean")))
+            jobs.append(
+                Job("input", region, item["parameter"], store=item["store"], how=item.get("how", "mean"))
+            )
     return jobs
 
 
 # --- running ----------------------------------------------------------------------------------
+
 
 def _period_and_n(s, job: Job) -> tuple[str, str, int, str]:
     """(status, period, n, unit) for a fetched series."""
@@ -145,7 +151,7 @@ def _period_and_n(s, job: Job) -> tuple[str, str, int, str]:
         return "no data", "", 0, "d"
     a = acquire.assess(power_zarr.monthly_from_daily(clean, job.how))
     period = f"{clean.index[0]:%Y-%m-%d}..{clean.index[-1]:%Y-%m-%d}"
-    return a["status"], period, int(len(clean)), "d"
+    return a["status"], period, len(clean), "d"
 
 
 def run_job(job: Job, *, refresh: bool = False, with_earthdata: bool = False) -> Result:
@@ -155,8 +161,12 @@ def run_job(job: Job, *, refresh: bool = False, with_earthdata: bool = False) ->
     t0 = time.perf_counter()
     try:
         if job.kind == "variable":
-            s = acquire.get_series(job.name, job.region, allow_login_fetch=with_earthdata,
-                                   refresh=refresh and (with_earthdata or not job.needs_login))
+            s = acquire.get_series(
+                job.name,
+                job.region,
+                allow_login_fetch=with_earthdata,
+                refresh=refresh and (with_earthdata or not job.needs_login),
+            )
         else:
             s = acquire.get_input_series(job.name, job.region, store=job.store, refresh=refresh)
         status, period, n, unit = _period_and_n(s, job)
@@ -170,8 +180,7 @@ def run_job(job: Job, *, refresh: bool = False, with_earthdata: bool = False) ->
         status = "no data" if "no data" in str(exc).lower() else "error"
         return Result(job, status, seconds=time.perf_counter() - t0, message=str(exc))
     except Exception as exc:  # noqa: BLE001 - one failing series must not stop the run
-        return Result(job, "error", seconds=time.perf_counter() - t0,
-                      message=f"{type(exc).__name__}: {exc}")
+        return Result(job, "error", seconds=time.perf_counter() - t0, message=f"{type(exc).__name__}: {exc}")
 
 
 def format_result(r: Result) -> str:
@@ -207,8 +216,9 @@ def _power_cache_path(job: Job) -> Path:
     return power_zarr._cache_path(power_zarr.default_cache_dir(), variable, region, store, land_only)
 
 
-def run_jobs(jobs: Iterable[Job], *, refresh: bool = False, with_earthdata: bool = False,
-             echo=print) -> list[Result]:
+def run_jobs(
+    jobs: Iterable[Job], *, refresh: bool = False, with_earthdata: bool = False, echo=print
+) -> list[Result]:
     results = []
     for job in jobs:
         r = run_job(job, refresh=refresh, with_earthdata=with_earthdata)
@@ -231,6 +241,7 @@ def summarise(results: Sequence[Result], echo=print) -> int:
 
 
 # --- manifest ---------------------------------------------------------------------------------
+
 
 def default_cache_root() -> Path:
     """``$CACHE_DIR`` or ``data/cache`` (the parent of the reader cache folders)."""
@@ -260,12 +271,29 @@ def _csv_summary(path: Path) -> tuple[int, str | None, str | None]:
     return rows, first, last
 
 
+def _region_id(bbox: dict | None) -> str | None:
+    """Preset id whose bbox equals the sidecar bbox (B1-03), else ``None`` (custom box or grid)."""
+    if not bbox:
+        return None
+    key = (bbox.get("lon_min"), bbox.get("lat_min"), bbox.get("lon_max"), bbox.get("lat_max"))
+    for pid, e in acquire.list_regions().items():
+        if tuple(float(v) for v in e["bbox"]) == key:
+            return pid
+    return None
+
+
 def manifest_entry(path: Path, cache_root: Path) -> dict:
-    rows, first, last = _csv_summary(path)
     sidecar = path.with_name(path.name + ".provenance.json")
     prov = json.loads(sidecar.read_text(encoding="utf-8")) if sidecar.exists() else {}
+    if path.suffix in GRID_SUFFIXES:
+        tr = prov.get("time_range") or {}
+        rows, first, last = prov.get("n_months"), tr.get("start"), tr.get("end")
+    else:
+        rows, first, last = _csv_summary(path)
     var = prov.get("variable")
     return {
+        "kind": "grid" if path.suffix in GRID_SUFFIXES else "series",
+        "region_id": _region_id(prov.get("bbox")) if path.suffix not in GRID_SUFFIXES else None,
         "path": path.relative_to(cache_root).as_posix(),
         "bytes": path.stat().st_size,
         "sha256": _sha256(path),
@@ -286,8 +314,13 @@ def manifest_entry(path: Path, cache_root: Path) -> dict:
 def build_manifest(cache_root: Path, freeze_date: str | None = None) -> dict:
     cache_root = Path(cache_root)
     files = sorted(
-        (p for d in MANIFEST_DIRS if (cache_root / d).is_dir() for p in (cache_root / d).rglob("*.csv")
-         if not p.name.endswith(".partial.csv")),  # unfinished resumable fetches are not frozen data
+        (
+            p
+            for d in MANIFEST_DIRS
+            if (cache_root / d).is_dir()
+            for p in (cache_root / d).rglob("*")
+            if p.is_file() and p.suffix in (".csv", *GRID_SUFFIXES) and not p.name.endswith(".partial.csv")
+        ),  # unfinished resumable fetches are not frozen data
         key=lambda p: p.relative_to(cache_root).as_posix(),
     )
     entries = [manifest_entry(p, cache_root) for p in files]
@@ -304,21 +337,25 @@ def write_manifest(cache_root: Path, freeze_date: str | None = None) -> dict:
     """Write ``<cache_root>/MANIFEST.json`` (sorted, deterministic) and return its content."""
     manifest = build_manifest(cache_root, freeze_date)
     out = Path(cache_root) / MANIFEST_NAME
-    out.write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8",
-                   newline="\n")
+    out.write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8", newline="\n")
     return manifest
 
 
 # --- CLI --------------------------------------------------------------------------------------
 
+
 def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     p.add_argument("--jobs", type=Path, default=DEFAULT_JOBS, help="YAML job list")
     p.add_argument("--refresh", action="store_true", help="download again even if cached")
-    p.add_argument("--with-earthdata", action="store_true",
-                   help="allow fetching login-only variables (needs EARTHDATA_TOKEN)")
-    p.add_argument("--only", action="append", metavar="REGION_ID",
-                   help="build only this region preset (repeatable)")
+    p.add_argument(
+        "--with-earthdata",
+        action="store_true",
+        help="allow fetching login-only variables (needs EARTHDATA_TOKEN)",
+    )
+    p.add_argument(
+        "--only", action="append", metavar="REGION_ID", help="build only this region preset (repeatable)"
+    )
     p.add_argument("--dry-run", action="store_true", help="list what would be built and exit")
     p.add_argument("--manifest-only", action="store_true", help="only rewrite MANIFEST.json")
     args = p.parse_args(argv)

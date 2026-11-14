@@ -80,6 +80,7 @@ def spec(bd, tmp_path):
 
 # --- job parsing and expansion ----------------------------------------------------------------
 
+
 def test_load_jobs_validates(bd, tmp_path):
     bad = tmp_path / "bad.yaml"
     bad.write_text("regions: []\n", encoding="utf-8")
@@ -106,11 +107,20 @@ def test_expand_matrix_and_inputs(bd, spec):
     variables = [j for j in jobs if j.kind == "variable"]
     inputs = [j for j in jobs if j.kind == "input"]
     assert [(j.region, j.name) for j in variables] == [
-        ("r1", "temp"), ("r1", "ice"), ("r1", "ndvi"), ("r2", "temp"), ("r2", "ice"), ("r2", "ndvi")]
+        ("r1", "temp"),
+        ("r1", "ice"),
+        ("r1", "ndvi"),
+        ("r2", "temp"),
+        ("r2", "ice"),
+        ("r2", "ndvi"),
+    ]
     assert [j.excluded for j in variables if j.name == "ice"] == [True, True]
     assert all(j.needs_login == (j.name == "ndvi") for j in variables)
     assert [(j.region, j.name, j.how) for j in inputs] == [
-        ("r1", "T2M_MAX", "mean"), ("r2", "T2M_MAX", "mean"), ("r1", "PRECTOTCORR", "sum")]
+        ("r1", "T2M_MAX", "mean"),
+        ("r2", "T2M_MAX", "mean"),
+        ("r1", "PRECTOTCORR", "sum"),
+    ]
 
 
 def test_expand_only_and_explicit_list(bd, spec):
@@ -130,6 +140,7 @@ def test_default_matrix_uses_available_catalog(bd):
 
 
 # --- running: earthdata skipping, failures, exit code -----------------------------------------
+
 
 def test_earthdata_not_cached_is_skipped_not_error(bd, monkeypatch):
     calls = []
@@ -174,9 +185,15 @@ def test_failures_do_not_stop_run_and_set_exit_code(bd, monkeypatch, spec):
     results = bd.run_jobs(bd.expand_jobs(spec, catalog=CATALOG), echo=lines.append)
     status = {(r.job.region, r.job.name): r.status for r in results}
     assert status == {
-        ("r1", "temp"): "ok", ("r1", "ice"): "skipped", ("r1", "ndvi"): "not cached",
-        ("r2", "temp"): "no data", ("r2", "ice"): "skipped", ("r2", "ndvi"): "not cached",
-        ("r1", "T2M_MAX"): "ok", ("r2", "T2M_MAX"): "ok", ("r1", "PRECTOTCORR"): "error",
+        ("r1", "temp"): "ok",
+        ("r1", "ice"): "skipped",
+        ("r1", "ndvi"): "not cached",
+        ("r2", "temp"): "no data",
+        ("r2", "ice"): "skipped",
+        ("r2", "ndvi"): "not cached",
+        ("r1", "T2M_MAX"): "ok",
+        ("r2", "T2M_MAX"): "ok",
+        ("r1", "PRECTOTCORR"): "error",
     }
     assert len(lines) == len(results)
     daily = next(r for r in results if r.job.name == "T2M_MAX")
@@ -196,8 +213,14 @@ def test_main_dry_run_fetches_nothing(bd, monkeypatch, tmp_path, capsys, spec):
     monkeypatch.setattr(acquire, "get_series", boom)
     monkeypatch.setattr(acquire, "get_input_series", boom)
     monkeypatch.setattr(bd, "_power_cache_path", lambda job: tmp_path / "missing.csv")
-    monkeypatch.setattr(bd, "expand_jobs", lambda s, only=None: [
-        bd.Job("variable", "r1", "temp"), bd.Job("variable", "r1", "ndvi", needs_login=True)])
+    monkeypatch.setattr(
+        bd,
+        "expand_jobs",
+        lambda s, only=None: [
+            bd.Job("variable", "r1", "temp"),
+            bd.Job("variable", "r1", "ndvi", needs_login=True),
+        ],
+    )
     jobs = tmp_path / "build.yaml"
     jobs.write_text(JOBS_YAML, encoding="utf-8")
     assert bd.main(["--jobs", str(jobs), "--dry-run"]) == 0
@@ -220,6 +243,7 @@ def test_main_build_exit_code_and_manifest_in_tmp(bd, monkeypatch, tmp_path, cap
 
 # --- manifest ---------------------------------------------------------------------------------
 
+
 def _write_csv(path: Path, text: str, prov: dict | None) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(text, encoding="utf-8", newline="\n")
@@ -230,12 +254,18 @@ def _write_csv(path: Path, text: str, prov: dict | None) -> None:
 def test_write_manifest(bd, tmp_path):
     root = tmp_path / "cache"
     csv_a = "time,value\n2001-01-01,1.5\n2001-02-01,2.5\n2001-03-01,3.5\n"
-    prov = {"variable": {"variable": "T2M", "source": "merra2"}, "region_name": "Ukraine",
-            "bbox": {"lat_min": 44.0, "lat_max": 52.5, "lon_min": 22.0, "lon_max": 40.5},
-            "land_only": True, "git_commit": "abc1234", "accessed": "2026-11-14T10:00:00Z"}
+    prov = {
+        "variable": {"variable": "T2M", "source": "merra2"},
+        "region_name": "Ukraine",
+        "bbox": {"lat_min": 44.0, "lat_max": 52.5, "lon_min": 22.0, "lon_max": 40.5},
+        "land_only": True,
+        "git_commit": "abc1234",
+        "accessed": "2026-11-14T10:00:00Z",
+    }
     _write_csv(root / "power_zarr" / "merra2_T2M_x.csv", csv_a, prov)
-    _write_csv(root / "earthdata" / "mod13c2_ndvi_y.csv", "month,value,valid_fraction\n2000-02-01,,0.4\n",
-               None)
+    _write_csv(
+        root / "earthdata" / "mod13c2_ndvi_y.csv", "month,value,valid_fraction\n2000-02-01,,0.4\n", None
+    )
     _write_csv(root / "raw" / "big.csv", "a\n1\n", None)  # raw is not frozen
 
     m = bd.write_manifest(root, freeze_date="2026-11-14")
@@ -270,3 +300,30 @@ def test_manifest_skips_unfinished_partial_files(bd, tmp_path):
     d.mkdir()
     (d / "omno2d_x.csv.partial.csv").write_text("date,value\n2005-01-01,1\n", encoding="utf-8")
     assert bd.build_manifest(tmp_path)["n_files"] == 0
+
+
+def test_manifest_lists_grids_and_preset_ids(bd, tmp_path):
+    """B1-02: committed map grids are frozen too; B1-03: series carry the preset id."""
+    root = tmp_path / "cache"
+    prov = {
+        "variable": {"variable": "T2M", "source": "merra2"},
+        "region_name": "Ukraine",
+        "bbox": {"lat_min": 44.0, "lat_max": 52.5, "lon_min": 22.0, "lon_max": 40.5},
+    }
+    _write_csv(root / "power_zarr" / "merra2_T2M_x.csv", "time,value\n2001-01-01,1.5\n", prov)
+    grid = root / "grids" / "merra2_T2M_2deg.nc"
+    grid.parent.mkdir(parents=True)
+    grid.write_bytes(b"CDF\x01fake")
+    gprov = {
+        "variable": {"variable": "T2M", "source": "merra2"},
+        "n_months": 549,
+        "time_range": {"start": "1981-01", "end": "2026-09"},
+    }
+    grid.with_name(grid.name + ".provenance.json").write_text(json.dumps(gprov), encoding="utf-8")
+    m = bd.build_manifest(root, freeze_date="2026-11-14")
+    by_path = {f["path"]: f for f in m["files"]}
+    assert set(by_path) == {"grids/merra2_T2M_2deg.nc", "power_zarr/merra2_T2M_x.csv"}
+    g = by_path["grids/merra2_T2M_2deg.nc"]
+    assert (g["kind"], g["rows"], g["first"], g["last"]) == ("grid", 549, "1981-01", "2026-09")
+    assert by_path["power_zarr/merra2_T2M_x.csv"]["region_id"] == "ukraine"
+    assert "grids" in m["directories"]

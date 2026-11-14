@@ -21,7 +21,11 @@ Procedure:
    sensitivity (drop first/last 2 years — does the verdict flip)? FDR on maps? percent change only for
    ratio-scale variables?
 5. Check the wording: does the verdict text match the thresholds in `docs/10-methods.md`? Any causal
-   claim not supported?
+   claim not supported? If MK Yue-Wang and the OLS n_eff cross-check disagree at 0.05, the reported
+   verdict must be the more conservative one, with a "Two methods disagree" line, and no
+   multiple-testing pass may be claimed for that row (trend-stats SKILL.md rule 2).
+6. Units: is the shown unit the catalog `display_units`, converted only by the catalog `convert`
+   (e.g. solar W/m² → MJ/m²/day, `x * 0.0864`)? Is "Tmax" the mean daily maximum, not the hottest hour?
 
 Report:
 ```

@@ -43,7 +43,7 @@ Status: **draft** — confirm stack choices via ADRs before building.
 ## Trend analysis contract (`/trend` response)
 ```json
 {
-  "variable": "T2M", "region": {"type": "bbox", "bounds": [22, 44, 40, 52.5]},
+  "variable": "T2M", "region": {"type": "bbox", "bounds": [22.0, 44.0, 40.5, 52.5], "land_only": true},
   "period": {"start": "1981-01", "end": "2025-12"}, "n": 540, "frequency": "monthly",
   "deseasonalized": true,
   "sen_slope_per_decade": 0.52, "sen_ci95_per_decade": [0.44, 0.60], "units": "K/decade",

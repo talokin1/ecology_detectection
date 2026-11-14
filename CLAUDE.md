@@ -63,7 +63,7 @@ Relevance (NASA data as the core), Presentation**. When in doubt, optimise for
 backend/     Python API (FastAPI) + analysis engine
 frontend/    Web app (map + charts + wizard)
 data/catalog Variable catalog (YAML) — curated, plain-language
-data/cache   Pre-fetched NetCDF/Zarr/CSV (git-ignored if large; document how to rebuild)
+data/cache   Pre-fetched NetCDF/Zarr/CSV (git-ignored if large, except map grids listed in .gitignore (ADR-006); document how to rebuild)
 notebooks/   Exploration; promote reusable code to backend/
 scripts/     Data fetch / precompute scripts (idempotent, documented CLI)
 docs/        Context, decisions, methods, logs

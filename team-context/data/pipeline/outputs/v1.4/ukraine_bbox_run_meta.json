@@ -1,0 +1,367 @@
+{
+ "region": "ukraine_bbox",
+ "region_cfg": {
+  "type": "bbox",
+  "lon_min": 22.1,
+  "lon_max": 40.2,
+  "lat_min": 44.4,
+  "lat_max": 52.4,
+  "description": "Approved-numbers box 22.1-40.2E, 44.4-52.4N (~2x Ukraine; includes neighbours and NW Black Sea)"
+ },
+ "bounds": [
+  22.1,
+  44.4,
+  40.2,
+  52.4
+ ],
+ "sources": {
+  "nasa_power": {
+   "source": "nasa_power",
+   "status": "ok",
+   "variables": {
+    "T2M": {
+     "n_cells_in_file": 464,
+     "grid": "16x29",
+     "n_cells_weight_gt0": 464,
+     "sum_frac": 452.47400000000016
+    },
+    "T2M_MAX": {
+     "n_cells_in_file": 464,
+     "grid": "16x29",
+     "n_cells_weight_gt0": 464,
+     "sum_frac": 452.47400000000016
+    },
+    "T2M_MIN": {
+     "n_cells_in_file": 464,
+     "grid": "16x29",
+     "n_cells_weight_gt0": 464,
+     "sum_frac": 452.47400000000016
+    },
+    "PRECTOTCORR": {
+     "n_cells_in_file": 464,
+     "grid": "16x29",
+     "n_cells_weight_gt0": 464,
+     "sum_frac": 452.47400000000016
+    },
+    "QV2M": {
+     "n_cells_in_file": 464,
+     "grid": "16x29",
+     "n_cells_weight_gt0": 464,
+     "sum_frac": 452.47400000000016
+    },
+    "WS10M": {
+     "n_cells_in_file": 464,
+     "grid": "16x29",
+     "n_cells_weight_gt0": 464,
+     "sum_frac": 452.47400000000016
+    },
+    "ALLSKY_SFC_SW_DWN": {
+     "n_cells_in_file": 144,
+     "grid": "8x18",
+     "n_cells_weight_gt0": 144,
+     "sum_frac": 136.04000000000002
+    }
+   },
+   "seconds": 0.4
+  },
+  "grace": {
+   "source": "grace",
+   "status": "ok",
+   "file": "$GLOBAL_DATA/grace/GRCTellus.JPL.200204_202609.GLO.RL06.3M.MSCNv04CRI.nc",
+   "n_mascons": 15,
+   "n_land_cells_weight_gt0": 560,
+   "time_center_vs_csv_max_days": 0,
+   "seconds": 0.2
+  },
+  "hadcrut5": {
+   "source": "hadcrut5",
+   "status": "ok",
+   "n_cells_weight_gt0": 15,
+   "sum_frac": 5.792,
+   "seconds": 0.3
+  },
+  "gistemp": {
+   "source": "gistemp",
+   "status": "ok",
+   "n_cells_weight_gt0": 50,
+   "seconds": 0.5
+  },
+  "berkeley": {
+   "source": "berkeley",
+   "status": "ok",
+   "n_cells_weight_gt0": 166,
+   "weight": "area x overlap x land_mask fraction",
+   "seconds": 1.9
+  },
+  "chirps": {
+   "source": "chirps",
+   "status": "ok",
+   "path": "global_grid_overlap_weights",
+   "file": "$GLOBAL_DATA/chirps_v3/chirps-v3.0.monthly.nc",
+   "cache": "chirps_ukraine_bbox_a7c5a48e436cb8be.parquet",
+   "seconds": 0.1
+  },
+  "cci_sm": {
+   "source": "cci_sm",
+   "status": "ok",
+   "note": "record 1978-11..1991-12 only",
+   "seconds": 0.1
+  },
+  "merra2": {
+   "source": "merra2",
+   "status": "ok",
+   "path": "global_grid_overlap_weights",
+   "products": [
+    {
+     "product": "merra2_slv",
+     "dir": "$GLOBAL_DATA/merra2_slv_slim",
+     "n_files": 561,
+     "window_cells": "17x30",
+     "cache": "merra2_slv_ukraine_bbox_5dfde50564399045.parquet",
+     "status": "cached"
+    },
+    {
+     "product": "merra2_flx",
+     "dir": "$GLOBAL_DATA/merra2_flx_slim",
+     "n_files": 561,
+     "window_cells": "17x30",
+     "cache": "merra2_flx_ukraine_bbox_2bce88e428930a39.parquet",
+     "status": "cached"
+    },
+    {
+     "product": "merra2_wind",
+     "dir": "$GLOBAL_DATA/merra2_slv_wind",
+     "n_files": 561,
+     "window_cells": "17x30",
+     "cache": "merra2_wind_ukraine_bbox_9880ff4c0b8d7f36.parquet",
+     "status": "cached"
+    },
+    {
+     "product": "merra2_ext",
+     "dir": "$GLOBAL_DATA/merra2_statm_extremes",
+     "n_files": 561,
+     "window_cells": "17x30",
+     "cache": "merra2_ext_ukraine_bbox_be93fceef823e62b.parquet",
+     "status": "cached"
+    }
+   ],
+   "seconds": 0.1
+  },
+  "gldas20": {
+   "source": "gldas20",
+   "status": "ok",
+   "path": "global_grid_overlap_weights",
+   "products": [
+    {
+     "product": "gldas20",
+     "dir": "$GLOBAL_DATA/gldas20_slim",
+     "n_files": 804,
+     "window_cells": "33x73",
+     "cache": "gldas20_ukraine_bbox_65fb0c399b6c71ab.parquet",
+     "status": "cached"
+    },
+    {
+     "product": "gldas20_rainf",
+     "dir": "$GLOBAL_DATA/gldas20_rainf",
+     "n_files": 804,
+     "window_cells": "33x73",
+     "cache": "gldas20_rainf_ukraine_bbox_9a90372deb28f426.parquet",
+     "status": "cached"
+    }
+   ],
+   "seconds": 0.1
+  },
+  "gldas21": {
+   "source": "gldas21",
+   "status": "ok",
+   "path": "global_grid_overlap_weights",
+   "products": [
+    {
+     "product": "gldas21",
+     "dir": "$GLOBAL_DATA/gldas21_slim",
+     "n_files": 319,
+     "window_cells": "33x73",
+     "cache": "gldas21_ukraine_bbox_613915cdf88a113b.parquet",
+     "status": "cached"
+    },
+    {
+     "product": "gldas21_rainf",
+     "dir": "$GLOBAL_DATA/gldas21_rainf",
+     "n_files": 319,
+     "window_cells": "33x73",
+     "cache": "gldas21_rainf_ukraine_bbox_1d410ba85e1075e8.parquet",
+     "status": "cached"
+    }
+   ],
+   "seconds": 0.1
+  },
+  "gpm_imerg": {
+   "source": "gpm_imerg",
+   "status": "ok",
+   "path": "global_grid_overlap_weights",
+   "products": [
+    {
+     "product": "gpm_imerg",
+     "dir": "$GLOBAL_DATA/gpm_imerg_slim",
+     "n_files": 333,
+     "window_cells": "81x181",
+     "cache": "gpm_imerg_ukraine_bbox_93316a02cd4dbb3b.parquet",
+     "status": "cached"
+    }
+   ],
+   "seconds": 0.0
+  },
+  "airs": {
+   "source": "airs",
+   "status": "ok",
+   "path": "global_grid_overlap_weights",
+   "products": [
+    {
+     "product": "airs",
+     "dir": "$GLOBAL_DATA/airs3stm_slim",
+     "n_files": 290,
+     "window_cells": "9x19",
+     "cache": "airs_ukraine_bbox_13acde4a5697ff3a.parquet",
+     "status": "cached"
+    }
+   ],
+   "seconds": 0.0
+  },
+  "modis": {
+   "source": "modis",
+   "status": "ok",
+   "path": "global_grid_overlap_weights",
+   "products": [
+    {
+     "product": "mod13c2_qc",
+     "dir": "$GLOBAL_DATA/mod13c2_slim",
+     "n_files": 321,
+     "window_cells": "160x363",
+     "cache": "mod13c2_qc_ukraine_bbox_ad93482c93b5cf93.parquet",
+     "status": "cached"
+    },
+    {
+     "product": "mod11c3_qc",
+     "dir": "$GLOBAL_DATA/mod11c3_slim",
+     "n_files": 321,
+     "window_cells": "160x363",
+     "cache": "mod11c3_qc_ukraine_bbox_fc4d3c7a6208f4ac.parquet",
+     "status": "cached"
+    }
+   ],
+   "qc": "per-pixel QC applied before area averaging (see qc_report: MODIS QC rules)",
+   "seconds": 0.1
+  },
+  "omi": {
+   "source": "omi",
+   "status": "ok",
+   "note": "n_valid = days with data; coverage = days/days_in_month",
+   "seconds": 0.0
+  },
+  "gpcc": {
+   "source": "gpcc",
+   "status": "ok",
+   "path": "global_grid_overlap_weights",
+   "n_files": 47,
+   "cache": "gpcc_ukraine_bbox_a27d0d3e1d5e7e00.parquet",
+   "seconds": 0.0
+  },
+  "cru_cy": {
+   "source": "cru_cy",
+   "status": "skipped",
+   "reason": "country (Ukraine) series; only used for ukraine_mask* regions",
+   "seconds": 0.0
+  },
+  "berkeley_country": {
+   "source": "berkeley_country",
+   "status": "skipped",
+   "reason": "country (Ukraine) series; only used for ukraine_mask* regions",
+   "seconds": 0.0
+  },
+  "ghcn": {
+   "source": "ghcn",
+   "status": "ok",
+   "n_stations_in_region": 28,
+   "n_qflag_values_removed": 4022,
+   "variables": {
+    "TAVG": {
+     "stations_with_data": 27,
+     "stations_with_any_baseline_month": 25,
+     "stations_with_full_12month_baseline": 25,
+     "stations_dropped_no_baseline": 2,
+     "stations_ending_before_2006": 0,
+     "station_months_failing_day_rule": 1210
+    },
+    "TMAX": {
+     "stations_with_data": 27,
+     "stations_with_any_baseline_month": 26,
+     "stations_with_full_12month_baseline": 19,
+     "stations_dropped_no_baseline": 1,
+     "stations_ending_before_2006": 0,
+     "station_months_failing_day_rule": 3246
+    },
+    "TMIN": {
+     "stations_with_data": 27,
+     "stations_with_any_baseline_month": 26,
+     "stations_with_full_12month_baseline": 20,
+     "stations_dropped_no_baseline": 1,
+     "stations_ending_before_2006": 0,
+     "station_months_failing_day_rule": 3969
+    },
+    "PRCP": {
+     "stations_with_data": 28,
+     "stations_with_any_baseline_month": 13,
+     "stations_with_full_12month_baseline": 6,
+     "stations_dropped_no_baseline": 15,
+     "stations_ending_before_2006": 22,
+     "station_months_failing_day_rule": 7745
+    }
+   },
+   "seconds": 1.7
+  },
+  "gsom": {
+   "source": "gsom",
+   "status": "ok",
+   "n_stations_in_region": 204,
+   "variables": {
+    "TAVG": {
+     "stations_with_data": 183,
+     "stations_with_any_baseline_month": 36,
+     "stations_with_full_12month_baseline": 9,
+     "stations_dropped_no_baseline": 147,
+     "stations_ending_before_2006": 49
+    },
+    "TMAX": {
+     "stations_with_data": 186,
+     "stations_with_any_baseline_month": 39,
+     "stations_with_full_12month_baseline": 15,
+     "stations_dropped_no_baseline": 147,
+     "stations_ending_before_2006": 45
+    },
+    "TMIN": {
+     "stations_with_data": 186,
+     "stations_with_any_baseline_month": 37,
+     "stations_with_full_12month_baseline": 9,
+     "stations_dropped_no_baseline": 149,
+     "stations_ending_before_2006": 11
+    },
+    "PRCP": {
+     "stations_with_data": 201,
+     "stations_with_any_baseline_month": 21,
+     "stations_with_full_12month_baseline": 10,
+     "stations_dropped_no_baseline": 180,
+     "stations_ending_before_2006": 190
+    }
+   },
+   "seconds": 0.3
+  },
+  "swot": {
+   "source": "swot",
+   "status": "ok",
+   "n_reaches": 8,
+   "seconds": 0.1
+  }
+ },
+ "n_series": 73,
+ "seconds": 19.4
+}

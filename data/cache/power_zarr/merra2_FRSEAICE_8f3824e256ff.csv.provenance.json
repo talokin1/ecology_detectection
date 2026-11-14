@@ -13,7 +13,7 @@
     "units": "1",
     "definition": "The fraction of ocean covered by sea ice."
   },
-  "region_name": "Arctic cap",
+  "region_name": "Arctic (north of 70°N)",
   "bbox": {
     "lat_min": 70,
     "lat_max": 90,

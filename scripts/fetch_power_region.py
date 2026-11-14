@@ -10,7 +10,7 @@ Examples (PowerShell or bash):
         --bbox -15 10 35 18
     python scripts/fetch_power_region.py --list --source syn1deg
 
-SI-assisted (Claude, Anthropic); reviewed by the team (see docs/08-si-usage-log.md).
+SI-assisted (Claude, Anthropic); pending team review (see docs/08-si-usage-log.md).
 """
 
 from __future__ import annotations
@@ -21,7 +21,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "backend"))
 
-from trend_detective import power_zarr  # noqa: E402
+from trend_detective import power_zarr
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -30,7 +30,10 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--variable", help="POWER parameter name, e.g. T2M")
     p.add_argument("--name", default="region", help="label for the region (stored in provenance)")
     p.add_argument(
-        "--bbox", nargs=4, type=float, metavar=("LON_MIN", "LAT_MIN", "LON_MAX", "LAT_MAX"),
+        "--bbox",
+        nargs=4,
+        type=float,
+        metavar=("LON_MIN", "LAT_MIN", "LON_MAX", "LAT_MAX"),
         help="west south east north, degrees; LON_MIN > LON_MAX crosses the antimeridian",
     )
     p.add_argument("--refresh", action="store_true", help="download again even if cached")

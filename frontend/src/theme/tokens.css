@@ -1,0 +1,46 @@
+/* Design tokens. Colour lives in the data; the interface is black, white and greys (plan v2). */
+:root {
+  --bg: #ffffff;
+  --surface: #ffffff;
+  --surface-2: #f6f7f8;
+  --text: #111418;
+  --text-2: #5e6570;
+  --text-3: #7a818b;
+  --line: #e3e5e8;
+  --line-strong: #c9cdd2;
+  --ink: #111418;          /* active controls, trend line, evidence scale */
+  --ink-contrast: #ffffff; /* text on --ink */
+  --map-ocean: #f1f3f5;
+  --map-land: #e4e7ea;
+  --map-border: rgba(17, 20, 24, 0.28);
+  --map-coast: rgba(17, 20, 24, 0.55);
+  --band: rgba(17, 20, 24, 0.10);
+  --focus: #111418;
+  --radius: 6px;
+  --font: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --fs-h1: 28px;
+  --fs-verdict: 22px;
+  --fs-body: 14px;
+  --fs-small: 12.5px;
+  color-scheme: light;
+}
+
+:root[data-theme='dark'] {
+  --bg: #0f1114;
+  --surface: #14171b;
+  --surface-2: #1a1e23;
+  --text: #eceef0;
+  --text-2: #a3a9b2;
+  --text-3: #8b929c;
+  --line: #262b31;
+  --line-strong: #3a4048;
+  --ink: #eceef0;
+  --ink-contrast: #0f1114;
+  --map-ocean: #121519;
+  --map-land: #1d2126;
+  --map-border: rgba(236, 238, 240, 0.25);
+  --map-coast: rgba(236, 238, 240, 0.5);
+  --band: rgba(236, 238, 240, 0.14);
+  --focus: #eceef0;
+  color-scheme: dark;
+}

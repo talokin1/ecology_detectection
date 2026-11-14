@@ -10,7 +10,7 @@ Only land cells (the product's ``land_mask``) are averaged, with cos(latitude) w
 
 This module only acquires data. Trend statistics come from ``trend_stats.py``.
 
-SI-assisted (Claude, Anthropic); reviewed by the team (see docs/08-si-usage-log.md).
+SI-assisted (Claude, Anthropic); pending team review (see docs/08-si-usage-log.md).
 """
 
 from __future__ import annotations
@@ -68,7 +68,7 @@ def fetch_file(dest_dir: Path | None = None, *, check_newer: bool = True) -> Pat
         return local[-1]
     try:
         (granule,) = earthdata.cmr_granules(SHORT_NAME)[-1:]
-    except Exception:  # noqa: BLE001 - offline: any failure falls back to the local copy
+    except Exception:
         if local:
             return local[-1]
         raise
@@ -189,7 +189,7 @@ def region_series(
     prov = {
         "source": "NASA PO.DAAC, JPL GRACE/GRACE-FO mascon grid (Earthdata Login)",
         "source_url": "https://archive.podaac.earthdata.nasa.gov/podaac-ops-cumulus-protected/"
-                      f"{SHORT_NAME}/{path.name}",
+        f"{SHORT_NAME}/{path.name}",
         "short_name": SHORT_NAME,
         "version": VERSION,
         "file": path.name,
@@ -198,10 +198,15 @@ def region_series(
         "landing_page": LANDING_PAGE,
         "variable": VARIABLE_INFO,
         "region_name": region.name,
-        "bbox": {"lat_min": region.lat_min, "lat_max": region.lat_max,
-                 "lon_min": region.lon_min, "lon_max": region.lon_max},
+        "bbox": {
+            "lat_min": region.lat_min,
+            "lat_max": region.lat_max,
+            "lon_min": region.lon_min,
+            "lon_max": region.lon_max,
+        },
+        "land_only": True,  # JPL land_mask cells only (B1-07)
         "time_range": {"start": s.index[0].strftime("%Y-%m"), "end": s.index[-1].strftime("%Y-%m")},
-        "n_months": int(len(s)),
+        "n_months": len(s),
         "missing_months": gaps,
         "missing_months_match_published": gaps == published_in_range,
         "n_land_cells_0p5deg": n_land,
@@ -211,11 +216,16 @@ def region_series(
             "converted longitudes 0..360 to -180..180",
             "selected 0.5° cells whose centres fall inside the bbox",
             "kept land cells only (product land_mask == 1)",
-            ("multiplied by the product's CLM scale_factor" if apply_scale_factor
-             else "no gain (scale) factors applied"),
+            (
+                "multiplied by the product's CLM scale_factor"
+                if apply_scale_factor
+                else "no gain (scale) factors applied"
+            ),
             "area mean with cos(latitude) weights",
-            "each solution assigned to its window-midpoint month; a month already taken moves the "
-            "solution to the next month (matches the product's months_missing list)",
+            (
+                "each solution assigned to its window-midpoint month; a month already taken moves the "
+                "solution to the next month (matches the product's months_missing list)"
+            ),
             "kept source units (cm liquid water equivalent)",
         ],
         "caveats": caveats,
