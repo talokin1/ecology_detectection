@@ -7,12 +7,13 @@ Objective 1 — *identify variables that can be investigated for trends*:
 
 Objective 2 — *acquire the variable for a particular region*:
     ``get_series(variable_id, region)`` takes a catalog id and a named preset or any box, and calls
-    the right reader (POWER Zarr live; MODIS NDVI and GRACE from the Earthdata cache).
+    the right reader (POWER Zarr, no login; MODIS NDVI and GRACE from the Earthdata cache). Used by
+    the offline precompute (scripts/build_data.py, ADR-004), not per app request.
 
 Variables come from ``data/catalog/variables.yaml`` (field ``access`` says how each is fetched);
 presets from ``data/catalog/regions.yaml``. Trend statistics are not computed here.
 
-SI-assisted (Claude, Anthropic); reviewed by the team (see docs/08-si-usage-log.md).
+SI-assisted (Claude, Anthropic); pending team review (see docs/08-si-usage-log.md).
 """
 
 from __future__ import annotations
@@ -75,6 +76,8 @@ class Variable:
         return {
             "id": self.id, "name": self.name, "definition": self.definition,
             "why_it_trends": self.why_it_trends, "units": self.units, "period": self.period,
+            # "live" = no login needed to (re)fetch, i.e. the precompute can refresh it without a
+            # token (ADR-004); the static app never reads per request (plan v2 decision 8).
             "available": self.available, "live": self.available and not self.needs_login,
             "reader": self.reader, "caveats": self.entry.get("caveats"),
             "topic": self.entry.get("topic"), "how_measured": self.entry.get("how_measured"),
@@ -179,7 +182,9 @@ def get_series(
     s.attrs.update({
         "variable_id": v.id, "catalog": v.summary(), "region": reg.name, "land_only": land_only,
         "bbox": [reg.lon_min, reg.lat_min, reg.lon_max, reg.lat_max],
-        "units": reader_units or v.units, "catalog_units": v.units,
+        # B2-11: ``units`` is the catalog unit (what the app labels); ``source_units`` is the
+        # reader's own string (e.g. POWER "C" for degC). ``catalog_units`` kept for callers.
+        "units": v.units or reader_units, "source_units": reader_units, "catalog_units": v.units,
         "assessment": assess(s),
     })
     return s
@@ -318,7 +323,7 @@ def inventory(region: str | Region | Sequence[float], *, allow_login_fetch: bool
     rows = []
     for v in list_variables().values():
         row = {"id": v.id, "name": v.name, "available": v.available,
-               "live": v.available and not v.needs_login}
+               "live": v.available and not v.needs_login}  # live = refresh needs no login
         if not v.available:
             rows.append(row | {"status": "no reader", "notes": ""})
             continue

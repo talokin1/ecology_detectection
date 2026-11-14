@@ -10,7 +10,7 @@ Only land cells (the product's ``land_mask``) are averaged, with cos(latitude) w
 
 This module only acquires data. Trend statistics come from ``trend_stats.py``.
 
-SI-assisted (Claude, Anthropic); reviewed by the team (see docs/08-si-usage-log.md).
+SI-assisted (Claude, Anthropic); pending team review (see docs/08-si-usage-log.md).
 """
 
 from __future__ import annotations

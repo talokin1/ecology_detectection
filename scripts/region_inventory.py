@@ -9,7 +9,7 @@ Examples (PowerShell or bash):
     python scripts/region_inventory.py --bbox 72 26 78 32 --name "NW India"
     python scripts/region_inventory.py --list-regions
 
-SI-assisted (Claude, Anthropic); reviewed by the team (see docs/08-si-usage-log.md).
+SI-assisted (Claude, Anthropic); pending team review (see docs/08-si-usage-log.md).
 """
 
 from __future__ import annotations

@@ -24,7 +24,7 @@ Coarsening (see ``_axis_fractions``):
 - Missing native cells are left out of the mean. ``valid_fraction`` is the share of a target
   cell's (weighted) native area that has data, averaged over the months kept.
 
-SI-assisted (Claude, Anthropic); reviewed by the team (see docs/08-si-usage-log.md).
+SI-assisted (Claude, Anthropic); pending team review (see docs/08-si-usage-log.md).
 """
 
 from __future__ import annotations

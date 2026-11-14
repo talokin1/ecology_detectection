@@ -89,7 +89,8 @@ def test_get_series_dispatches_and_annotates(catalog):
     (variable, region, store, land_only), = catalog
     assert land_only is False
     assert (variable, store, region.name) == ("T2M", "merra2", "Test box")
-    assert s.attrs["variable_id"] == "temp" and s.attrs["units"] == "C"
+    assert s.attrs["variable_id"] == "temp" and s.attrs["units"] == "degC"
+    assert s.attrs["source_units"] == "C"  # B2-11: reader string kept separately
     assert s.attrs["catalog_units"] == "degC" and s.attrs["bbox"] == [10, 40, 20, 50]
     assert s.attrs["assessment"]["status"] == "ok"
 

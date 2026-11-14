@@ -14,7 +14,7 @@ Examples (PowerShell or bash):
     python scripts/fetch_earthdata_region.py --dataset grace --name "NW India" --bbox 72 26 78 32
     python scripts/fetch_earthdata_region.py --dataset ndvi --name Ukraine --bbox 22 44 40.5 52.5
 
-SI-assisted (Claude, Anthropic); reviewed by the team (see docs/08-si-usage-log.md).
+SI-assisted (Claude, Anthropic); pending team review (see docs/08-si-usage-log.md).
 """
 
 from __future__ import annotations

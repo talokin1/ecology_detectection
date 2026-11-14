@@ -10,7 +10,7 @@ Examples (PowerShell or bash):
         --bbox -15 10 35 18
     python scripts/fetch_power_region.py --list --source syn1deg
 
-SI-assisted (Claude, Anthropic); reviewed by the team (see docs/08-si-usage-log.md).
+SI-assisted (Claude, Anthropic); pending team review (see docs/08-si-usage-log.md).
 """
 
 from __future__ import annotations

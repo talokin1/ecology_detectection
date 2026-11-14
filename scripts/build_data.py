@@ -18,7 +18,7 @@ Examples (PowerShell or bash):
     python scripts/build_data.py --with-earthdata
     python scripts/build_data.py --manifest-only
 
-SI-assisted (Claude, Anthropic); reviewed by the team (see docs/08-si-usage-log.md).
+SI-assisted (Claude, Anthropic); pending team review (see docs/08-si-usage-log.md).
 """
 
 from __future__ import annotations

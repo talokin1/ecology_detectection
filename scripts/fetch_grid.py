@@ -9,7 +9,7 @@ Examples (PowerShell or bash):
     python scripts/fetch_grid.py --variable PRECTOTCORR --resolution 2.0 --land-only
     python scripts/fetch_grid.py --variable T2M --resolution 1.0 --method overlap --refresh
 
-SI-assisted (Claude, Anthropic); reviewed by the team (see docs/08-si-usage-log.md).
+SI-assisted (Claude, Anthropic); pending team review (see docs/08-si-usage-log.md).
 """
 
 from __future__ import annotations

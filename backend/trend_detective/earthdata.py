@@ -4,7 +4,7 @@ The token is read from the ``EARTHDATA_TOKEN`` environment variable or, failing 
 repo's ``.env`` file. It is only ever placed in an HTTP ``Authorization`` header sent to NASA
 hosts; it is never printed, logged, or written to cache or provenance files.
 
-SI-assisted (Claude, Anthropic); reviewed by the team (see docs/08-si-usage-log.md).
+SI-assisted (Claude, Anthropic); pending team review (see docs/08-si-usage-log.md).
 """
 
 from __future__ import annotations
