@@ -6,6 +6,50 @@ Primary significance: repo Mann-Kendall with the Yue-Wang AR(1) correction (ADR-
 
 Run: `cd team-context/data/pipeline && OMP_NUM_THREADS=2 nice -n 10 python run_pipeline.py --region ukraine_bbox ukraine_mask ukraine_mask_no_crimea && python smoke_test.py`
 
+<!-- B-3 re-derivation: start -->
+## B-3: conservative verdict re-derived (2026-11-14, Europe/Kiev)
+
+**Verdict columns re-derived, not recomputed.** Rule (main, `.claude/skills/trend-stats/SKILL.md:26-28`): when
+repo MK Yue-Wang and the OLS n_eff cross-check disagree at 0.05, use the more conservative verdict.
+`tools/rederive_verdicts.py` applied `ukpipe/verdict.py` to the committed v1.4 tables because the tidy
+inputs are not available offline. No statistic changed. 27 rows disagree; on the 20 rows where Yue-Wang alone
+is significant, "significant at 0.05" now reads "method-dependent ... not a detection" (also inside
+"[raw call: ...]" of diagnostic rows); the other 7 rows (only OLS significant) get a
+"methods disagree" note; and `mt_bonferroni_pass` /
+`mt_bh_pass` are cleared on every disagreement row. Full list: `outputs/v1.4/verdict_changes_b3.csv`.
+Sensitivity columns renamed: `mk_yw_p` -> `sens_pymk_yw_p_do_not_use`, `theil_sen_per_decade` ->
+`sens_theil_sen_per_decade` (the reported slope is `yw_sen_slope_per_decade` with its 95% CI).
+Sections below generated before 2026-11-14 keep their old statistics; the verdict cells of the headline
+tables and the multiple-testing lists were patched to match.
+
+| region | source | variable | series | headline | YW p | OLS n_eff p | was BH pass |
+|---|---|---|---|---|---|---|---|
+| ukraine_bbox | nasa_power | PRECTOTCORR | annual_ANN_12of12 | yes | 0.01939 | 0.086 | BH |
+| ukraine_bbox | nasa_power | WS10M | annual_ANN_12of12 | yes | 0.02425 | 0.09197 | BH |
+| ukraine_bbox | merra2 | PRECTOTCORR | annual_ANN_12of12 |  | 0.0184 | 0.08291 | BH |
+| ukraine_bbox | gldas20 | rainfall_liquid | annual_ANN_12of12 | yes | 0.03975 | 0.06661 |  |
+| ukraine_bbox | gldas21 | snowfall | annual_ANN_12of12 |  | 0.03435 | 0.0552 |  |
+| ukraine_bbox | modis | LST_Night_clear_days | annual_ANN_12of12 |  | 0.03873 | 0.06795 |  |
+| ukraine_bbox | gldas21 | Evap_tavg | monthly_deseasonalised_1991-2020 |  | 0.01005 | 0.05989 | BH |
+| ukraine_bbox | omi | ColumnAmountNO2Trop | monthly_deseasonalised_record_mean |  | 0.02755 | 0.08611 |  |
+| ukraine_mask | nasa_power | WS10M | annual_ANN_12of12 | yes | 0.03286 | 0.1533 |  |
+| ukraine_mask | gldas21 | snowfall | annual_ANN_12of12 |  | 0.02751 | 0.06183 | BH |
+| ukraine_mask | gldas21 | snowfall | annual_ANN_12of12 |  | 0.02349 | 0.05779 | BH |
+| ukraine_mask | gldas21 | Qsb_acc | monthly_deseasonalised_1991-2020 |  | 0.03022 | 0.3224 |  |
+| ukraine_mask | gldas21 | snowfall | monthly_deseasonalised_1991-2020 |  | 0.03597 | 0.05703 |  |
+| ukraine_mask_no_crimea | nasa_power | WS10M | annual_ANN_12of12 | yes | 0.03406 | 0.1206 |  |
+| ukraine_mask_no_crimea | gldas21 | snowfall | annual_ANN_12of12 |  | 0.03077 | 0.06882 |  |
+| ukraine_mask_no_crimea | gldas21 | snowfall | annual_ANN_12of12 |  | 0.02651 | 0.06396 | BH |
+| ukraine_mask_no_crimea | merra2 | DTR | monthly_deseasonalised_1991-2020 |  | 0.04919 | 0.06153 |  |
+| ukraine_mask_no_crimea | gldas21 | Evap_tavg | monthly_deseasonalised_1991-2020 |  | 0.03371 | 0.1581 |  |
+| ukraine_mask_no_crimea | gldas21 | Qsb_acc | monthly_deseasonalised_1991-2020 |  | 0.02881 | 0.3433 |  |
+| ukraine_mask_no_crimea | gldas21 | snowfall | monthly_deseasonalised_1991-2020 |  | 0.03938 | 0.06383 |  |
+
+Reworded claims: POWER PRECTOTCORR (bbox), POWER WS10M (all three regions) and GLDAS-2.0 rainfall (bbox)
+are **not detections**. Precipitation and wind trends are method-dependent; quote them only as
+"Yue-Wang p<0.05 but the OLS cross-check is not significant, so the methods disagree".
+<!-- B-3 re-derivation: end -->
+
 ## Smoke test (blocking, region=ukraine_bbox, tolerance ±0.005)
 
 Overall: **PASS** (run 2026-11-14T14:15:21)
@@ -249,9 +293,9 @@ POWER solar (`ALLSKY_SFC_SW_DWN`) has a source break (GEWEX SRB before 2001, CER
 pipeline uses 2001+ only. Do not headline it unless this run's Yue-Wang row survives Bonferroni or BH
 and agrees with OLS n_eff. GLDAS precipitation and evaporation are forcing diagnostics, not observations.
 
-- `ukraine_bbox`: Bonferroni pass: airs:SurfAirTemp, berkeley:tas_anomaly, ghcn:TAVG_anom, ghcn:TMAX_anom, gistemp:tas_anomaly, gldas20:Tair_f_inst, grace:TWS, gsom:TAVG_anom, gsom:TMAX_anom, hadcrut5:tas_anomaly, merra2:QV2M, merra2:T2M, merra2:T2MMAX, merra2:T2MMIN, modis:LST_Night, nasa_power:QV2M, nasa_power:T2M, nasa_power:T2M_MAX. BH only: ghcn:TMIN_anom, gldas20:Evap_tavg, gldas21:Qs_acc, gldas21:RootMoist_inst, gldas21:SoilMoi0_10cm_inst, gldas21:Tair_f_inst, gpcc:precip, gsom:TMIN_anom, modis:LST_Day, nasa_power:ALLSKY_SFC_SW_DWN, nasa_power:PRECTOTCORR, nasa_power:T2M_MIN, nasa_power:WS10M. Yue-Wang raw 0.05 but fail BH: gldas20:rainfall_liquid, gldas21:Evap_tavg, modis:EVI (Apr-Sep).
-- `ukraine_mask`: Bonferroni pass: berkeley:tas_anomaly, berkeley_country:tas_anomaly, cru_cy:tmn, cru_cy:tmp, cru_cy:tmp_anom, cru_cy:tmx, cru_cy:vap, ghcn:TMAX_anom, gistemp:tas_anomaly, gldas20:Tair_f_inst, grace:TWS, gsom:TAVG_anom, gsom:TMAX_anom, hadcrut5:tas_anomaly, merra2:T2M, merra2:T2MMAX, merra2:T2MMIN, modis:LST_Night, nasa_power:T2M, nasa_power:T2M_MAX. BH only: airs:SurfAirTemp, cru_cy:dtr, cru_cy:wet, ghcn:TAVG_anom, ghcn:TMIN_anom, gldas20:Evap_tavg, gldas21:Qs_acc, gldas21:RootMoist_inst, gldas21:SoilMoi0_10cm_inst, gldas21:Tair_f_inst, gsom:TMIN_anom, merra2:QV2M, modis:LST_Day, nasa_power:QV2M, nasa_power:T2M_MIN. Yue-Wang raw 0.05 but fail BH: cru_cy:pet, modis:EVI (JJA), nasa_power:ALLSKY_SFC_SW_DWN, nasa_power:WS10M.
-- `ukraine_mask_no_crimea`: Bonferroni pass: berkeley:tas_anomaly, berkeley_country:tas_anomaly, cru_cy:tmn, cru_cy:tmp, cru_cy:tmp_anom, cru_cy:tmx, cru_cy:vap, ghcn:TMAX_anom, gistemp:tas_anomaly, gldas20:Tair_f_inst, grace:TWS, gsom:TAVG_anom, gsom:TMAX_anom, hadcrut5:tas_anomaly, merra2:T2M, merra2:T2MMAX, merra2:T2MMIN, modis:LST_Night, nasa_power:T2M, nasa_power:T2M_MAX. BH only: airs:SurfAirTemp, cru_cy:dtr, cru_cy:wet, ghcn:TAVG_anom, ghcn:TMIN_anom, gldas20:Evap_tavg, gldas21:Qs_acc, gldas21:RootMoist_inst, gldas21:SoilMoi0_10cm_inst, gldas21:Tair_f_inst, gsom:TMIN_anom, merra2:QV2M, modis:EVI (JJA), modis:LST_Day, nasa_power:QV2M, nasa_power:T2M_MIN. Yue-Wang raw 0.05 but fail BH: cru_cy:pet, nasa_power:ALLSKY_SFC_SW_DWN, nasa_power:WS10M.
+- `ukraine_bbox`: Bonferroni pass: airs:SurfAirTemp, berkeley:tas_anomaly, ghcn:TAVG_anom, ghcn:TMAX_anom, gistemp:tas_anomaly, gldas20:Tair_f_inst, grace:TWS, gsom:TAVG_anom, gsom:TMAX_anom, hadcrut5:tas_anomaly, merra2:QV2M, merra2:T2M, merra2:T2MMAX, merra2:T2MMIN, modis:LST_Night, nasa_power:QV2M, nasa_power:T2M, nasa_power:T2M_MAX. BH only: ghcn:TMIN_anom, gldas20:Evap_tavg, gldas21:Qs_acc, gldas21:RootMoist_inst, gldas21:SoilMoi0_10cm_inst, gldas21:Tair_f_inst, gpcc:precip, gsom:TMIN_anom, modis:LST_Day, nasa_power:ALLSKY_SFC_SW_DWN, nasa_power:T2M_MIN. Yue-Wang raw 0.05 but fail BH: gldas21:Evap_tavg, modis:EVI (Apr-Sep). Method-dependent (YW p<0.05, OLS n_eff p>=0.05; not a detection): gldas20:rainfall_liquid, nasa_power:PRECTOTCORR, nasa_power:WS10M.
+- `ukraine_mask`: Bonferroni pass: berkeley:tas_anomaly, berkeley_country:tas_anomaly, cru_cy:tmn, cru_cy:tmp, cru_cy:tmp_anom, cru_cy:tmx, cru_cy:vap, ghcn:TMAX_anom, gistemp:tas_anomaly, gldas20:Tair_f_inst, grace:TWS, gsom:TAVG_anom, gsom:TMAX_anom, hadcrut5:tas_anomaly, merra2:T2M, merra2:T2MMAX, merra2:T2MMIN, modis:LST_Night, nasa_power:T2M, nasa_power:T2M_MAX. BH only: airs:SurfAirTemp, cru_cy:dtr, cru_cy:wet, ghcn:TAVG_anom, ghcn:TMIN_anom, gldas20:Evap_tavg, gldas21:Qs_acc, gldas21:RootMoist_inst, gldas21:SoilMoi0_10cm_inst, gldas21:Tair_f_inst, gsom:TMIN_anom, merra2:QV2M, modis:LST_Day, nasa_power:QV2M, nasa_power:T2M_MIN. Yue-Wang raw 0.05 but fail BH: cru_cy:pet, modis:EVI (JJA), nasa_power:ALLSKY_SFC_SW_DWN. Method-dependent (YW p<0.05, OLS n_eff p>=0.05; not a detection): nasa_power:WS10M.
+- `ukraine_mask_no_crimea`: Bonferroni pass: berkeley:tas_anomaly, berkeley_country:tas_anomaly, cru_cy:tmn, cru_cy:tmp, cru_cy:tmp_anom, cru_cy:tmx, cru_cy:vap, ghcn:TMAX_anom, gistemp:tas_anomaly, gldas20:Tair_f_inst, grace:TWS, gsom:TAVG_anom, gsom:TMAX_anom, hadcrut5:tas_anomaly, merra2:T2M, merra2:T2MMAX, merra2:T2MMIN, modis:LST_Night, nasa_power:T2M, nasa_power:T2M_MAX. BH only: airs:SurfAirTemp, cru_cy:dtr, cru_cy:wet, ghcn:TAVG_anom, ghcn:TMIN_anom, gldas20:Evap_tavg, gldas21:Qs_acc, gldas21:RootMoist_inst, gldas21:SoilMoi0_10cm_inst, gldas21:Tair_f_inst, gsom:TMIN_anom, merra2:QV2M, modis:EVI (JJA), modis:LST_Day, nasa_power:QV2M, nasa_power:T2M_MIN. Yue-Wang raw 0.05 but fail BH: cru_cy:pet, nasa_power:ALLSKY_SFC_SW_DWN. Method-dependent (YW p<0.05, OLS n_eff p>=0.05; not a detection): nasa_power:WS10M.
 
 ## Growing-season vegetation (QC'd MODIS NDVI/EVI)
 
@@ -399,9 +443,9 @@ Bounds [22.1, 44.4, 40.2, 52.4]; 73 series; 19.4 s.
 | nasa_power | T2M | °C | annual_ANN_12of12 | full | 1981 | 2025 | 45 | 0.5526 | 9.79e-06 | 4.334e-06 | True | significant at 0.05 (repo MK Yue-Wang; verdict strong) | True | True | annual | 135 |  |
 | nasa_power | T2M_MAX | °C | annual_ANN_12of12 | full | 1981 | 2025 | 45 | 0.5592 | 8.737e-06 | 1.6e-06 | True | significant at 0.05 (repo MK Yue-Wang; verdict strong) | True | True | annual | 135 |  |
 | nasa_power | T2M_MIN | °C | annual_ANN_12of12 | full | 1981 | 2025 | 45 | 0.6039 | 0.001698 | 0.0003349 | True | significant at 0.05 (repo MK Yue-Wang; verdict strong) | False | True | annual | 135 |  |
-| nasa_power | PRECTOTCORR | mm/year | annual_ANN_12of12 | full | 1981 | 2025 | 45 | 14.83 | 0.01939 | 0.086 | False | significant at 0.05 (repo MK Yue-Wang; verdict moderate) | False | True | annual | 135 |  |
+| nasa_power | PRECTOTCORR | mm/year | annual_ANN_12of12 | full | 1981 | 2025 | 45 | 14.83 | 0.01939 | 0.086 | False | method-dependent: YW p<0.05, OLS n_eff p>=0.05, not a detection (conservative verdict, SKILL.md rule 2) | False | False | annual | 135 |  |
 | nasa_power | QV2M | g/kg | annual_ANN_12of12 | full | 1981 | 2025 | 45 | 0.1626 | 2.905e-05 | 2.446e-05 | True | significant at 0.05 (repo MK Yue-Wang; verdict strong) | True | True | annual | 135 |  |
-| nasa_power | WS10M | m/s | annual_ANN_12of12 | full | 1981 | 2025 | 45 | -0.02336 | 0.02425 | 0.09197 | False | significant at 0.05 (repo MK Yue-Wang; verdict moderate) | False | True | annual | 135 |  |
+| nasa_power | WS10M | m/s | annual_ANN_12of12 | full | 1981 | 2025 | 45 | -0.02336 | 0.02425 | 0.09197 | False | method-dependent: YW p<0.05, OLS n_eff p>=0.05, not a detection (conservative verdict, SKILL.md rule 2) | False | False | annual | 135 |  |
 | nasa_power | ALLSKY_SFC_SW_DWN | kWh/m²/day | annual_ANN_12of12 | full | 2001 | 2025 | 25 | 0.05379 | 0.02651 | 0.01493 | True | significant at 0.05 (repo MK Yue-Wang; verdict moderate) | False | True | annual | 135 |  |
 | derived | DTR | °C | annual_ANN_12of12 | full | 1981 | 2025 | 45 | -0.04466 | 0.4396 | 0.6574 | True | not significant at 0.05 (repo MK Yue-Wang; verdict none) | False | False | annual | 135 |  |
 | hadcrut5 | tas_anomaly | °C anomaly (1961-1990) | annual_ANN_12of12 | full | 1850 | 2025 | 176 | 0.09543 | 9.943e-08 | 1.041e-08 | True | significant at 0.05 (repo MK Yue-Wang; verdict strong) | True | True | annual | 135 |  |
@@ -429,7 +473,7 @@ Bounds [22.1, 44.4, 40.2, 52.4]; 73 series; 19.4 s.
 | gldas20 | Qsb_acc | mm/year | annual_ANN_12of12 | full | 1948 | 2014 | 67 | 1.751 | 0.3153 | 0.52 | True | not significant at 0.05 (repo MK Yue-Wang; verdict none) | False | False | annual | 135 |  |
 | gldas20 | precip_total | mm/year | annual_ANN_12of12 | full | 1948 | 2014 | 67 | 5.041 | 0.15 | 0.2079 | True | not significant at 0.05 (repo MK Yue-Wang; verdict none) | False | False | annual | 135 |  |
 | gldas20 | snowfall | mm/year | annual_ANN_12of12 | full | 1948 | 2014 | 67 | -1.561 | 0.6117 | 0.5396 | True | not significant at 0.05 (repo MK Yue-Wang; verdict none) | False | False | annual | 135 |  |
-| gldas20 | rainfall_liquid | mm/year | annual_ANN_12of12 | full | 1948 | 2014 | 67 | 6.611 | 0.03975 | 0.06661 | False | significant at 0.05 (repo MK Yue-Wang; verdict moderate) | False | False | annual | 135 |  |
+| gldas20 | rainfall_liquid | mm/year | annual_ANN_12of12 | full | 1948 | 2014 | 67 | 6.611 | 0.03975 | 0.06661 | False | method-dependent: YW p<0.05, OLS n_eff p>=0.05, not a detection (conservative verdict, SKILL.md rule 2) | False | False | annual | 135 |  |
 | gldas21 | SoilMoi0_10cm_inst | kg/m² (≈mm) | annual_ANN_12of12 | full | 2000 | 2025 | 26 | -1.262 | 0.008316 | 0.007392 | True | significant at 0.05 (repo MK Yue-Wang; verdict strong) | False | True | annual | 135 |  |
 | gldas21 | RootMoist_inst | kg/m² (≈mm) | annual_ANN_12of12 | full | 2000 | 2025 | 26 | -14.42 | 0.01978 | 0.01778 | True | significant at 0.05 (repo MK Yue-Wang; verdict moderate) | False | True | annual | 135 |  |
 | gldas21 | Tair_f_inst | °C | annual_ANN_12of12 | full | 2000 | 2025 | 26 | 0.9266 | 0.0005847 | 0.0001975 | True | significant at 0.05 (repo MK Yue-Wang; verdict strong) | False | True | annual | 135 |  |
@@ -624,7 +668,7 @@ Bounds [22.13283980300011, 44.38104889500005, 40.1595430910001, 52.3689492800000
 | nasa_power | T2M_MIN | °C | annual_ANN_12of12 | full | 1981 | 2025 | 45 | 0.6192 | 0.003143 | 0.0008879 | True | significant at 0.05 (repo MK Yue-Wang; verdict strong) | False | True | annual | 161 |  |
 | nasa_power | PRECTOTCORR | mm/year | annual_ANN_12of12 | full | 1981 | 2025 | 45 | 10.13 | 0.07663 | 0.2245 | True | not significant at 0.05 (repo MK Yue-Wang; verdict weak) | False | False | annual | 161 |  |
 | nasa_power | QV2M | g/kg | annual_ANN_12of12 | full | 1981 | 2025 | 45 | 0.1436 | 0.0003239 | 0.0003586 | True | significant at 0.05 (repo MK Yue-Wang; verdict strong) | False | True | annual | 161 |  |
-| nasa_power | WS10M | m/s | annual_ANN_12of12 | full | 1981 | 2025 | 45 | -0.02186 | 0.03286 | 0.1533 | False | significant at 0.05 (repo MK Yue-Wang; verdict moderate) | False | False | annual | 161 |  |
+| nasa_power | WS10M | m/s | annual_ANN_12of12 | full | 1981 | 2025 | 45 | -0.02186 | 0.03286 | 0.1533 | False | method-dependent: YW p<0.05, OLS n_eff p>=0.05, not a detection (conservative verdict, SKILL.md rule 2) | False | False | annual | 161 |  |
 | nasa_power | ALLSKY_SFC_SW_DWN | kWh/m²/day | annual_ANN_12of12 | full | 2001 | 2025 | 25 | 0.04963 | 0.04217 | 0.03798 | True | significant at 0.05 (repo MK Yue-Wang; verdict moderate) | False | False | annual | 161 |  |
 | derived | DTR | °C | annual_ANN_12of12 | full | 1981 | 2025 | 45 | -0.05076 | 0.3859 | 0.6701 | True | not significant at 0.05 (repo MK Yue-Wang; verdict none) | False | False | annual | 161 |  |
 | hadcrut5 | tas_anomaly | °C anomaly (1961-1990) | annual_ANN_12of12 | full | 1850 | 2025 | 176 | 0.09569 | 1.452e-07 | 1.701e-08 | True | significant at 0.05 (repo MK Yue-Wang; verdict strong) | True | True | annual | 161 |  |
@@ -855,7 +899,7 @@ Bounds [22.13283980300011, 45.21356842700004, 40.1595430910001, 52.3689492800000
 | nasa_power | T2M_MIN | °C | annual_ANN_12of12 | full | 1981 | 2025 | 45 | 0.6209 | 0.004389 | 0.00118 | True | significant at 0.05 (repo MK Yue-Wang; verdict strong) | False | True | annual | 161 |  |
 | nasa_power | PRECTOTCORR | mm/year | annual_ANN_12of12 | full | 1981 | 2025 | 45 | 9.597 | 0.09829 | 0.2484 | True | not significant at 0.05 (repo MK Yue-Wang; verdict weak) | False | False | annual | 161 |  |
 | nasa_power | QV2M | g/kg | annual_ANN_12of12 | full | 1981 | 2025 | 45 | 0.1407 | 0.0004471 | 0.0005761 | True | significant at 0.05 (repo MK Yue-Wang; verdict strong) | False | True | annual | 161 |  |
-| nasa_power | WS10M | m/s | annual_ANN_12of12 | full | 1981 | 2025 | 45 | -0.02378 | 0.03406 | 0.1206 | False | significant at 0.05 (repo MK Yue-Wang; verdict moderate) | False | False | annual | 161 |  |
+| nasa_power | WS10M | m/s | annual_ANN_12of12 | full | 1981 | 2025 | 45 | -0.02378 | 0.03406 | 0.1206 | False | method-dependent: YW p<0.05, OLS n_eff p>=0.05, not a detection (conservative verdict, SKILL.md rule 2) | False | False | annual | 161 |  |
 | nasa_power | ALLSKY_SFC_SW_DWN | kWh/m²/day | annual_ANN_12of12 | full | 2001 | 2025 | 25 | 0.04891 | 0.04713 | 0.04455 | True | significant at 0.05 (repo MK Yue-Wang; verdict moderate) | False | False | annual | 161 |  |
 | derived | DTR | °C | annual_ANN_12of12 | full | 1981 | 2025 | 45 | -0.04977 | 0.4092 | 0.6859 | True | not significant at 0.05 (repo MK Yue-Wang; verdict none) | False | False | annual | 161 |  |
 | hadcrut5 | tas_anomaly | °C anomaly (1961-1990) | annual_ANN_12of12 | full | 1850 | 2025 | 176 | 0.09609 | 1.385e-07 | 1.671e-08 | True | significant at 0.05 (repo MK Yue-Wang; verdict strong) | True | True | annual | 161 |  |

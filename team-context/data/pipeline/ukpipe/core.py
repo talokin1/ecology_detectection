@@ -7,11 +7,11 @@ import numpy as np
 import pandas as pd
 import yaml
 
-from .paths import global_data, ukraine_samples
+from .paths import LazyPath, global_data, ukraine_samples
 
 PIPE = Path(__file__).resolve().parents[1]
-SAMPLES = ukraine_samples()
-GLOBAL = global_data()
+SAMPLES = LazyPath(ukraine_samples)  # resolved on first use, not at import (MC-4)
+GLOBAL = LazyPath(global_data)
 VARS = yaml.safe_load((PIPE / "config" / "variables.yaml").read_text())
 
 TIDY_COLS = ["source", "variable", "region", "date", "value", "unit", "n_valid", "n_effective_cells",

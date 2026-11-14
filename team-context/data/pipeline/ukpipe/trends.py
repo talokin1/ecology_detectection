@@ -16,6 +16,7 @@ tm = load_module(trend_methods_py(), "trend_methods")
 from .core import LAST_FULL_YEAR, SHORT_RECORD_YEARS, TREND_EXCLUDE_FLAGS  # noqa: E402
 from .grace_method import METHOD_LABEL as GRACE_METHOD_LABEL, grace_headline_trend  # noqa: E402
 from . import repo_yw  # noqa: E402
+from .verdict import apply_conservative_verdict, rename_sensitivity_columns  # noqa: E402
 
 WINDOWS = [(1981, 2025), (2001, 2025)]
 STATION_SOURCES = {"ghcn", "gsom"}
@@ -222,4 +223,5 @@ def trend_table(tidy: pd.DataFrame, annual: pd.DataFrame) -> pd.DataFrame:
     df["repo_trend_stats_md5"] = repo_yw.REPO_TS_MD5
     df["notes"] = ("Pettitt is exploratory and anti-conservative under autocorrelation; "
                    "same independence_group = not independent confirmation")
-    return df
+    # B-3: YW vs OLS n_eff disagreement -> conservative verdict, multiple-testing passes cleared
+    return rename_sensitivity_columns(apply_conservative_verdict(df))

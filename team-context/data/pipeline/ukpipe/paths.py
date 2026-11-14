@@ -102,6 +102,34 @@ def trend_methods_py() -> Path:
     raise FileNotFoundError("Set TREND_METHODS_PY to the vendored trend_methods.py")
 
 
+class LazyPath(os.PathLike):
+    """A path resolved on first use, so importing the pipeline (or `--help`) needs no env vars (MC-4)."""
+
+    def __init__(self, resolver):
+        self._resolver = resolver
+        self._path: Path | None = None
+
+    def resolve_now(self) -> Path:
+        if self._path is None:
+            self._path = self._resolver()
+        return self._path
+
+    def __truediv__(self, other):
+        return self.resolve_now() / other
+
+    def __fspath__(self):
+        return str(self.resolve_now())
+
+    def __str__(self):
+        return str(self.resolve_now())
+
+    def __getattr__(self, name):
+        return getattr(self.resolve_now(), name)
+
+    def __repr__(self):
+        return f"LazyPath({self._resolver.__name__})"
+
+
 def load_module(path: Path, name: str):
     spec = importlib.util.spec_from_file_location(name, path)
     if spec is None or spec.loader is None:

@@ -6,7 +6,10 @@ Read this before quoting a number from an older file in `stats/findings/`. Those
 Repository Yue–Wang is primary. OLS n_eff is the cross-check. If they disagree, it is not a detection. Bonferroni and BH are on the Yue–Wang p-value. HAC and Hamed–Rao lag-3 are sensitivity columns only. Do not use pymannkendall's Yue–Wang routine.
 
 ## Precipitation
-No precipitation detection. POWER bbox Yue–Wang p = 0.019 disagrees with OLS n_eff p = 0.086, fails Bonferroni, and the mask is not significant. Products disagree on the sign. See `team/reviews/yw_v14_review.md`.
+No precipitation detection. POWER bbox Yue–Wang p = 0.019 disagrees with OLS n_eff p = 0.086, so under main's conservative-verdict rule (`.claude/skills/trend-stats/SKILL.md:26-28`) the row is **method-dependent, not a detection**, and its BH pass is cleared (B-3, 2026-11-14). The mask is not significant. Products disagree on the sign. GLDAS-2.0 `rainfall_liquid` (bbox, YW p = 0.040, OLS n_eff p = 0.067) is method-dependent too, and is a forcing diagnostic anyway. See `team/reviews/yw_v14_review.md` and `data/pipeline/outputs/v1.4/verdict_changes_b3.csv`.
+
+## Wind
+No wind-speed detection. POWER `WS10M` annual is Yue–Wang significant in all three regions (p = 0.024 / 0.033 / 0.034) but the OLS n_eff cross-check is not (p = 0.092 / 0.153 / 0.121). The conservative verdict is method-dependent, not a detection (B-3). Do not quote "stilling" as a finding.
 
 ## GPCC gauges
 Gauges inside the bbox fell from about 500 in the 1980s to about 230 in 2020–2025 (`gpcc_gauge_counts.md`). Early decades are sparse (about 60 gauges in 1891–1929).
