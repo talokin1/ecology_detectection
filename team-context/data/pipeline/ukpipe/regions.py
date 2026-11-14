@@ -65,6 +65,8 @@ def load_polygon(shp: Path, adm0: str):
 
 def load_region(name: str) -> Region:
     cfg = yaml.safe_load((PIPE / "config" / "regions.yaml").read_text())
+    aliases = {c["alias"]: k for k, c in cfg.items() if isinstance(c, dict) and c.get("alias")}
+    name = aliases.get(name, name)  # e.g. catalog name ukraine_sa_bbox -> archive key ukraine_bbox (Q2)
     if name not in cfg:
         raise SystemExit(f"Unknown region {name!r}; choices: {list(cfg)}")
     c = cfg[name]

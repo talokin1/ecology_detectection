@@ -1,4 +1,9 @@
-# Per-source variable metadata. Single source of truth for units and conversions.
+# Per-source variable metadata for the ARCHIVE pipeline only (A1-09, 2026-11-14).
+# The product unit source is data/catalog/variables.yaml (06-conventions.md:32): source units in the cache,
+# display units via the catalog `convert` field. Units here are archive working units:
+#   precipitation / fluxes: mm/month SUMS (catalog source unit mm/day; x days in month);
+#   POWER solar: kWh/m2/day here; catalog cache is W/m2, display MJ/m2/day (x 0.0864 from W/m2; x 3.6 from kWh/m2/day).
+# Do not copy numbers from archive outputs into the UI; rebuild via scripts/build_all.py (MC-4).
 # conversion (applied to raw monthly values, BEFORE spatial averaging is irrelevant: all are linear):
 #   none | K_to_C | scale (x factor) | per_s_to_month (x86400 x days) | per_day_to_month (x days)
 #   per_hour_to_month (x24 x days) | acc3h_to_month (x8 x days) | tenths (x0.1)
@@ -15,12 +20,12 @@ nasa_power:
   note: "NASA POWER monthly = MERRA-2 (CERES for solar); not independent of merra2"
   variables:
     T2M:               {raw_unit: "°C", conversion: none, unit: "°C", agg: mean, valid_range: *trange}
-    T2M_MAX:           {raw_unit: "°C", conversion: none, unit: "°C", agg: mean, valid_range: *trange, note: "monthly mean of daily max; do NOT use POWER ANN"}
-    T2M_MIN:           {raw_unit: "°C", conversion: none, unit: "°C", agg: mean, valid_range: *trange}
-    PRECTOTCORR:       {raw_unit: "mm/day", conversion: per_day_to_month, unit: "mm/month", agg: sum, valid_range: *prange}
+    T2M_MAX:           {raw_unit: "°C", conversion: none, unit: "°C", agg: mean, valid_range: *trange, note: "POWER MONTHLY-STORE value = hottest hour of the month (verified on data branch, Q3), NOT the mean daily max. App Tmax = mean daily max from daily data. Do NOT use POWER ANN"}
+    T2M_MIN:           {raw_unit: "°C", conversion: none, unit: "°C", agg: mean, valid_range: *trange, note: "POWER monthly-store value = coldest hour of the month (Q3)"}
+    PRECTOTCORR:       {raw_unit: "mm/day", conversion: per_day_to_month, unit: "mm/month", agg: sum, note: "monthly SUM in mm/month; annual = mm/year", valid_range: *prange}
     QV2M:              {raw_unit: "g/kg", conversion: none, unit: "g/kg", agg: mean, valid_range: [0, 40]}
     WS10M:             {raw_unit: "m/s", conversion: none, unit: "m/s", agg: mean, valid_range: [0, 50]}
-    ALLSKY_SFC_SW_DWN: {raw_unit: "kWh/m²/day", conversion: none, unit: "kWh/m²/day", agg: mean, valid_range: [0, 15], start: "2001-01", group: CERES, note: "POWER solar used 2001+ only (plan)"}
+    ALLSKY_SFC_SW_DWN: {raw_unit: "kWh/m²/day", conversion: none, unit: "kWh/m²/day", agg: mean, valid_range: [0, 15], start: "2001-01", group: CERES, note: "POWER solar used 2001+ only (plan). Display unit MJ/m2/day via catalog convert (Q1); 1 kWh/m2/day = 3.6 MJ/m2/day"}
 
 merra2:
   group: MERRA-2
@@ -199,4 +204,4 @@ derived:
   group: MERRA-2
   note: "Derived series"
   variables:
-    DTR: {raw_unit: "°C", conversion: none, unit: "°C", agg: mean, valid_range: [0, 40], note: "POWER T2M_MAX - T2M_MIN"}
+    DTR: {raw_unit: "°C", conversion: none, unit: "°C", agg: mean, valid_range: [0, 40], note: "ARCHIVE ONLY: POWER monthly-store T2M_MAX - T2M_MIN = hottest hour minus coldest hour; overstates DTR by up to 10.6 °C (Kherson Jul 2020). Product DTR = mean(daily Tmax) - mean(daily Tmin) from daily data (Q3)"}

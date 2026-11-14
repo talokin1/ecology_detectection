@@ -8,6 +8,9 @@ Repository Yue–Wang is primary. OLS n_eff is the cross-check. If they disagree
 ## Precipitation
 No precipitation detection. POWER bbox Yue–Wang p = 0.019 disagrees with OLS n_eff p = 0.086, so under main's conservative-verdict rule (`.claude/skills/trend-stats/SKILL.md:26-28`) the row is **method-dependent, not a detection**, and its BH pass is cleared (B-3, 2026-11-14). The mask is not significant. Products disagree on the sign. GLDAS-2.0 `rainfall_liquid` (bbox, YW p = 0.040, OLS n_eff p = 0.067) is method-dependent too, and is a forcing diagnostic anyway. See `team/reviews/yw_v14_review.md` and `data/pipeline/outputs/v1.4/verdict_changes_b3.csv`.
 
+## Units and Tmax
+Archive precipitation and flux series are monthly **sums in mm/month** (annual mm/year); POWER solar is kWh/m²/day here, while the product displays MJ/m²/day via the catalog `convert` (Q1). POWER monthly-store `T2M_MAX`/`T2M_MIN` are the hottest/coldest hour of the month, not mean daily max/min, so archive Tmax runs 5–7 °C above the mean daily max and archive DTR is overstated by up to 10.6 °C. Product DTR = mean(daily Tmax) − mean(daily Tmin) (Q3). Anomalies here use a 1991–2020 baseline, a recorded deviation from 1981–2010 (ADR-003).
+
 ## Wind
 No wind-speed detection. POWER `WS10M` annual is Yue–Wang significant in all three regions (p = 0.024 / 0.033 / 0.034) but the OLS n_eff cross-check is not (p = 0.092 / 0.153 / 0.121). The conservative verdict is method-dependent, not a detection (B-3). Do not quote "stilling" as a finding.
 
@@ -15,7 +18,7 @@ No wind-speed detection. POWER `WS10M` annual is Yue–Wang significant in all t
 Gauges inside the bbox fell from about 500 in the 1980s to about 230 in 2020–2025 (`gpcc_gauge_counts.md`). Early decades are sparse (about 60 gauges in 1891–1929).
 
 ## GRACE
-Headline is the overlap-weight monthly series: bbox −11.242 cm/decade, mask −12.120 cm/decade, mask without Crimea −12.364 cm/decade, n = 235, drop 2002/2017/2018/2026, time at the solution centre. Not groundwater. The dictionary lines that say GRACE was not downloaded are stale.
+Headline is the overlap-weight monthly series: bbox −11.242 cm/decade, mask −12.120 cm/decade, mask without Crimea −12.364 cm/decade, n = 235, drop 2002/2017/2018/2026, time at the solution centre. Not groundwater. The dictionary lines that say GRACE was not downloaded are stale. The product uses `backend/.../grace.py` (cell centres, JPL land mask); this archive series differs from it by about 4%, which is within the product uncertainty at its ~3° (≈300 km) real resolution (Q5). The archive still drops whole years (2002/2017/2018/2026) instead of setting only the gap months to NaN (A1-08); that rerun needs the tidy inputs and is open.
 
 ## AIRS 2025
 2025 is excluded from AIRS trends (`airs_2025_bias_unverified`). The annual window is 2003–2024, n = 22.

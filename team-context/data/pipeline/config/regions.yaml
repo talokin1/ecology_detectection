@@ -1,4 +1,7 @@
-# Region definitions. Add a new region here; no code changes needed.
+# Region definitions for the ARCHIVE pipeline. Add a new region here; no code changes needed.
+# Canonical product region (Q2, ADR-005): data/catalog/regions.yaml `ukraine` = [22.0, 44.0, 40.5, 52.5], land_only.
+# The boxes/masks below are NAMED ALTERNATES: `ukraine_bbox` here is `ukraine_sa_bbox` in the catalog
+# (alias accepted by ukpipe.regions.load_region); `ukraine_mask` / `ukraine_mask_no_crimea` keep their names.
 # type: bbox    -> lon_min/lon_max/lat_min/lat_max (degrees, -180..180)
 # type: polygon -> Natural Earth admin-0 shapefile + ADM0_A3 code
 #
@@ -13,7 +16,8 @@ ukraine_bbox:
   lon_max: 40.2
   lat_min: 44.4
   lat_max: 52.4
-  description: "Approved-numbers box 22.1-40.2E, 44.4-52.4N (~2x Ukraine; includes neighbours and NW Black Sea)"
+  alias: ukraine_sa_bbox
+  description: "SA alternate box (not canonical; see header) 22.1-40.2E, 44.4-52.4N (~2x Ukraine; includes neighbours and NW Black Sea)"
 ukraine_mask:
   type: polygon
   shapefile: data/raw_aux/natural_earth/ne_10m_admin_0_countries_ukr/ne_10m_admin_0_countries_ukr.shp
