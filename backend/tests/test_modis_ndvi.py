@@ -29,10 +29,13 @@ def test_grid_index_rejects_bad_boxes():
 
 def test_box_mean_divides_by_10000_and_filters_quality():
     lat = np.array([0.0, 60.0])
-    ndvi = np.array([[8000, 2000, -3000],    # equator: good, cloudy, ocean (fill)
-                     [4000, 6000, -3000]])   # 60N:     good, snow,   ocean
-    rel = np.array([[0, 3, -1],
-                    [1, 2, -1]])
+    ndvi = np.array(
+        [
+            [8000, 2000, -3000],  # equator: good, cloudy, ocean (fill)
+            [4000, 6000, -3000],
+        ]
+    )  # 60N:     good, snow,   ocean
+    rel = np.array([[0, 3, -1], [1, 2, -1]])
     mean, frac = nd.box_mean(ndvi, rel, lat)
     w0, w60 = 1.0, np.cos(np.deg2rad(60))
     assert mean == pytest.approx((0.8 * w0 + 0.4 * w60) / (w0 + w60))
@@ -49,8 +52,14 @@ def test_box_mean_all_ocean_or_all_bad():
 
 def fake_granules(n=24):
     months = pd.date_range("2001-01-01", periods=n, freq="MS")
-    return [{"title": f"MOD13C2.A{m:%Y%j}.061.x", "time_start": f"{m:%Y-%m-%d}T00:00:00.000Z",
-             "collection_concept_id": "C2565788914-LPCLOUD"} for m in months]
+    return [
+        {
+            "title": f"MOD13C2.A{m:%Y%j}.061.x",
+            "time_start": f"{m:%Y-%m-%d}T00:00:00.000Z",
+            "collection_concept_id": "C2565788914-LPCLOUD",
+        }
+        for m in months
+    ]
 
 
 @pytest.fixture
@@ -124,8 +133,11 @@ def test_threshold_is_part_of_the_cache_key(offline, tmp_path):
 
 @pytest.mark.network
 def test_live_one_month_ukraine():
-    (g,) = [g for g in nd.earthdata.cmr_granules(nd.SHORT_NAME, nd.VERSION)
-            if g["time_start"].startswith("2020-07")]
+    (g,) = [
+        g
+        for g in nd.earthdata.cmr_granules(nd.SHORT_NAME, nd.VERSION)
+        if g["time_start"].startswith("2020-07")
+    ]
     mean, frac = nd._fetch_month(g, *nd.grid_index(UKRAINE))
     assert 0.4 < mean < 0.8 and frac > 0.9  # midsummer cropland and forest
 

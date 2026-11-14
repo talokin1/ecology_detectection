@@ -168,8 +168,11 @@ def test_live_series_through_team_statistics(tmp_path):
 def test_land_only_excludes_sea_cells(fake, monkeypatch, tmp_path):
     """Fake land = eastern half (lon >= 0); the fake T2M equals latitude + month everywhere."""
     ds = fake_dataset()
-    mask = xr.DataArray(np.broadcast_to(ds.lon.values >= 20, (ds.lat.size, ds.lon.size)).copy(),
-                        coords={"lat": ds.lat, "lon": ds.lon}, dims=("lat", "lon"))
+    mask = xr.DataArray(
+        np.broadcast_to(ds.lon.values >= 20, (ds.lat.size, ds.lon.size)).copy(),
+        coords={"lat": ds.lat, "lon": ds.lon},
+        dims=("lat", "lon"),
+    )
     monkeypatch.setattr(data, "land_mask", lambda: mask)
     r = Region("coast", 0, 20, 0, 40)  # lon 0 and 20 cells; only lon 20 is "land"
     full = region_series("T2M", r, cache_dir=tmp_path)
@@ -216,8 +219,10 @@ def test_daily_source_keeps_dates(monkeypatch, tmp_path):
     lat, lon = np.arange(-10, 11, 10.0), np.arange(0, 41, 20.0)
     vals = np.ones((400, lat.size, lon.size)) * np.arange(400)[:, None, None]
     vals[-20:] = np.nan  # pre-allocated future days
-    ds = xr.Dataset({"T2M_MAX": (("time", "lat", "lon"), vals, {"units": "C", "long_name": "Tmax"})},
-                    coords={"time": time, "lat": lat, "lon": lon})
+    ds = xr.Dataset(
+        {"T2M_MAX": (("time", "lat", "lon"), vals, {"units": "C", "long_name": "Tmax"})},
+        coords={"time": time, "lat": lat, "lon": lon},
+    )
     monkeypatch.setattr(data, "open_source", lambda source: ds)
     s = region_series("T2M_MAX", Region("box", -10, 10, 0, 40), "merra2_daily", cache_dir=tmp_path)
     assert len(s) == 380 and s.index.name == "date" and s.index[1] == pd.Timestamp("2001-01-01")

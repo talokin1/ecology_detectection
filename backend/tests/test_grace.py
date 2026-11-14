@@ -10,11 +10,18 @@ from trend_detective.power_zarr import Region
 
 def test_assign_months_follows_jpl_convention():
     """Real windows from the RL06.3Mv04 file around the two shifted solutions."""
-    tb = np.array([
-        ["2011-10-17", "2011-11-16"], ["2011-12-17", "2012-01-15"], ["2012-01-01", "2012-01-31"],
-        ["2012-03-20", "2012-04-19"],
-        ["2015-04-01", "2015-04-30"], ["2015-04-12", "2015-05-11"], ["2015-06-29", "2015-07-31"],
-    ], dtype="datetime64[ns]")
+    tb = np.array(
+        [
+            ["2011-10-17", "2011-11-16"],
+            ["2011-12-17", "2012-01-15"],
+            ["2012-01-01", "2012-01-31"],
+            ["2012-03-20", "2012-04-19"],
+            ["2015-04-01", "2015-04-30"],
+            ["2015-04-12", "2015-05-11"],
+            ["2015-06-29", "2015-07-31"],
+        ],
+        dtype="datetime64[ns]",
+    )
     months = [str(m) for m in grace.assign_months(tb)]
     assert months == ["2011-11", "2011-12", "2012-01", "2012-04", "2015-04", "2015-05", "2015-07"]
 
@@ -37,8 +44,11 @@ def fake_file(path):
             "time_bounds": (("time", "bounds"), np.stack([starts, ends], axis=1)),
         },
         coords={"time": starts + (ends - starts) / 2, "lat": lat, "lon": lon},
-        attrs={"months_missing": "2003-03", "time_mean_removed": "2004.000 to 2009.999",
-               "date_created": "2026-11-10T07:11:31Z"},
+        attrs={
+            "months_missing": "2003-03",
+            "time_mean_removed": "2004.000 to 2009.999",
+            "date_created": "2026-11-10T07:11:31Z",
+        },
     )
     ds.to_netcdf(path)
     return path
@@ -104,3 +114,17 @@ def test_live_nw_india_depletion(tmp_path):
     s = grace.region_series(Region("NW India", 26, 32, 72, 78), cache_dir=tmp_path)
     assert s.attrs["provenance"]["missing_months_match_published"]
     assert s.loc["2020":].mean() < s.loc[:"2006"].mean()
+
+
+def test_mission_gap_of_11_months_is_stated_as_caveat():
+    """Q6: the GRACE -> GRACE-FO gap (2017-07..2018-05) is 11 months, below LONG_GAP_MONTHS = 12,
+    so assess() does not flag it; the safeguard is the mission-gap caveat in the provenance."""
+    from trend_detective import acquire
+
+    assert acquire.LONG_GAP_MONTHS == 12  # kept on purpose (no tuning to catch one known case)
+    s = acquire.get_series("terrestrial_water_storage_grace", "ukraine")  # frozen cache, offline
+    a = s.attrs["assessment"]
+    assert a["longest_gap_months"] == 11 and a["checks"]["no_long_gaps"]
+    caveats = " ".join(s.attrs["provenance"]["caveats"])
+    assert "2017-07 to 2018-05" in caveats and "GRACE-FO" in caveats
+    assert {"2017-07", "2018-05"} <= set(s.attrs["provenance"]["missing_months"])

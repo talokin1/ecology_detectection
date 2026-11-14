@@ -1,4 +1,4 @@
-# ADR-004 — NASA POWER Zarr archive as the primary live data source
+# ADR-004 — NASA POWER Zarr archive as the primary precompute data source
 
 - Status: Proposed (pending data-engineer and lead approval)
 - Date: 2026-11-14
@@ -31,11 +31,15 @@ A whole-globe read of one variable took about 58 s. Details:
    aerosol and radiation (2001 →). Limited to what POWER republishes; no MODIS land, OMI, AIRS or GLDAS.
 
 ## Decision (proposed)
-Option 3 for live regional series, implemented in `backend/trend_detective/power_zarr.py`, with the
-REST API (option 1) as fallback and option 2 kept for the offline trend maps and non-POWER variables.
+Option 3 as the **precompute** source: `scripts/build_data.py` reads the Zarr stores through
+`backend/trend_detective/power_zarr.py` and freezes regional series (with provenance sidecars) into
+`data/cache/`, from which the static site's JSON is built (plan v2 decision 8: static site, precomputed
+JSON; B2-07). Option 2 stays for non-POWER variables (GRACE, MODIS NDVI) and the offline trend maps.
+Live per-request reads and a REST API fallback (option 1, not implemented in code) are **future work**,
+not part of this decision. The catalog's `live` flag means "no login needed to refresh", not "read per request".
 
 ## Consequences
-- R-02 works for any region without accounts; every cached series has a provenance sidecar.
+- R-02 works for any preset or new box without accounts (one precompute run); every cached series has a provenance sidecar.
 - Whole-globe trend maps (R-15) cannot be computed per request; they stay an offline precompute.
 - Dependencies added to `requirements.txt`: xarray, zarr, numcodecs (pinned together), fsspec,
   aiohttp, dask, pandas. Not yet tested on Windows.

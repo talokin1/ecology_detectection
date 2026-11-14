@@ -13,7 +13,7 @@
     "units": "mm/day",
     "definition": "The average MERRA-2 bias corrected total precipitation at the surface of the earth."
   },
-  "region_name": "Sahel",
+  "region_name": "Sahel (West and Central Africa)",
   "bbox": {
     "lat_min": 10,
     "lat_max": 18,

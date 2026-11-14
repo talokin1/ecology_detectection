@@ -86,10 +86,11 @@ def test_resolve_region_forms(catalog):
 
 def test_get_series_dispatches_and_annotates(catalog):
     s = acquire.get_series("temp", "box")
-    (variable, region, store, land_only), = catalog
+    ((variable, region, store, land_only),) = catalog
     assert land_only is False
     assert (variable, store, region.name) == ("T2M", "merra2", "Test box")
-    assert s.attrs["variable_id"] == "temp" and s.attrs["units"] == "C"
+    assert s.attrs["variable_id"] == "temp" and s.attrs["units"] == "degC"
+    assert s.attrs["source_units"] == "C"  # B2-11: reader string kept separately
     assert s.attrs["catalog_units"] == "degC" and s.attrs["bbox"] == [10, 40, 20, 50]
     assert s.attrs["assessment"]["status"] == "ok"
 
@@ -118,8 +119,11 @@ def test_login_variables_are_offline_by_default(catalog, monkeypatch):
 
 
 def test_inventory_rows(catalog, monkeypatch):
-    monkeypatch.setattr(modis_ndvi, "region_series",
-                        lambda region, refresh=False, offline=False: (_ for _ in ()).throw(NotCachedError()))
+    monkeypatch.setattr(
+        modis_ndvi,
+        "region_series",
+        lambda region, refresh=False, offline=False: (_ for _ in ()).throw(NotCachedError()),
+    )
     df = acquire.inventory("box").set_index("id")
     assert df.loc["temp", "status"] == "ok" and df.loc["temp", "live"]
     assert df.loc["ndvi", "status"] == "not cached"
@@ -215,13 +219,45 @@ def test_assess_flags_mostly_zero_series_with_rare_outliers():
 
 
 def test_preset_land_only_flag_is_used(catalog, tmp_path):
-    (tmp_path / "regions.yaml").write_text(REGIONS + """  - id: coast
+    (tmp_path / "regions.yaml").write_text(
+        REGIONS
+        + """  - id: coast
     name: Coast
     bbox: [10.0, 40.0, 20.0, 50.0]
     land_only: true
-""", encoding="utf-8")
+""",
+        encoding="utf-8",
+    )
     acquire._load_yaml.cache_clear()
     acquire.get_series("temp", "coast")
     acquire.get_series("temp", "coast", land_only=False)
     acquire.get_series("temp", [10, 40, 20, 50])
     assert [c[3] for c in catalog] == [True, False, False]
+
+
+def test_internal_inputs_state_their_semantics():
+    """Q3: T2M_MAX/T2M_MIN/PRECTOTCORR_SUM are internal inputs, never user-facing variables."""
+    inputs = acquire.list_inputs()
+    assert {"T2M_MAX", "T2M_MIN", "PRECTOTCORR_SUM"} <= set(inputs)
+    assert not set(inputs) & set(acquire.list_variables())
+    for e in inputs.values():
+        assert e["internal"] is True and e["semantics"] and e["monthly"]["how"] in {"mean", "sum"}, e["id"]
+    assert "hottest hour of the month" in inputs["T2M_MAX"]["semantics"]
+    assert inputs["PRECTOTCORR_SUM"]["units"] == "mm/month"
+
+
+def test_real_catalog_solar_display_conversion():
+    """Q1: cache stays W/m^2; the only conversion is the catalog's convert field."""
+    v = acquire.list_variables()["solar_radiation_power"].entry
+    assert str(v["units"]).split("#")[0].strip() == "W/m^2"
+    assert v["display_units"] == "MJ/m^2/day" and v["convert"] == "x * 0.0864"
+    assert eval(v["convert"], {}, {"x": 1.0}) == pytest.approx(86400 / 1e6)
+    imerg = acquire.list_variables()["precipitation_imerg"].entry
+    assert imerg["source"] == "power" and "convert" not in imerg
+
+
+def test_real_ukraine_preset_is_canonical_land_only_box():
+    """Q2: canonical Ukraine = [22.0, 44.0, 40.5, 52.5], land only; SA box is a non-app alternate."""
+    regions = acquire.list_regions()
+    assert regions["ukraine"]["bbox"] == [22.0, 44.0, 40.5, 52.5] and regions["ukraine"]["land_only"] is True
+    assert regions["ukraine_sa_bbox"]["app"] is False

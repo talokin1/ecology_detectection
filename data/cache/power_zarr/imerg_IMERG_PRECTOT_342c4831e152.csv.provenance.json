@@ -13,7 +13,7 @@
     "units": "mm/day",
     "definition": "The average IMERG total precipitation at the surface of the earth."
   },
-  "region_name": "Sahel",
+  "region_name": "Sahel (West and Central Africa)",
   "bbox": {
     "lat_min": 10.0,
     "lat_max": 18.0,

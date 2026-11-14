@@ -6,7 +6,7 @@ box are downloaded. Each result is cached as a small CSV in ``<CACHE_DIR>/power_
 
 This module only acquires data. Trend statistics come from ``trend_stats.py``.
 
-SI-assisted (Claude, Anthropic); reviewed by the team (see docs/08-si-usage-log.md).
+SI-assisted (Claude, Anthropic); pending team review (see docs/08-si-usage-log.md).
 """
 
 from __future__ import annotations
@@ -155,8 +155,7 @@ def _select_box(da: xr.DataArray, region: Region) -> xr.DataArray:
         box = da.sel(lon=slice(region.lon_min, region.lon_max))
     if box.sizes["lat"] == 0 or box.sizes["lon"] == 0:
         raise ValueError(
-            f"region {region.name!r} is smaller than one grid cell of this source; "
-            "make the box larger"
+            f"region {region.name!r} is smaller than one grid cell of this source; make the box larger"
         )
     return box
 
@@ -207,10 +206,13 @@ def monthly_from_daily(daily: pd.Series, how: str, min_fraction: float = 0.8) ->
     if how == "sum" and units.endswith("/day"):
         s.attrs["units"] = units[: -len("/day")] + "/month"
     s.attrs["aggregation"] = {
-        "from": "daily", "how": how, "min_fraction_of_days": min_fraction,
+        "from": "daily",
+        "how": how,
+        "min_fraction_of_days": min_fraction,
         "months_dropped": [str(m) for m in frac.index[~keep]],
-        "rule": ("mean of valid days" if how == "mean"
-                 else "mean of valid days x days in month (monthly total)"),
+        "rule": (
+            "mean of valid days" if how == "mean" else "mean of valid days x days in month (monthly total)"
+        ),
     }
     return s.astype(float)
 
@@ -232,8 +234,7 @@ def _apply_land_mask(box: xr.DataArray) -> xr.DataArray:
     return box.where(mask)
 
 
-def _cache_path(cache_dir: Path, variable: str, region: Region, source: str,
-                land_only: bool = False) -> Path:
+def _cache_path(cache_dir: Path, variable: str, region: Region, source: str, land_only: bool = False) -> Path:
     key = json.dumps([source, variable, *region.bbox_key] + (["land_only"] if land_only else []))
     digest = hashlib.sha1(key.encode()).hexdigest()[:12]
     return cache_dir / f"{source}_{variable}_{digest}.csv"
@@ -247,7 +248,11 @@ def _git_commit() -> str | None:
     try:
         out = subprocess.run(
             ["git", "rev-parse", "--short", "HEAD"],
-            cwd=REPO_ROOT, capture_output=True, text=True, timeout=5, check=True,
+            cwd=REPO_ROOT,
+            capture_output=True,
+            text=True,
+            timeout=5,
+            check=True,
         )
         return out.stdout.strip() or None
     except (OSError, subprocess.SubprocessError):
@@ -256,15 +261,21 @@ def _git_commit() -> str | None:
 
 def _time_fields(s: pd.Series, freq: str) -> dict:
     if freq == "D":
-        return {"frequency": "daily", "n_days": int(len(s)),
-                "time_range": {"start": s.index[0].strftime("%Y-%m-%d"),
-                               "end": s.index[-1].strftime("%Y-%m-%d")}}
-    return {"frequency": "monthly", "n_months": int(len(s)),
-            "time_range": {"start": s.index[0].strftime("%Y-%m"), "end": s.index[-1].strftime("%Y-%m")}}
+        return {
+            "frequency": "daily",
+            "n_days": len(s),
+            "time_range": {"start": s.index[0].strftime("%Y-%m-%d"), "end": s.index[-1].strftime("%Y-%m-%d")},
+        }
+    return {
+        "frequency": "monthly",
+        "n_months": len(s),
+        "time_range": {"start": s.index[0].strftime("%Y-%m"), "end": s.index[-1].strftime("%Y-%m")},
+    }
 
 
-def _provenance(ds: xr.Dataset, info: dict[str, str], region: Region, source: str, s: pd.Series,
-                land_only: bool = False) -> dict:
+def _provenance(
+    ds: xr.Dataset, info: dict[str, str], region: Region, source: str, s: pd.Series, land_only: bool = False
+) -> dict:
     """Provenance record written next to every cached file (docs/06-conventions.md)."""
     return {
         "source": "NASA POWER Zarr archive (AWS Open Data)",
@@ -277,16 +288,26 @@ def _provenance(ds: xr.Dataset, info: dict[str, str], region: Region, source: st
         "variable": info,
         "region_name": region.name,
         "bbox": {
-            "lat_min": region.lat_min, "lat_max": region.lat_max,
-            "lon_min": region.lon_min, "lon_max": region.lon_max,
+            "lat_min": region.lat_min,
+            "lat_max": region.lat_max,
+            "lon_min": region.lon_min,
+            "lon_max": region.lon_max,
         },
         **_time_fields(s, SOURCES[source].get("freq", "M")),
         "accessed": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "land_only": land_only,
         "processing": [
             "selected grid cells whose centres fall inside the bbox",
-            *(["kept land cells only (MERRA-2 cells with root-zone soil wetness; nearest MERRA-2 "
-               "cell for other grids); ocean, lakes and ice sheets excluded"] if land_only else []),
+            *(
+                [
+                    (
+                        "kept land cells only (MERRA-2 cells with root-zone soil wetness; nearest MERRA-2 "
+                        "cell for other grids); ocean, lakes and ice sheets excluded"
+                    )
+                ]
+                if land_only
+                else []
+            ),
             f"masked fill value {FILL_VALUE}",
             "area mean with cos(latitude) weights, ignoring missing cells",
             "dropped time steps with no data (the store pre-allocates future dates)",

@@ -129,8 +129,9 @@ def test_provenance_sidecar(fake, tmp_path):
 
 
 def test_land_only(fake, monkeypatch, tmp_path):
-    mask = xr.DataArray(np.broadcast_to(LON >= 0, (LAT.size, LON.size)),
-                        coords={"lat": LAT, "lon": LON}, dims=("lat", "lon"))
+    mask = xr.DataArray(
+        np.broadcast_to(LON >= 0, (LAT.size, LON.size)), coords={"lat": LAT, "lon": LON}, dims=("lat", "lon")
+    )
     monkeypatch.setattr(data, "land_mask", lambda: mask)
     ds = grids.build_grid("T2M", resolution_deg=60, land_only=True, cache_dir=tmp_path, method="centre")
     assert (tmp_path / "merra2_T2M_60deg_land_centre.nc").exists()

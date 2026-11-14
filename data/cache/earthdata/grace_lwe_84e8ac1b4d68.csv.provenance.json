@@ -14,7 +14,7 @@
     "units": "cm",
     "definition": "Change in all water on and under the land (snow, soil, lakes, groundwater), as an equivalent water depth relative to the 2004-2009 average, measured from Earth's gravity."
   },
-  "region_name": "NW India",
+  "region_name": "North-west India (Punjab, Haryana, Rajasthan)",
   "bbox": {
     "lat_min": 26.0,
     "lat_max": 32.0,
@@ -80,5 +80,6 @@
     "Effective resolution is ~3\u00b0 (~300 km); small regions mix in neighbours."
   ],
   "script": "backend/trend_detective/grace.py",
-  "git_commit": "b47dff5"
+  "git_commit": "b47dff5",
+  "land_only": true
 }

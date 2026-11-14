@@ -17,7 +17,7 @@ regional mean that silently represents only the snow-free corner of the box.
 
 This module only acquires data. Trend statistics come from ``trend_stats.py``.
 
-SI-assisted (Claude, Anthropic); reviewed by the team (see docs/08-si-usage-log.md).
+SI-assisted (Claude, Anthropic); pending team review (see docs/08-si-usage-log.md).
 """
 
 from __future__ import annotations
@@ -150,8 +150,9 @@ def _granule_month(granule: dict) -> pd.Timestamp:
 
 
 def _cache_path(cache_dir: Path, region: Region, min_valid_fraction: float) -> Path:
-    key = json.dumps([SHORT_NAME, VERSION, *region.bbox_key, list(KEEP_RELIABILITY),
-                      float(min_valid_fraction)])
+    key = json.dumps(
+        [SHORT_NAME, VERSION, *region.bbox_key, list(KEEP_RELIABILITY), float(min_valid_fraction)]
+    )
     return cache_dir / f"mod13c2_ndvi_{hashlib.sha1(key.encode()).hexdigest()[:12]}.csv"
 
 
@@ -190,10 +191,13 @@ def region_series(
             f"NDVI series for {region.name!r} is not cached; run scripts/fetch_earthdata_region.py"
         )
 
-    granules =earthdata.cmr_granules(SHORT_NAME, VERSION)
+    granules = earthdata.cmr_granules(SHORT_NAME, VERSION)
     by_month = {_granule_month(g): g for g in granules}
-    done = _read(partial) if partial.exists() and not refresh else pd.DataFrame(
-        columns=["value", "valid_fraction"], index=pd.DatetimeIndex([], name="month"))
+    done = (
+        _read(partial)
+        if partial.exists() and not refresh
+        else pd.DataFrame(columns=["value", "valid_fraction"], index=pd.DatetimeIndex([], name="month"))
+    )
     todo = [m for m in sorted(by_month) if m not in done.index]
 
     cache_dir.mkdir(parents=True, exist_ok=True)
@@ -237,13 +241,18 @@ def region_series(
         "landing_page": LANDING_PAGE,
         "variable": VARIABLE_INFO,
         "region_name": region.name,
-        "bbox": {"lat_min": region.lat_min, "lat_max": region.lat_max,
-                 "lon_min": region.lon_min, "lon_max": region.lon_max},
+        "bbox": {
+            "lat_min": region.lat_min,
+            "lat_max": region.lat_max,
+            "lon_min": region.lon_min,
+            "lon_max": region.lon_max,
+        },
+        "land_only": True,  # MOD13C2 NDVI is a land product (B1-07)
         "grid_rows": [rows.start, rows.stop - 1],
         "grid_cols": [cols.start, cols.stop - 1],
         "time_range": {"start": kept.index[0].strftime("%Y-%m"), "end": kept.index[-1].strftime("%Y-%m")},
-        "n_months": int(len(kept)),
-        "n_granules": int(len(df)),
+        "n_months": len(kept),
+        "n_granules": len(df),
         "months_dropped_low_coverage": dropped,
         "min_valid_fraction": min_valid_fraction,
         "accessed": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
@@ -271,6 +280,13 @@ def region_series(
 def _to_series(df: pd.DataFrame, prov: dict, region: Region, *, from_cache: bool) -> pd.Series:
     s = df["value"].astype(float).dropna()
     s.name = "NDVI"
-    s.attrs.update(VARIABLE_INFO | {"region": region.name, "provenance": prov, "from_cache": from_cache,
-                                     "valid_fraction": df["valid_fraction"].reindex(s.index).tolist()})
+    s.attrs.update(
+        VARIABLE_INFO
+        | {
+            "region": region.name,
+            "provenance": prov,
+            "from_cache": from_cache,
+            "valid_fraction": df["valid_fraction"].reindex(s.index).tolist(),
+        }
+    )
     return s

@@ -9,7 +9,7 @@ Examples (PowerShell or bash):
     python scripts/region_inventory.py --bbox 72 26 78 32 --name "NW India"
     python scripts/region_inventory.py --list-regions
 
-SI-assisted (Claude, Anthropic); reviewed by the team (see docs/08-si-usage-log.md).
+SI-assisted (Claude, Anthropic); pending team review (see docs/08-si-usage-log.md).
 """
 
 from __future__ import annotations
@@ -20,8 +20,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "backend"))
 
-import pandas as pd  # noqa: E402
-from trend_detective import acquire  # noqa: E402
+import pandas as pd
+from trend_detective import acquire
 
 
 def main(argv: list[str] | None = None) -> int:

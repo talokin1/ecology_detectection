@@ -24,7 +24,7 @@ Coarsening (see ``_axis_fractions``):
 - Missing native cells are left out of the mean. ``valid_fraction`` is the share of a target
   cell's (weighted) native area that has data, averaged over the months kept.
 
-SI-assisted (Claude, Anthropic); reviewed by the team (see docs/08-si-usage-log.md).
+SI-assisted (Claude, Anthropic); pending team review (see docs/08-si-usage-log.md).
 """
 
 from __future__ import annotations
@@ -54,8 +54,14 @@ def default_cache_dir() -> Path:
     return root / "grids"
 
 
-def grid_path(cache_dir: Path, variable: str, source: str, resolution_deg: float,
-              land_only: bool = False, method: str = "overlap") -> Path:
+def grid_path(
+    cache_dir: Path,
+    variable: str,
+    source: str,
+    resolution_deg: float,
+    land_only: bool = False,
+    method: str = "overlap",
+) -> Path:
     name = f"{source}_{variable}_{resolution_deg:g}deg"
     if land_only:
         name += "_land"
@@ -76,8 +82,9 @@ def _native_edges(centres: np.ndarray, lo: float, hi: float) -> np.ndarray:
     return np.clip(edges, lo, hi)
 
 
-def _axis_fractions(centres: np.ndarray, start: float, res: float, n: int, method: str,
-                    periodic: bool = False) -> sparse.csr_matrix:
+def _axis_fractions(
+    centres: np.ndarray, start: float, res: float, n: int, method: str, periodic: bool = False
+) -> sparse.csr_matrix:
     """Sparse (n_native, n_target) matrix: fraction of each native cell given to each target cell.
 
     ``centres`` must be ascending. Rows sum to 1 for every native cell inside the target domain.
@@ -106,7 +113,7 @@ def _axis_fractions(centres: np.ndarray, start: float, res: float, n: int, metho
             a, b = lo + shift - start, hi + shift - start
             if b <= 0 or a >= span:
                 continue
-            for j in range(max(0, int(math.floor(a / res))), min(n, int(math.ceil(b / res)))):
+            for j in range(max(0, math.floor(a / res)), min(n, math.ceil(b / res))):
                 ov = min(b, (j + 1) * res) - max(a, j * res)
                 if ov > 1e-12:
                     rows.append(i)
@@ -119,15 +126,16 @@ def _check_resolution(resolution_deg: float) -> tuple[int, int]:
     nlat, nlon = 180 / resolution_deg, 360 / resolution_deg
     if resolution_deg <= 0 or abs(nlat - round(nlat)) > 1e-9 or abs(nlon - round(nlon)) > 1e-9:
         raise ValueError("resolution_deg must divide 180 exactly (e.g. 0.5, 1, 2, 2.5, 5)")
-    return int(round(nlat)), int(round(nlon))
+    return round(nlat), round(nlon)
 
 
 def _month_start(time: xr.DataArray) -> pd.DatetimeIndex:
     return pd.DatetimeIndex(time.values).to_period("M").to_timestamp().as_unit("ns")
 
 
-def coarsen(da: xr.DataArray, resolution_deg: float, method: str = "overlap",
-            max_band_values: int = MAX_BAND_VALUES) -> xr.Dataset:
+def coarsen(
+    da: xr.DataArray, resolution_deg: float, method: str = "overlap", max_band_values: int = MAX_BAND_VALUES
+) -> xr.Dataset:
     """Area-weighted, NaN-aware coarsening of a (time, lat, lon) array to a regular global grid.
 
     ``da`` may be lazy (dask): it is read in latitude bands that each cover the full time axis,
@@ -198,22 +206,37 @@ def _trailing_empty(has_data: np.ndarray) -> int:
 def _grid_attrs(resolution_deg: float) -> dict:
     nlat, nlon = _check_resolution(resolution_deg)
     return {
-        "lat0": -90.0 + resolution_deg / 2, "lon0": -180.0 + resolution_deg / 2,
-        "dlat": float(resolution_deg), "dlon": float(resolution_deg),
-        "nlat": nlat, "nlon": nlon,
+        "lat0": -90.0 + resolution_deg / 2,
+        "lon0": -180.0 + resolution_deg / 2,
+        "dlat": float(resolution_deg),
+        "dlon": float(resolution_deg),
+        "nlat": nlat,
+        "nlon": nlon,
         "grid_reference": "lat0/lon0 are the centre of the south-west cell; rows go north, columns east",
     }
 
 
-def _provenance(src: xr.Dataset, info: dict, source: str, resolution_deg: float, method: str,
-                land_only: bool, ds: xr.Dataset, interior_empty: list[str], n_dropped: int,
-                native: dict) -> dict:
+def _provenance(
+    src: xr.Dataset,
+    info: dict,
+    source: str,
+    resolution_deg: float,
+    method: str,
+    land_only: bool,
+    ds: xr.Dataset,
+    interior_empty: list[str],
+    n_dropped: int,
+    native: dict,
+) -> dict:
     t = pd.DatetimeIndex(ds.time.values)
-    split = ("each native cell goes, whole, to the target cell containing its centre (half-open "
-             "[lo, hi) cells; the native row at +90 goes to the northernmost row; the native column "
-             "centred on -180 goes to the first column)" if method == "centre" else
-             "each native cell is split between target cells in proportion to footprint overlap "
-             "(native edges halfway between centres, clipped to +-90, longitude wraps)")
+    split = (
+        "each native cell goes, whole, to the target cell containing its centre (half-open "
+        "[lo, hi) cells; the native row at +90 goes to the northernmost row; the native column "
+        "centred on -180 goes to the first column)"
+        if method == "centre"
+        else "each native cell is split between target cells in proportion to footprint overlap "
+        "(native edges halfway between centres, clipped to +-90, longitude wraps)"
+    )
     return {
         "source": "NASA POWER Zarr archive (AWS Open Data)",
         "source_url": power_zarr.BASE_URL + power_zarr.SOURCES[source]["path"],
@@ -227,22 +250,36 @@ def _provenance(src: xr.Dataset, info: dict, source: str, resolution_deg: float,
         "native_grid": native,
         "method": method,
         "frequency": "monthly",
-        "n_months": int(len(t)),
+        "n_months": len(t),
         "time_range": {"start": t[0].strftime("%Y-%m"), "end": t[-1].strftime("%Y-%m")},
         "months_without_data_kept_as_nan": interior_empty,
         "accessed": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "land_only": land_only,
         "processing": [
-            "read the whole globe for the variable from the temporal (location-chunked) store, "
-            "in latitude bands covering the full time axis",
+            (
+                "read the whole globe for the variable from the temporal (location-chunked) store, "
+                "in latitude bands covering the full time axis"
+            ),
             f"masked fill value {power_zarr.FILL_VALUE}",
-            *(["kept land cells only (MERRA-2 cells with root-zone soil wetness; nearest MERRA-2 "
-               "cell for other grids); ocean, lakes and ice sheets excluded"] if land_only else []),
-            f"coarsened to {resolution_deg:g} deg cells with edges at multiples of {resolution_deg:g} "
-            "from -90 / -180",
+            *(
+                [
+                    (
+                        "kept land cells only (MERRA-2 cells with root-zone soil wetness; nearest MERRA-2 "
+                        "cell for other grids); ocean, lakes and ice sheets excluded"
+                    )
+                ]
+                if land_only
+                else []
+            ),
+            (
+                f"coarsened to {resolution_deg:g} deg cells with edges at multiples of {resolution_deg:g} "
+                "from -90 / -180"
+            ),
             split,
-            "cell value = mean of native cells weighted by cos(latitude of native centre) x assigned "
-            "fraction, ignoring missing native cells (native polar rows get weight 0)",
+            (
+                "cell value = mean of native cells weighted by cos(latitude of native centre) x assigned "
+                "fraction, ignoring missing native cells (native polar rows get weight 0)"
+            ),
             "valid_fraction = weighted share of the cell's native area with data, per month",
             f"dropped {n_dropped} trailing time steps with no data (the store pre-allocates future dates)",
             "time labelled by month start",
@@ -290,9 +327,12 @@ def build_grid(
     if land_only:
         da = power_zarr._apply_land_mask(da)
     native = {
-        "nlat": int(da.sizes["lat"]), "nlon": int(da.sizes["lon"]),
-        "lat_first": float(da.lat.min()), "lat_last": float(da.lat.max()),
-        "lon_first": float(da.lon.min()), "lon_last": float(da.lon.max()),
+        "nlat": int(da.sizes["lat"]),
+        "nlon": int(da.sizes["lon"]),
+        "lat_first": float(da.lat.min()),
+        "lat_last": float(da.lat.max()),
+        "lon_first": float(da.lon.min()),
+        "lon_last": float(da.lon.max()),
     }
     out = coarsen(da, resolution_deg, method)
 
@@ -302,28 +342,38 @@ def build_grid(
         raise ValueError(f"no data for {variable!r} in source {source!r}")
     out = out.isel(time=slice(0, len(has_data) - n_drop))
     out = out.assign_coords(time=_month_start(out.time))
-    interior_empty = [t.strftime("%Y-%m") for t, ok in
-                      zip(pd.DatetimeIndex(out.time.values), has_data[: out.sizes["time"]], strict=True)
-                      if not ok]
+    interior_empty = [
+        t.strftime("%Y-%m")
+        for t, ok in zip(pd.DatetimeIndex(out.time.values), has_data[: out.sizes["time"]], strict=True)
+        if not ok
+    ]
 
     info = power_zarr.variable_info(variable, source)
     out = out.rename({"value": variable})
     out[variable].attrs.update({k: info[k] for k in ("long_name", "units", "definition")})
-    out["valid_fraction"].attrs.update({
-        "long_name": "share of the cell's native area with data in this month", "units": "1"})
+    out["valid_fraction"].attrs.update(
+        {"long_name": "share of the cell's native area with data in this month", "units": "1"}
+    )
     out["n_valid_months"] = np.isfinite(out[variable]).sum("time").astype(np.int16)
     out["n_valid_months"].attrs.update({"long_name": "number of months with a value", "units": "1"})
     out["lat"].attrs.update({"units": "degrees_north", "long_name": "latitude of cell centre"})
     out["lon"].attrs.update({"units": "degrees_east", "long_name": "longitude of cell centre"})
-    prov = _provenance(src, info, source, resolution_deg, method, land_only, out, interior_empty,
-                       n_drop, native)
-    out.attrs.update({
-        **_grid_attrs(resolution_deg),
-        "variable": variable, "source": source, "method": method, "land_only": int(land_only),
-        "title": f"{info['long_name']} ({source}, {resolution_deg:g} deg monthly grid)",
-        "source_url": prov["source_url"], "source_version": prov["version"],
-        "history": f"{prov['accessed']} built by {SCRIPT}",
-    })
+    prov = _provenance(
+        src, info, source, resolution_deg, method, land_only, out, interior_empty, n_drop, native
+    )
+    out.attrs.update(
+        {
+            **_grid_attrs(resolution_deg),
+            "variable": variable,
+            "source": source,
+            "method": method,
+            "land_only": int(land_only),
+            "title": f"{info['long_name']} ({source}, {resolution_deg:g} deg monthly grid)",
+            "source_url": prov["source_url"],
+            "source_version": prov["version"],
+            "history": f"{prov['accessed']} built by {SCRIPT}",
+        }
+    )
 
     cache_dir.mkdir(parents=True, exist_ok=True)
     enc = {name: {"zlib": True, "complevel": 4, "shuffle": True} for name in out.data_vars}
@@ -348,6 +398,9 @@ def grid_summary(path: Path | str) -> dict:
             "dims": {k: int(v) for k, v in ds.sizes.items()},
             "variables": list(ds.data_vars),
             "time_range": {"start": t[0].strftime("%Y-%m"), "end": t[-1].strftime("%Y-%m")},
-            "grid": {k: np.asarray(ds.attrs[k]).item()
-                     for k in ("lat0", "lon0", "dlat", "dlon", "nlat", "nlon") if k in ds.attrs},
+            "grid": {
+                k: np.asarray(ds.attrs[k]).item()
+                for k in ("lat0", "lon0", "dlat", "dlon", "nlat", "nlon")
+                if k in ds.attrs
+            },
         }

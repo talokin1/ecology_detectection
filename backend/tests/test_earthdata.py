@@ -29,13 +29,16 @@ def test_missing_token_is_a_clear_error(monkeypatch, tmp_path):
         earthdata.token()
 
 
-@pytest.mark.parametrize("url,expected", [
-    ("https://data.gesdisc.earthdata.nasa.gov/x", True),
-    ("https://opendap.earthdata.nasa.gov/x", True),
-    ("https://d2b3c3wh8s6en5.cloudfront.net/x", False),
-    ("https://nasa.gov.evil.example/x", False),
-    ("https://evilnasa.gov/x", False),
-])
+@pytest.mark.parametrize(
+    "url,expected",
+    [
+        ("https://data.gesdisc.earthdata.nasa.gov/x", True),
+        ("https://opendap.earthdata.nasa.gov/x", True),
+        ("https://d2b3c3wh8s6en5.cloudfront.net/x", False),
+        ("https://nasa.gov.evil.example/x", False),
+        ("https://evilnasa.gov/x", False),
+    ],
+)
 def test_token_only_for_nasa_hosts(url, expected):
     assert earthdata._is_nasa_host(url) is expected
 
