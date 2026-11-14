@@ -1,0 +1,22 @@
+# Job list for scripts/build_data.py: which cached series the statistics team needs.
+# Run `python scripts/build_data.py --dry-run` to see the expanded list without fetching.
+version: 0.1
+
+# Region preset ids from data/catalog/regions.yaml (the plan-v2 case regions).
+# Both sections below use this list unless a section gives its own `regions:`.
+regions: [south_ukraine, ukraine, north_europe, south_europe]
+
+# Every *available* catalog variable (a reader exists) x every region above.
+# Variables that need an Earthdata login (GRACE, MODIS NDVI) are served from the cache;
+# they are fetched only with --with-earthdata.
+matrix:
+  variables: all          # "all" = acquire.list_variables(available_only=True), or a list of ids
+  exclude_variables: []   # catalog ids to leave out of the matrix (reported as "skipped")
+
+# Method inputs that are not catalog variables (daily data for extreme indices, plan v2 S2).
+# `how` is only used to aggregate the daily series to months for the data-quality check
+# ("mean" for states such as temperature, "sum" for per-day fluxes such as precipitation).
+inputs:
+  - {parameter: T2M_MAX, store: merra2_daily, how: mean}
+  - {parameter: T2M_MIN, store: merra2_daily, how: mean}
+  - {parameter: PRECTOTCORR, store: merra2_daily, how: sum}

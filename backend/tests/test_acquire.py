@@ -184,6 +184,7 @@ def test_real_catalog_is_consistent():
     assert len(vs) >= 20
     for v in vs.values():
         assert v.definition and v.name, v.id
+        assert v.entry.get("topic") and v.entry.get("how_measured"), v.id  # plan v2 filters, reanalysis note
         if v.reader == "power_zarr":
             assert v.access["store"] in power_zarr.SOURCES and v.access["variable"], v.id
     regions = acquire.list_regions()

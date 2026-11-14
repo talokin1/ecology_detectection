@@ -77,6 +77,7 @@ class Variable:
             "why_it_trends": self.why_it_trends, "units": self.units, "period": self.period,
             "available": self.available, "live": self.available and not self.needs_login,
             "reader": self.reader, "caveats": self.entry.get("caveats"),
+            "topic": self.entry.get("topic"), "how_measured": self.entry.get("how_measured"),
             "percent_change_meaningful": self.entry.get("percent_change_meaningful"),
             "biomes": self.entry.get("biomes", []),
         }
