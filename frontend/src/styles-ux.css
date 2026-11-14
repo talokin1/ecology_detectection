@@ -283,3 +283,17 @@
   .steps { grid-template-columns: 1fr; }
   .vdetails__numbers { grid-template-columns: 1fr; }
 }
+
+/* Deeper checks (climate_stats pipeline results) */
+.dchecks__h { font-size: var(--fs-small); text-transform: uppercase; letter-spacing: .04em; color: var(--text-2); margin: 14px 0 6px; }
+.dchecks__list { list-style: none; margin: 0; padding: 0; display: grid; gap: 0; }
+.dcheck { border-bottom: 1px solid var(--line); padding: 8px 0; }
+.dcheck__head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+.dcheck__label { font-weight: 600; }
+.dcheck__status { flex: none; font-size: var(--fs-small); border: 1px solid var(--line-strong); border-radius: 999px; padding: 1px 8px; color: var(--text-2); }
+.dcheck__status--clear { background: var(--ink); color: var(--ink-contrast); border-color: var(--ink); }
+.dcheck__status--unavailable { border-style: dashed; }
+.dcheck__value { margin: 2px 0 0; font-variant-numeric: tabular-nums; }
+.dcheck__value--muted, .dcheck__range, .dcheck__q, .dcheck__detail { color: var(--text-2); }
+.dcheck__detail { font-size: var(--fs-small); margin: 2px 0 0; }
+.dcheck--unavailable .dcheck__label { color: var(--text-2); font-weight: 500; }

@@ -24,6 +24,7 @@
     "neighbour",
     "insights",
     "insights_audit",
+    "deeper_checks",
     "provenance"
   ],
   "properties": {
@@ -664,6 +665,63 @@
     },
     "provenance": {
       "$ref": "common.schema.json#/$defs/Provenance"
+    },
+    "deeper_checks": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "object",
+          "description": "Extra checks from trend_detective.climate_stats; one BH family per region document.",
+          "required": [
+            "rows",
+            "shown",
+            "available",
+            "clear",
+            "family_tests",
+            "q",
+            "source_file",
+            "text"
+          ],
+          "properties": {
+            "rows": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/DeeperCheck"
+              }
+            },
+            "shown": {
+              "type": "integer"
+            },
+            "available": {
+              "type": "integer"
+            },
+            "clear": {
+              "type": "integer"
+            },
+            "family_tests": {
+              "type": "integer"
+            },
+            "q": {
+              "type": "number"
+            },
+            "source_file": {
+              "type": "string"
+            },
+            "pipeline_version": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "text": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
     }
   },
   "additionalProperties": false,
@@ -842,6 +900,116 @@
         "tested": {
           "type": "boolean",
           "description": "true = comes from a follow-up check that passed the FDR filter."
+        }
+      },
+      "additionalProperties": false
+    },
+    "DeeperCheck": {
+      "type": "object",
+      "description": "One result of the team's climate_stats pipeline, ready to display.",
+      "required": [
+        "id",
+        "group",
+        "label",
+        "explain",
+        "unit",
+        "path",
+        "status",
+        "status_text"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "group": {
+          "enum": [
+            "events",
+            "method"
+          ]
+        },
+        "label": {
+          "type": "string"
+        },
+        "explain": {
+          "type": "string",
+          "description": "One plain-language sentence."
+        },
+        "unit": {
+          "type": "string"
+        },
+        "path": {
+          "type": "string",
+          "description": "JSON pointer into stats/<region>.json"
+        },
+        "status": {
+          "enum": [
+            "clear",
+            "not_clear",
+            "unavailable"
+          ]
+        },
+        "status_text": {
+          "type": "string"
+        },
+        "reason": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "rate": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "ci95": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "number"
+              },
+              "minItems": 2,
+              "maxItems": 2
+            }
+          ]
+        },
+        "value_text": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "range_text": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "detail": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "q": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "methods_disagree": {
+          "type": "boolean"
+        },
+        "warnings": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
         }
       },
       "additionalProperties": false

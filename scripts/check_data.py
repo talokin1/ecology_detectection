@@ -18,7 +18,8 @@ from referencing import Registry, Resource
 ROOT = Path(__file__).resolve().parents[1]
 SCHEMA = ROOT / "schema"
 RULES = [("index.json", "index"), ("catalog.json", "catalog"), ("validation.json", "validation"),
-         ("map/*.json", "map"), ("analysis/*.json", "analysis"), ("compare/*.json", "compare")]
+         ("map/*.json", "map"), ("analysis/*.json", "analysis"), ("compare/*.json", "compare"),
+         ("stats/*.json", "climate-output")]
 
 
 def main(data: Path) -> int:

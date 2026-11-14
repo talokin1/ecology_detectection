@@ -6,6 +6,7 @@ import type { AnalysisResult, Case, Index, MapLayer, Region, VariableRef } from 
 import { LegendChip } from '../components/MapLegend';
 import { Readout, VerdictDetails } from '../components/VerdictCard';
 import { InsightList } from '../components/InsightList';
+import { DeeperChecks } from '../components/DeeperChecks';
 import { TrendChart, type ChartBars, type ChartHandle } from '../components/SeriesChart';
 import { ExtremesChart, MonthChart, SeasonChart } from '../components/SmallCharts';
 import { Disclosure, InfoPopover } from '../components/Panel';
@@ -215,6 +216,11 @@ function CaseBody({ index, a, region, variable, theCase, layer }: {
           <Disclosure title={`${S.case.sections.extremes}: ${a.extremes.label.toLowerCase()}`} summary={a.extremes.display.trend_text}>
             <p className="sec__units">{a.extremes.display.subtitle}</p>
             <ExtremesChart a={a} variable={variable} />
+          </Disclosure>
+        )}
+        {a.deeper_checks && (
+          <Disclosure title={S.case.sections.deeper} summary={S.deeper.summary(a.deeper_checks.clear, a.deeper_checks.available)}>
+            <DeeperChecks a={a} />
           </Disclosure>
         )}
         <Disclosure title={S.case.sections.data} summary={`${S.case.source}: ${a.provenance.dataset}`}>

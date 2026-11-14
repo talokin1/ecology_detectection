@@ -1,21 +1,33 @@
-"""Generate SYNTHETIC demo data for the web app, in the exact JSON format of the real pipeline.
+"""Build the web app's data from REAL NASA data in the frozen cache (`data/cache/`).
 
-The input series are invented (trend fields + autocorrelated noise, shaped like NASA POWER
-monthly data). Everything computed FROM them uses the project's reference module
-`trend_stats.py` (Sen, Mann-Kendall Yue-Wang, OLS n_eff, BH FDR, years to detection), so the
-numbers on screen are internally consistent. Every file carries `provenance.synthetic = true`
-and the app shows a "synthetic data" banner. Synthetic numbers must never be quoted as results.
+Inputs (all committed, checked by `scripts/check_cache.py`; nothing is downloaded here):
+  regional monthly series   NASA POWER (MERRA-2) via `acquire.get_series`, cos(lat)-weighted,
+                            land cells only where the region preset says so
+  daily inputs              POWER daily T2M_MAX, T2M_MIN, PRECTOTCORR for the case regions
+  world map                 2-degree monthly grids (`data/cache/grids/`, built by `grids.py`)
+
+Statistics:
+  headline verdicts, seasons, months, extremes, map   `trend_stats.py` (Sen, Mann-Kendall
+                            Yue-Wang, OLS n_eff, BH FDR, years to detection)
+  deeper checks             the team's offline pipeline `trend_detective.climate_stats`
+                            (ETCCDI-style daily indices, SPI/SPEI, acceleration, variability,
+                            block bootstrap, change point); one BH family per region document
+
+Period rule (fixed before any result was looked at): every series starts in 1981-01 and ends
+with the last calendar year that is complete in every input, so yearly, seasonal and map
+values all use whole years.
 
 Outputs (frontend/public/data/):
   index.json                       cases, regions (with outlines), variables
   catalog.json                     all catalog variables with plain-language text and status
-  map/<variable>.json              1-degree global trend grid + FDR significance
+  map/<variable>.json              2-degree global trend grid + FDR significance
   analysis/<region>__<variable>.json
   compare/<regionA>__<regionB>__<variable>.json
-  validation.json                  Monte-Carlo false-alarm table (real, from validate_type1.py)
+  stats/<region>.json              full climate_stats output for that region (reproducibility)
+  validation.json                  Monte-Carlo false-alarm table (from validate_type1.py)
 
-Usage (from the repo root):
-  python scripts/make_synthetic_data.py [--seed 7] [--runs 300]
+Usage (from the repo root, with requirements.txt installed):
+  python scripts/make_app_data.py [--runs 300] [--bootstrap 999]
 
 SI-assisted (Claude, Anthropic).
 """
@@ -32,20 +44,34 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+import xarray as xr
 import yaml
-from scipy import ndimage, stats
+from scipy import stats
 from shapely import contains_xy
 from shapely.geometry import shape
-from shapely.ops import unary_union
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / ".claude" / "skills" / "trend-stats" / "scripts"))
+sys.path.insert(0, str(ROOT / "backend"))
 import trend_stats as ts  # noqa: E402
+from trend_detective import acquire, power_zarr  # noqa: E402
+from trend_detective.climate_stats import analyze as climate_analyze  # noqa: E402
+
+
+def _no_download(*_args, **_kwargs):
+    raise RuntimeError("make_app_data.py reads the frozen cache only; a series was missing from "
+                       "data/cache/ (ask the data engineer to add it, see HANDOFF.md)")
+
+
+power_zarr.open_source = _no_download  # never fetch: every input must come from the frozen cache
 
 OUT = ROOT / "frontend" / "public" / "data"
+GRIDS = ROOT / "data" / "cache" / "grids"
 SCHEMA_VERSION = "0.1.0"
-Y0, Y1 = 1981, 2024
+Y0 = 1981
+Y1 = 2025  # recomputed in main(): last calendar year complete in every input
 BASELINE = ("1981-01-01", "2010-12-31")
+DAILY = {"tmax": "T2M_MAX", "tmin": "T2M_MIN", "precip": "PRECTOTCORR"}
 FDR_MAP_Q = 0.05
 FDR_INSIGHT_Q = 0.05  # same q as the maps (review P0-5: filter and 95% whiskers must agree)
 MONTH_NAMES = ["January", "February", "March", "April", "May", "June", "July", "August",
@@ -69,10 +95,9 @@ VARIABLES = {
         "up": "getting warmer", "down": "getting cooler", "noun": "warming", "noun_down": "cooling",
         "rate_decimals": 2, "total_decimals": 1, "series_decimals": 2, "percent": False,
         "topic": "temperature", "land_only": False,
+        "scale": 1.0, "grid": "merra2_T2M_2deg.nc", "grid_var": "T2M",
         "extreme": {"kind": "hot_months", "tail": "upper", "label": "Very hot months",
                     "threshold_text": "hotter than 9 in 10 months of 1981–2010"},
-        "month_profile": np.array([1.45, 1.35, 1.2, 1.0, 0.85, 0.8, 0.85, 0.9, 0.9, 1.0, 1.15, 1.4]),
-        "phi": 0.35,
     },
     "precip": {
         "catalog_id": "precipitation_power", "name": "Precipitation",
@@ -86,10 +111,9 @@ VARIABLES = {
         "up": "getting wetter", "down": "getting drier", "noun": "wetting", "noun_down": "drying",
         "rate_decimals": 2, "total_decimals": 2, "series_decimals": 2, "percent": True,
         "topic": "water", "land_only": False,
+        "scale": 1.0, "grid": "merra2_PRECTOTCORR_2deg.nc", "grid_var": "PRECTOTCORR",
         "extreme": {"kind": "dry_months", "tail": "lower", "label": "Very dry months",
                     "threshold_text": "drier than 9 in 10 months of 1981–2010"},
-        "month_profile": np.array([1.3, 1.25, 1.1, 0.95, 0.85, 0.8, 0.8, 0.85, 0.95, 1.05, 1.2, 1.3]),
-        "phi": 0.1,
     },
     "soil": {
         "catalog_id": "root_zone_soil_wetness_power", "name": "Soil wetness",
@@ -104,10 +128,9 @@ VARIABLES = {
         "up": "getting wetter", "down": "getting drier", "noun": "wetting", "noun_down": "drying",
         "rate_decimals": 1, "total_decimals": 1, "series_decimals": 1, "percent": False,
         "topic": "water", "land_only": True,
+        "scale": 100.0, "grid": "merra2_GWETROOT_2deg.nc", "grid_var": "GWETROOT",  # fraction 0-1 -> %
         "extreme": {"kind": "dry_months", "tail": "lower", "label": "Very dry months",
                     "threshold_text": "drier than 9 in 10 months of 1981–2010"},
-        "month_profile": np.array([0.4, 0.4, 0.55, 0.75, 0.95, 1.3, 1.7, 1.85, 1.55, 1.05, 0.6, 0.4]),
-        "phi": 0.8,
     },
 }
 
@@ -118,7 +141,7 @@ CASES = [
      "variable_id": "soil", "region_id": "south_ukraine"},
     {"id": "02", "slug": "ukraine-warming", "title": "Is Ukraine getting warmer?",
      "question": "Is Ukraine getting warmer, and in which season the most?",
-     "teaser": "Winters without snow, summers that do not end. What do 44 years of data say?",
+     "teaser": "Winters without snow, summers that do not end. What do {years} years of data say?",
      "variable_id": "t2m", "region_id": "ukraine"},
     {"id": "03", "slug": "same-rain-opposite-ways", "title": "Same rain, opposite ways",
      "question": "Is the north of Europe getting wetter while the south dries out?",
@@ -177,25 +200,6 @@ def rnd(a, d: int):
     """Round an array for JSON; NaN -> None."""
     a = np.asarray(a, dtype=float)
     return [None if not np.isfinite(v) else round(float(v), d) for v in a]
-
-
-def gauss(lat, lon, lat0, lon0, slat, slon):
-    dlon = (lon - lon0 + 180) % 360 - 180
-    return np.exp(-(((lat - lat0) / slat) ** 2) - ((dlon / slon) ** 2))
-
-
-def smooth_noise(rng, shape_, sigma):
-    f = ndimage.gaussian_filter(rng.normal(size=shape_), sigma=sigma, mode=("nearest", "wrap"))
-    return (f - f.mean()) / f.std()
-
-
-def ar1(n, phi, rng):
-    e = rng.normal(0, 1, n)
-    x = np.empty(n)
-    x[0] = e[0] / math.sqrt(1 - phi ** 2)
-    for i in range(1, n):
-        x[i] = phi * x[i - 1] + e[i]
-    return x * math.sqrt(1 - phi ** 2)
 
 
 def excludes_zero(ci) -> bool:
@@ -261,81 +265,60 @@ def write_json(path: Path, obj) -> None:
     path.write_text(json.dumps(obj, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
 
 
-# --------------------------------------------------------------------------- synthetic fields
-class World:
-    def __init__(self, rng):
-        self.lat = np.arange(-89.5, 90, 1.0)
-        self.lon = np.arange(-179.5, 180, 1.0)
+# --------------------------------------------------------------------------- real inputs
+def month_index(start_year: int, end_year: int) -> pd.DatetimeIndex:
+    return pd.date_range(f"{start_year}-01-01", f"{end_year}-12-01", freq="MS")
+
+
+def last_complete_year(index: pd.DatetimeIndex) -> int:
+    """Last calendar year with all 12 months present in a monthly index."""
+    counts = pd.Series(1, index=index).groupby(index.year).sum()
+    full = counts[counts == 12]
+    return int(full.index.max())
+
+
+class Grid:
+    """One 2-degree monthly grid from data/cache/grids/ (built by trend_detective.grids)."""
+
+    def __init__(self, var: str):
+        spec = VARIABLES[var]
+        self.path = GRIDS / spec["grid"]
+        ds = xr.open_dataset(self.path)
+        name = spec["grid_var"] if spec["grid_var"] in ds.data_vars else next(
+            v for v in ds.data_vars if v != "valid_fraction")
+        da = ds[name]
+        self.time = pd.DatetimeIndex(ds["time"].values)
+        self.lat = ds["lat"].values.astype(float)
+        self.lon = ds["lon"].values.astype(float)
+        self.values = da.transpose("time", "lat", "lon").values.astype(float) * spec["scale"]
+        ds.close()
         self.LON, self.LAT = np.meshgrid(self.lon, self.lat)
-        land = json.loads((ROOT / "frontend/public/basemap/land.geojson").read_text(encoding="utf-8"))
-        land_geom = unary_union([shape(f["geometry"]) for f in land["features"]])
-        self.land = contains_xy(land_geom, self.LON, self.LAT)
-        self.rng = rng
-        self.fields = {v: self._field(v) for v in VARIABLES}
+        sidecar = self.path.with_name(self.path.name + ".provenance.json")
+        self.provenance = json.loads(sidecar.read_text(encoding="utf-8"))
 
-    def _field(self, var):
-        """True trend per decade, annual noise std and climatology for each grid cell."""
-        lat, lon, land, rng = self.LAT, self.LON, self.land, self.rng
-        rough = smooth_noise(rng, lat.shape, 6)
-        if var == "t2m":
-            trend = np.where(land, 0.29, 0.14)
-            trend = trend + 0.55 * np.clip((lat - 55) / 30, 0, 1) ** 1.3
-            trend = trend + 0.16 * gauss(lat, lon, 50, 32, 9, 22)          # eastern Europe
-            trend = trend - 0.38 * gauss(lat, lon, 55, -35, 7, 14)         # North Atlantic cold blob
-            trend = trend - 0.10 * gauss(lat, lon, -60, 0, 8, 400)         # Southern Ocean
-            trend = trend + 0.06 * rough
-            sd = np.where(land, 0.42, 0.2) + 0.5 * np.clip((np.abs(lat) - 40) / 40, 0, 1)
-            clim = 28 - 0.55 * np.clip(np.abs(lat) - 12, 0, None)
-        elif var == "precip":
-            clim = (0.7 + 6.5 * np.exp(-(((lat - 6) / 9) ** 2))
-                    + 2.4 * np.exp(-(((np.abs(lat) - 50) / 14) ** 2)))
-            clim = np.where(land & (np.abs(lat) > 14) & (np.abs(lat) < 33), clim * 0.35, clim)
-            pct = (5.0 * np.clip((lat - 50) / 14, 0, 1)
-                   - 7.0 * gauss(lat, lon, 40, 6, 7, 26)                   # Mediterranean
-                   - 4.0 * gauss(lat, lon, 34, -112, 7, 12)                # US south-west
-                   + 6.0 * gauss(lat, lon, 14, 5, 4, 30)                   # Sahel recovery
-                   - 3.5 * gauss(lat, lon, -24, 25, 7, 14)                 # southern Africa
-                   - 2.5 * gauss(lat, lon, 47, 33, 4, 9)                   # Black Sea steppe
-                   + 1.6 * rough)
-            trend = clim * pct / 100
-            sd = clim * np.where(land, 0.11, 0.07)
-        else:  # soil wetness, %
-            pc = (0.7 + 6.5 * np.exp(-(((lat - 6) / 9) ** 2)) + 2.4 * np.exp(-(((np.abs(lat) - 50) / 14) ** 2)))
-            pc = np.where((np.abs(lat) > 14) & (np.abs(lat) < 33), pc * 0.35, pc)
-            clim = 20 + 60 * pc / (pc + 2.5)
-            trend = (-1.7 * gauss(lat, lon, 40, 10, 7, 20)                 # Mediterranean
-                     - 1.55 * gauss(lat, lon, 46.6, 33, 3.2, 8)            # southern Ukraine steppe
-                     + 0.9 * np.clip((lat - 55) / 12, 0, 1) * gauss(lat, lon, 62, 20, 12, 40)
-                     + 1.1 * gauss(lat, lon, 14, 5, 4, 30)                 # Sahel
-                     - 0.45 * gauss(lat, lon, 38, -99, 6, 10)              # Great Plains
-                     - 0.7 * gauss(lat, lon, -25, 135, 10, 20)             # Australia
-                     + 0.32 * rough)
-            sd = np.full(lat.shape, 2.0)
-            greenland = (lat > 59.5) & (lon > -74) & (lon < -11) & ~((lat < 67) & (lon > -25))  # not Iceland
-            ice = (lat < -60) | greenland  # ice sheets have no meaningful soil wetness
-            land = land & ~ice
-            trend = np.where(land, trend, np.nan)
-            sd = np.where(land, sd, np.nan)
-            clim = np.where(land, clim, np.nan)
-        return {"trend": trend, "sd": sd, "clim": clim}
+    def annual_means(self) -> np.ndarray:
+        """(years, lat, lon) mean of the 12 calendar months; NaN unless all 12 months exist."""
+        out = np.full((Y1 - Y0 + 1,) + self.LAT.shape, np.nan)
+        years = self.time.year
+        for k, y in enumerate(range(Y0, Y1 + 1)):
+            sel = years == y
+            if sel.sum() != 12:
+                continue
+            block = self.values[sel]
+            ok = np.isfinite(block).all(axis=0)
+            out[k] = np.where(ok, block.mean(axis=0), np.nan)
+        return out
 
 
-def map_layer(world: World, var: str, rng) -> tuple[dict, dict]:
+def map_layer(grid: Grid, var: str) -> tuple[dict, dict]:
     """Per-cell Sen slope and Yue-Wang MK on annual means, then BH FDR across cells."""
-    f = world.fields[var]
     years = np.arange(Y0, Y1 + 1)
     n = years.size
-    tc = (years - years.mean()) / 10.0
-    k_modes = 16
-    modes = np.stack([smooth_noise(rng, world.LAT.shape, 7) for _ in range(k_modes)])
-    amps = np.stack([ar1(n, 0.3, rng) for _ in range(k_modes)])
-    coherent = np.tensordot(amps.T, modes, axes=1) / math.sqrt(k_modes)       # (n, lat, lon)
-    local = rng.normal(size=(n,) + world.LAT.shape)
-    noise = (math.sqrt(0.88) * coherent + math.sqrt(0.12) * local) * f["sd"][None]
-    series = f["trend"][None] * tc[:, None, None] + noise                      # (n, lat, lon)
+    series = grid.annual_means()                                                 # (n, lat, lon)
     Y = series.reshape(n, -1).T                                                 # (cells, n)
 
     valid = np.isfinite(Y).all(axis=1)
+    valid[valid] = np.std(Y[valid], axis=1) > 0
     slope = np.full(Y.shape[0], np.nan)
     pval = np.full(Y.shape[0], np.nan)
     i, j = np.triu_indices(n, 1)
@@ -356,21 +339,26 @@ def map_layer(world: World, var: str, rng) -> tuple[dict, dict]:
         z = (s - np.sign(s)) / np.sqrt(var0 * eta)
         slope[sel] = sen * 10
         pval[sel] = 2 * stats.norm.sf(np.abs(z))
-    sig, _ = ts.fdr_bh(pval, q=FDR_MAP_Q)
+    sig = np.zeros(Y.shape[0], dtype=bool)
+    ok = np.isfinite(pval)
+    sig[ok], _ = ts.fdr_bh(pval[ok], q=FDR_MAP_Q)
 
     spec = VARIABLES[var]
     finite = np.abs(slope[np.isfinite(slope)])
     raw_lim = float(np.percentile(finite, 98))
-    nice = [0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.4, 0.5, 0.6, 0.8, 1.0, 1.2, 1.5, 2.0, 2.5, 3.0]
-    limit = next(v for v in nice if v >= raw_lim)
+    nice = [0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.4, 0.5, 0.6, 0.8, 1.0, 1.2, 1.5, 2.0, 2.5, 3.0, 4.0, 5.0, 6.0]
+    limit = next((v for v in nice if v >= raw_lim), nice[-1])
     d = spec["rate_decimals"] + 1
     bins = 11
     edges = [-limit + 2 * limit * i / bins for i in range(bins + 1)]
+    dlat = float(grid.lat[1] - grid.lat[0])
+    dlon = float(grid.lon[1] - grid.lon[0])
     layer = {
         "schema_version": SCHEMA_VERSION,
         "variable_id": var,
         "period": {"start": f"{Y0}-01", "end": f"{Y1}-12"},
-        "grid": {"lat0": -89.5, "lon0": -179.5, "dlat": 1.0, "dlon": 1.0, "nlat": 180, "nlon": 360,
+        "grid": {"lat0": float(grid.lat[0]), "lon0": float(grid.lon[0]), "dlat": dlat, "dlon": dlon,
+                 "nlat": int(grid.lat.size), "nlon": int(grid.lon.size),
                  "order": "row-major from south to north, west to east"},
         "slope_per_decade": rnd(slope, d),
         "significant": [int(v) for v in sig],
@@ -381,85 +369,74 @@ def map_layer(world: World, var: str, rng) -> tuple[dict, dict]:
         "legend": {
             "title": f"Trend · {spec['rate_units']}",
             "edges_text": [fmt(e, d) for e in edges],
-            "ticks": [{"value": v, "text": "0" if v == 0 else fmt(v, d - 1)} for v in (-limit, -limit / 2, 0, limit / 2, limit)],
+            "ticks": [{"value": v, "text": "0" if v == 0 else fmt(v, d - 1)}
+                      for v in (-limit, -limit / 2, 0, limit / 2, limit)],
             "min_text": f"≤ {fmt(-limit, d - 1)}", "max_text": f"≥ {fmt(limit, d - 1)}",
         },
         "units_label": spec["rate_units"],
         "words": spec["words"],
         "fdr_q": FDR_MAP_Q,
-        "caption": (f"SYNTHETIC demo field shaped like NASA POWER {spec['parameter']} · {Y0}–{Y1} · "
-                    "Sen's slope of yearly means in each 1° square. Strong colour: passes the map-wide "
-                    f"test for false alarms (Mann-Kendall with memory correction, q = {FDR_MAP_Q}). "
-                    "This map enlarges areas near the poles."),
-        "provenance": provenance(spec, "map"),
+        "caption": (f"NASA POWER {spec['parameter']} (MERRA-2) · {Y0}–{Y1} · Sen's slope of yearly means in "
+                    f"each {dlat:g}° square. Strong colour: passes the map-wide test for false alarms "
+                    f"(Mann-Kendall with memory correction, q = {FDR_MAP_Q}). This map enlarges areas near "
+                    "the poles."),
+        "provenance": provenance_from(grid.provenance, spec, "map"),
     }
-    cells = {"slope": slope.reshape(world.LAT.shape), "sig": sig.reshape(world.LAT.shape)}
+    cells = {"slope": slope.reshape(grid.LAT.shape), "sig": sig.reshape(grid.LAT.shape),
+             "LAT": grid.LAT, "LON": grid.LON}
     return layer, cells
 
 
-def provenance(spec: dict, what: str) -> dict:
+def provenance_from(prov: dict, spec: dict, what: str) -> dict:
+    """App provenance block built from the cache sidecar of the file actually used."""
+    accessed = str(prov.get("accessed", ""))[:10] or None
+    processing = [str(p) for p in prov.get("processing", [])][:3]
+    if what == "map":
+        processing += [f"yearly means of complete years {Y0}–{Y1} in each 2° square",
+                       "per-square Sen's slope and Mann-Kendall (Yue-Wang), BH FDR across squares "
+                       "(trend_stats.py)"]
+    else:
+        processing += [f"monthly series {Y0}-01 to {Y1}-12 (complete years)",
+                       "anomalies from the calendar-month normal; Sen's slope, Mann-Kendall (Yue-Wang), "
+                       "OLS with effective sample size (trend_stats.py)"]
     return {
-        "dataset": f"SYNTHETIC — shaped like NASA POWER monthly {spec['parameter']}",
-        "version": None, "doi": None,
-        "landing_page": "https://power.larc.nasa.gov/",
-        "accessed": dt.date.today().isoformat(),
-        "processing": [
-            "synthetic trend field + autocorrelated noise (scripts/make_synthetic_data.py)",
-            "statistics: trend_stats.py (Sen, Mann-Kendall Yue-Wang, OLS n_eff, BH FDR)",
-        ] + (["per-cell annual means, BH FDR across cells"] if what == "map" else
-             ["cos(latitude)-weighted regional mean, monthly anomalies"]),
-        "synthetic": True,
-        "caveat": ("Data: model-based reanalysis, about 50 km squares (the map is regridded to 1°). "
-                   f"The trend is a straight line through {Y0}–{Y1}; it shows what changed, not why."),
+        "dataset": f"{prov.get('source', 'NASA POWER')} · {spec['parameter']}",
+        "version": prov.get("version"),
+        "doi": prov.get("doi"),
+        "landing_page": prov.get("landing_page") or "https://power.larc.nasa.gov/",
+        "accessed": accessed,
+        "processing": processing,
+        "synthetic": False,
+        "caveat": ("Data: MERRA-2 reanalysis, a weather model corrected by observations, about 50 km squares"
+                   + (" (the map averages them into 2° squares)" if what == "map" else "")
+                   + f". The trend is a straight line through {Y0}–{Y1}; it shows what changed, not why."),
     }
 
 
 # --------------------------------------------------------------------------- regional series
-def region_mask(world: World, geom) -> np.ndarray:
-    m = contains_xy(geom, world.LON, world.LAT)
-    if m.sum() < 3:  # tiny region: take the cells whose centre is within 1 degree
-        m = contains_xy(geom.buffer(0.75), world.LON, world.LAT)
+def region_mask(cells: dict, geom) -> np.ndarray:
+    m = contains_xy(geom, cells["LON"], cells["LAT"])
+    if m.sum() < 3:  # small region: take the squares whose centre is within about one square
+        m = contains_xy(geom.buffer(1.5), cells["LON"], cells["LAT"])
     return m
 
 
-def regional_series(world: World, var: str, mask: np.ndarray, centroid, rng):
-    spec, f = VARIABLES[var], world.fields[var]
-    w = np.cos(np.deg2rad(world.LAT)) * mask
-    if spec["land_only"]:
-        w = w * world.land
-    w = w / w.sum()
-    trend_dec = float(np.nansum(f["trend"] * w))
-    sd_ann = 0.85 * float(np.nansum(f["sd"] * w))  # a regional mean is less noisy than one cell
-    clim_mean = float(np.nansum(f["clim"] * w))
+def load_series(var: str, region_id: str) -> pd.Series:
+    """Monthly regional series from the cache, in app units, restricted to Y0..Y1."""
+    spec = VARIABLES[var]
+    s = acquire.get_series(spec["catalog_id"], region_id)
+    if not s.attrs.get("from_cache", True):
+        raise RuntimeError(f"{spec['catalog_id']} / {region_id} did not come from the cache")
+    attrs = dict(s.attrs)
+    s = s.reindex(month_index(Y0, Y1)) * spec["scale"]
+    s.attrs = attrs
+    return s
 
-    dates = np.arange(np.datetime64(f"{Y0}-01"), np.datetime64(f"{Y1 + 1}-01"), dtype="datetime64[M]")
-    months = dates.astype(int) % 12
-    t = (dates.astype(int) / 12.0) + 1970
-    tc = (t - t.mean()) / 10.0
-    profile = spec["month_profile"] / spec["month_profile"].mean()
-    phi = spec["phi"]
-    # monthly noise std chosen so that annual means have roughly sd_ann
-    sd_m = sd_ann * math.sqrt(12 / ((1 + phi) / (1 - phi)))
-    noise = ar1(dates.size, phi, rng) * sd_m
-    anom_true = trend_dec * profile[months] * tc + noise
 
-    lat = centroid[1]
-    if var == "t2m":
-        mean = float(np.nansum(f["clim"] * w))
-        amp = 1.5 + 0.32 * max(0.0, abs(lat) - 8)
-        phase = 6 if lat >= 0 else 0
-        cycle = mean + amp * np.cos(2 * np.pi * (months - phase) / 12)
-        raw = cycle + anom_true
-    elif var == "precip":
-        peak = 11 if 34 < lat < 46 and centroid[0] < 30 else 7 if lat > 0 else 0
-        amp = 0.9 if abs(lat) < 20 else 0.35
-        cycle = clim_mean * (1 + amp * np.cos(2 * np.pi * (months - peak) / 12))
-        raw = np.maximum(0.0, cycle + anom_true)
-    else:
-        cycle = clim_mean + 9 * np.cos(2 * np.pi * (months - 3) / 12)
-        raw = np.clip(cycle + anom_true, 2, 98)
-    day_dates = dates.astype("datetime64[D]")
-    return day_dates, raw
+def regional_series(var: str, region_id: str):
+    s = load_series(var, region_id)
+    dates = s.index.values.astype("datetime64[M]").astype("datetime64[D]")
+    return dates, s.to_numpy(dtype=float), s.attrs
 
 
 def seasonal_series(dates, anom, months_wanted):
@@ -505,10 +482,54 @@ def sentence_name(region: dict) -> str:
     return NAME_IN_SENTENCE.get(region["id"], region["name"])
 
 
-def analyse(world, var, region, cells, rng):
+def monthly_level(dates, raw) -> str:
+    """The app's verdict rule (weaker of MK-CI level and OLS-p level) for one monthly series."""
+    anom, _ = ts.deseasonalize(dates, raw)
+    t = ts.decimal_years(dates)
+    mk = ts.mann_kendall(t, anom, method="yue_wang")
+    cis = [[c * 10 for c in ts.sens_slope(t, anom, alpha=a, var_s=mk["var_s"])["ci"]] for a in (0.10, 0.05, 0.01)]
+    res = ts.analyze_series(dates, raw)
+    return weaker(level_from_cis(*cis), level_from_p(res["ols"]["p"]))
+
+
+def yearly_level(dates, raw) -> str:
+    anom, _ = ts.deseasonalize(dates, raw)
+    years = dates.astype("datetime64[Y]").astype(int) + 1970
+    ys = np.arange(Y0, Y1 + 1)
+    vals = np.array([anom[years == y].mean() for y in ys])
+    r = annual_trend(ys, vals)
+    t = ys.astype(float)
+    mk = ts.mann_kendall(t, vals, method="yue_wang")
+    cis = [[c * 10 for c in ts.sens_slope(t, vals, alpha=a, var_s=mk["var_s"])["ci"]] for a in (0.10, 0.05, 0.01)]
+    return weaker(level_from_cis(*cis), level_from_p(r["ols"]["p"]))
+
+
+def robustness(dates, raw, level: str) -> dict:
+    """Pre-declared sensitivity checks, the same for every region and variable: the verdict rule
+    repeated without the first two years, without the last two years, and on yearly means.
+    The headline verdict is never changed; a different outcome is reported next to it."""
+    if level == "insufficient":
+        return {"checks": [], "text": None}
+    years = dates.astype("datetime64[Y]").astype(int) + 1970
+    checks = []
+    for label, sel in ((f"leaving out {Y0}–{Y0 + 1}", years >= Y0 + 2),
+                       (f"leaving out {Y1 - 1}–{Y1}", years <= Y1 - 2)):
+        checks.append((label, monthly_level(dates[sel], raw[sel])))
+    checks.append(("using one average per year", yearly_level(dates, raw)))
+    differ = [(lbl, lv) for lbl, lv in checks if lv != level]
+    if not differ:
+        return {"checks": checks, "text": "Same verdict without the first or last two years and with yearly averages."}
+    parts = [f"{lbl}: {LEVEL_WORD[lv].lower()}" for lbl, lv in differ]
+    return {"checks": checks, "text": "Borderline: " + "; ".join(parts) + "."}
+
+
+def analyse(var, region, cells):
     spec = VARIABLES[var]
     name_s = sentence_name(region)
-    dates, raw = regional_series(world, var, region["mask"], region["centroid"], rng)
+    dates, raw, attrs = regional_series(var, region["id"])
+    if not np.isfinite(raw).all():
+        raise ValueError(f"{var} / {region['id']}: {int((~np.isfinite(raw)).sum())} missing months in "
+                         f"{Y0}-{Y1}; the app's annual and seasonal statistics need a complete record")
     res = ts.analyze_series(dates, raw, units=spec["rate_units"], variable_name=spec["long_name"])
     anom, _ = ts.deseasonalize(dates, raw)
     t = ts.decimal_years(dates)
@@ -566,6 +587,9 @@ def analyse(world, var, region, cells, rng):
         answer = "The record is too short or too patchy to judge a trend."
     how_sure = (f"Mann-Kendall test with a correction for month-to-month memory: {p_text(mk['p'])} · "
                 f"{res['n']} months · second test (regression): {p_text(res['ols']['p'])}")
+    robust = robustness(dates, raw, level)
+    if robust["text"]:
+        how_sure += " · " + robust["text"]
     disagree_text = (f"Mann-Kendall: {LEVEL_WORD[mk_level].lower()} ({p_text(mk['p'])}). Regression: "
                      f"{LEVEL_WORD[ols_level].lower()} ({p_text(res['ols']['p'])}). We report the weaker."
                      if disagree else None)
@@ -663,7 +687,7 @@ def analyse(world, var, region, cells, rng):
     }
 
     # --- spatial sign split (S9)
-    w = np.cos(np.deg2rad(world.LAT)) * region["mask"] * np.isfinite(cells["slope"])
+    w = np.cos(np.deg2rad(cells["LAT"])) * region["mask"] * np.isfinite(cells["slope"])
     opp = (np.sign(cells["slope"]) == -np.sign(per_dec)) & cells["sig"]
     same = (np.sign(cells["slope"]) == np.sign(per_dec)) & cells["sig"]
     share_opp = float((w * opp).sum() / w.sum()) if w.sum() else 0.0
@@ -729,8 +753,9 @@ def analyse(world, var, region, cells, rng):
         "neighbour": None,
         "insights": [],
         "insights_audit": {"tested": len(family), "passed": int(sig.sum()), "shown": 0, "q": FDR_INSIGHT_Q, "text": ""},
-        "provenance": provenance(spec, "region"),
-        "_internal": {"family": family, "qmap": qmap, "spec": spec, "region": region,
+        "deeper_checks": None,
+        "provenance": provenance_from(attrs.get("provenance", {}), spec, "region"),
+        "_internal": {"family": family, "qmap": qmap, "spec": spec, "region": region, "prov": attrs.get("provenance", {}),
                       "total": total, "pct": pct_total, "unit": unit},
     }
 
@@ -944,7 +969,237 @@ def compare(a: dict, b: dict, var: str) -> dict:
                            "upper": rnd([max(pivot + lo * (x - tm), pivot + hi * (x - tm)) for x in xs], sd_ + 2)},
                 "label": f"Gap: {na} minus {nb} ({spec['anomaly_units']})",
             },
-            "provenance": provenance(spec, "region")}
+            "provenance": provenance_from(a["_internal"]["prov"], spec, "region")}
+
+
+# --------------------------------------------------------------------------- deeper checks (climate_stats)
+# Which pipeline results each variable page shows. Fixed by what the variable is about, not by
+# the results: every listed row is shown, clear or not (plan v2: non-significant results count).
+# (kind, key, label, explain, unit_text, decimals)
+CHECKS = {
+    "t2m": [
+        ("index", ("tmax", "su"), "Summer days", "Days a year when the region-average afternoon high is above 25 °C.", "days a year", 1),
+        ("index", ("tmin", "fd"), "Frost nights", "Days a year when the region-average night-time low drops below 0 °C.", "days a year", 1),
+        ("index", ("tmax", "txx"), "Hottest day of the year", "The highest region-average afternoon temperature of each year.", "°C", 2),
+        ("index", ("tmin", "tnn"), "Coldest night of the year", "The lowest region-average night-time temperature of each year.", "°C", 2),
+        ("index", ("tmax", "tx90p"), "Unusually hot days",
+         "Share of days whose region-average high beats 9 in 10 days at the same time of year in 1981–2010.", "% of days", 2),
+        ("gsl", None, "Growing season", "Days between the first warm spell (6 days above 5 °C) and the first "
+         "cold spell after midsummer.", "days", 1),
+        ("index", ("tmin", "last_frost_doy"), "Last spring frost",
+         "The day of the year of the last night below 0 °C before July; a negative change means earlier.",
+         "days", 1),
+    ],
+    "precip": [
+        ("index", ("precip", "rx1day"), "Wettest day of the year", "The most region-average rain on a single day each year.", "mm", 2),
+        ("index", ("precip", "rx5day"), "Wettest five days", "The most region-average rain in five days in a row each year.", "mm", 1),
+        ("index", ("precip", "cdd"), "Longest dry spell", "The longest run of days a year with less than 1 mm of region-average rain.", "days", 1),
+        ("index", ("precip", "sdii"), "Rain on a wet day", "Average rain (region average) on days with at least 1 mm.", "mm", 2),
+        ("drought", "spi3", "Rain-only drought index (3 months)",
+         "SPI: how unusual the rain of June to August was; below zero is drier than normal.", "index points", 2),
+        ("drought", "spi6", "Rain-only drought index (6 months)",
+         "SPI over March to August; below zero is drier than normal.", "index points", 2),
+    ],
+    "soil": [
+        ("drought", "spei3", "Water-balance drought index (3 months)",
+         "SPEI: rain minus the water that warm air can pull out of the ground, June to August; below zero "
+         "is drier than normal.", "index points", 2),
+        ("drought", "spei6", "Water-balance drought index (6 months)",
+         "SPEI over March to August; below zero is drier than normal.", "index points", 2),
+        ("drought", "spi6", "Rain-only drought index (6 months)",
+         "SPI over March to August, rain only. If SPEI falls but SPI does not, heat rather than missing rain "
+         "is drying the land.", "index points", 2),
+    ],
+}
+METHOD_CHECKS = [
+    ("bootstrap", "Rate checked another way",
+     "Block bootstrap: we resample whole years of the record 999 times instead of relying on a formula."),
+    ("acceleration", "Faster or slower lately?",
+     "Compares the rate in the second half of the record with the first half (split fixed in advance)."),
+    ("variability", "Years more uneven?",
+     "Compares the size of year-to-year swings in the two halves of the record."),
+    ("change_point", "A sudden jump?",
+     "Pettitt test: looks for one year where the level shifts abruptly, e.g. after an instrument change."),
+]
+STATUS_TEXT = {"clear": "Clear change", "not_clear": "No clear change", "unavailable": "Not available here"}
+
+
+def cs_values(s: pd.Series, daily: bool) -> list[dict]:
+    fmt_ = "%Y-%m-%d" if daily else "%Y-%m"
+    return [{"date": d.strftime(fmt_), "value": None if not np.isfinite(v) else float(v)} for d, v in s.items()]
+
+
+def stats_document(region: dict, bootstrap: int) -> dict | None:
+    """Input document for trend_detective.climate_stats for one region (real cached data)."""
+    rid, lat = region["id"], float(region["centroid"][1])
+    common = {"region_id": rid, "latitude": lat}
+    series = []
+    for var, cid, units in (("t2m", "air_temperature_power", "degC"), ("soil", "root_zone_soil_wetness_power", "1")):
+        s = acquire.get_series(cid, rid)
+        s = s[(s.index.year >= Y0) & (s.index.year <= Y1)]
+        series.append({"id": var, "variable_id": cid, "frequency": "monthly", "units": units,
+                       "values": cs_values(s, False), **common})
+    daily_ok = True
+    daily = {}
+    for key, param in DAILY.items():
+        try:
+            d = acquire.get_input_series(param, rid, store="merra2_daily")
+        except Exception:  # noqa: BLE001 - not every region has daily inputs in the cache
+            daily_ok = False
+            break
+        if not d.attrs.get("from_cache", True):
+            raise RuntimeError(f"daily {param} / {rid} did not come from the cache")
+        daily[key] = d[(d.index.year >= Y0) & (d.index.year <= Y1)]
+    if daily_ok:
+        series += [
+            {"id": "tmax", "variable_id": "T2M_MAX", "frequency": "daily", "units": "degC",
+             "values": cs_values(daily["tmax"], True), **common},
+            {"id": "tmin", "variable_id": "T2M_MIN", "frequency": "daily", "units": "degC",
+             "values": cs_values(daily["tmin"], True), **common},
+            # one precipitation source only, so drought indices are not tested twice
+            {"id": "precip", "variable_id": "precipitation_power", "frequency": "daily", "units": "mm/day",
+             "values": cs_values(daily["precip"], True), **common},
+        ]
+    else:
+        s = acquire.get_series("precipitation_power", rid)
+        s = s[(s.index.year >= Y0) & (s.index.year <= Y1)]
+        series.append({"id": "precip", "variable_id": "precipitation_power", "frequency": "monthly",
+                       "units": "mm/day", "values": cs_values(s, False), **common})
+    return {
+        "schema_version": "1.0",
+        "metadata": {"project": "Earth System Trend Detective web app", "region_id": rid,
+                     "source": "data/cache (NASA POWER MERRA-2, frozen; see MANIFEST.json)",
+                     "period": f"{Y0}-01 to {Y1}-12"},
+        "config": {"baseline": [1981, 2010], "alpha": 0.05, "fdr_q": 0.05, "bootstrap_samples": bootstrap,
+                   "seed": 1729, "include_series": False,
+                   "methods": ["trend", "monthly_profile", "seasonal", "emergence", "probability",
+                               "acceleration", "variability", "bootstrap", "change_point", "indices", "drought"]},
+        "series": series,
+    }
+
+
+def _trend_row(t: dict | None, scale: float, d: int) -> dict:
+    """Display fields from one climate_stats trend object."""
+    if not isinstance(t, dict) or t.get("status") != "ok" or not t.get("inference_available", True):
+        reason = (t or {}).get("reason") if isinstance(t, dict) else None
+        return {"status": "unavailable", "reason": reason}
+    sen = t["sen"]
+    rate = sen["slope_per_decade"] * scale
+    ci = [c * scale for c in sen["ci_per_decade"]] if sen.get("ci_per_decade") else None
+    clear = bool(t.get("conservative_significant_fdr"))
+    return {
+        "status": "clear" if clear else "not_clear",
+        "rate": round(rate, d + 2), "ci95": None if ci is None else [round(c, d + 2) for c in ci],
+        "value_text": fmt(rate, d), "range_text": None if ci is None else range_text(ci[0], ci[1], d),
+        "q": None if t["mann_kendall"].get("q_value") is None else round(t["mann_kendall"]["q_value"], 4),
+        "methods_disagree": bool(t.get("methods_disagree")),
+        "warnings": [str(w) for w in t.get("warnings", [])],
+    }
+
+
+def deeper_checks(var: str, out: dict, region_id: str) -> dict:
+    """Compact, display-ready rows for one (region, variable) page from a climate_stats output."""
+    spec = VARIABLES[var]
+    S = out.get("series", {})
+    der = out.get("derived", {}).get(region_id, {})
+    rows = []
+    for kind, key, label, explain, unit, d in CHECKS[var]:
+        if kind == "index":
+            sid, idx = key
+            di = S.get(sid, {}).get("daily_indices", {})
+            obj = (di.get("indices") or {}).get(idx) if isinstance(di, dict) else None
+            t = obj.get("trend") if isinstance(obj, dict) else None
+            path = f"/series/{sid}/daily_indices/indices/{idx}/trend"
+            caveat = obj.get("caveat") if isinstance(obj, dict) else None
+        elif kind == "gsl":
+            obj = der.get("temperature", {}).get("gsl")
+            t = obj.get("trend") if isinstance(obj, dict) else None
+            path = "/derived/" + region_id + "/temperature/gsl/trend"
+            caveat = obj.get("caveat") if isinstance(obj, dict) else None
+        else:  # drought index, from the single precipitation source
+            src = (der.get("drought", {}).get("sources") or {}).get("precip", {})
+            obj = (src.get("indices") or {}).get(key)
+            t = obj.get("trend") if isinstance(obj, dict) else None
+            path = f"/derived/{region_id}/drought/sources/precip/indices/{key}/trend"
+            caveat = None
+        row = {"id": f"{kind}:{key if isinstance(key, str) else '/'.join(key) if key else kind}",
+               "group": "events", "label": label, "explain": explain, "unit": f"{unit} per decade",
+               "path": path, **_trend_row(t, 1.0, d)}
+        if row["status"] == "unavailable" and not row.get("reason"):
+            row["reason"] = "needs daily data, which we have only for the four European case regions"
+        if caveat and isinstance(caveat, str):
+            row["warnings"] = row.get("warnings", []) + [caveat]
+        row["status_text"] = STATUS_TEXT[row["status"]]
+        rows.append(row)
+
+    main = S.get(var, {})
+    scale = spec["scale"]
+    rd = spec["rate_decimals"]
+    for method, label, explain in METHOD_CHECKS:
+        m = main.get(method)
+        row = {"id": f"method:{method}", "group": "method", "label": label, "explain": explain,
+               "unit": spec["rate_units"], "path": f"/series/{var}/{method}", "warnings": []}
+        if not isinstance(m, dict) or m.get("status") != "ok":
+            row.update({"status": "unavailable", "reason": (m or {}).get("reason") if isinstance(m, dict) else None})
+        elif method == "bootstrap":
+            ci = [c * scale for c in m["ci"]]
+            row.update({"status": "clear" if m.get("significant_fdr") else "not_clear",
+                        "rate": round(m["estimate_per_decade"] * scale, rd + 2), "ci95": [round(c, rd + 2) for c in ci],
+                        "value_text": fmt(m["estimate_per_decade"] * scale, rd),
+                        "range_text": range_text(ci[0], ci[1], rd), "q": round(m["q_value"], 4)})
+        elif method == "acceleration":
+            dt_ = m.get("difference_test") or {}
+            diff = (m.get("difference_per_decade") or 0.0) * scale
+            ci = dt_.get("ci")
+            first, second = m.get("first", {}), m.get("second", {})
+            r1 = first.get("sen", {}).get("slope_per_decade")
+            r2 = second.get("sen", {}).get("slope_per_decade")
+            sy = m.get("split_year")
+            row.update({"status": "clear" if dt_.get("significant_fdr") else "not_clear",
+                        "rate": round(diff, rd + 2), "value_text": fmt(diff, rd),
+                        "ci95": None if not ci else [round(c * scale, rd + 2) for c in ci],
+                        "range_text": None if not ci else range_text(ci[0] * scale, ci[1] * scale, rd),
+                        "q": None if dt_.get("q_value") is None else round(dt_["q_value"], 4),
+                        "detail": (None if r1 is None or r2 is None else
+                                   f"{Y0}–{sy}: {fmt(r1 * scale, rd)} · {sy + 1}–{Y1}: {fmt(r2 * scale, rd)} "
+                                   f"{spec['rate_units']}"),
+                        "unit": (f"{spec['rate_units']}, {sy + 1}–{Y1} minus {Y0}–{sy}" if sy
+                                 else spec["rate_units"])})
+        elif method == "variability":
+            bt = m.get("block_test") or {}
+            ratio = m.get("ratio")
+            sy = m.get("split_year")
+            row.update({"status": "clear" if bt.get("significant_fdr") else "not_clear",
+                        "rate": None if ratio is None else round(ratio, 3),
+                        "value_text": None if ratio is None else f"×{ratio:.2f}",
+                        "range_text": None, "q": None if bt.get("q_value") is None else round(bt["q_value"], 4),
+                        "unit": f"size of swings in {sy + 1}–{Y1} compared with {Y0}–{sy}" if sy else "ratio"})
+        else:  # change_point
+            inf = m.get("inference") or {}
+            yb = m.get("last_year_before_candidate_break")
+            row.update({"status": "clear" if inf.get("significant_fdr") else "not_clear",
+                        "rate": None, "value_text": None if yb is None else f"after {yb}",
+                        "range_text": None, "q": None if inf.get("q_value") is None else round(inf["q_value"], 4),
+                        "unit": "most likely year of a jump"})
+        row["status_text"] = STATUS_TEXT[row["status"]]
+        rows.append(row)
+
+    audit = out.get("insights_audit", {})
+    n_clear = sum(1 for r in rows if r["status"] == "clear")
+    n_avail = sum(1 for r in rows if r["status"] != "unavailable")
+    return {
+        "rows": rows,
+        "shown": len(rows), "available": n_avail, "clear": n_clear,
+        "family_tests": int(audit.get("tested", 0)), "q": float(audit.get("q_threshold", 0.05)),
+        "source_file": f"stats/{region_id}.json",
+        "pipeline_version": out.get("pipeline_version"),
+        "text": (f"{n_clear} of {n_avail} extra checks show a clear change. Day counts use the region's "
+                 "average daily values; averaging smooths out extremes, so they differ from counts at one weather station. "
+                 f"“Clear” means both of the "
+                 f"pipeline's tests pass after correcting for all {int(audit.get('tested', 0))} tests run for this "
+                 f"region (false discovery rate q = {audit.get('q_threshold', 0.05)}). Rows that are not clear are "
+                 "shown too: no change is also a result."),
+    }
 
 
 # --------------------------------------------------------------------------- case answers
@@ -972,7 +1227,7 @@ def case_answer(c: dict, results: dict, compares: dict) -> tuple[str, str, str]:
             return ans + ".", v["headline"], v["level"]
         if v["direction"] == "up" and LEVEL_RANK[v["level"]] >= 2:
             return "No: the record shows the soil getting wetter, not drier.", v["headline"], v["level"]
-        return "Not proven: " + v["answer"][0].lower() + v["answer"][1:], v["headline"], v["level"]
+        return "Not proven. " + v["answer"], v["headline"], v["level"]
     if c["id"] == "02":
         if LEVEL_RANK[v["level"]] >= 2:
             ans = f"Yes. {a['_internal']['region']['name']} is {change_phrase(a)} than in {Y0}."
@@ -1049,58 +1304,122 @@ def catalog(variables_ready: dict) -> dict:
     return {"schema_version": SCHEMA_VERSION,
             "topics": [{"id": k, "label": lbl} for k, lbl in labels.items()],
             "place_types": [{"id": k, "label": lbl} for k, (lbl, _) in PLACE_TYPES.items()],
-            "variables": out, "synthetic": True}
+            "variables": out, "synthetic": False}
 
 
 # --------------------------------------------------------------------------- main
-def main(seed: int, runs: int) -> None:
-    sys.stdout.reconfigure(encoding="utf-8")
-    rng = np.random.default_rng(seed)
-    world = World(rng)
+def regions_with_data() -> dict:
+    """App regions (data/regions/regions.geojson) that have every app variable in the cache."""
     regions_fc = json.loads((ROOT / "data/regions/regions.geojson").read_text(encoding="utf-8"))
+    presets = acquire.list_regions()
     regions = {}
     for f in regions_fc["features"]:
         p = f["properties"]
-        g = shape(f["geometry"])
-        regions[p["id"]] = {**p, "geometry": f["geometry"], "mask": region_mask(world, g)}
+        if p["id"] not in presets:
+            print(f"skip region {p['id']}: no preset in data/catalog/regions.yaml, so no cached data")
+            continue
+        try:
+            for spec in VARIABLES.values():
+                acquire.get_series(spec["catalog_id"], p["id"])
+        except Exception as exc:  # noqa: BLE001 - report and leave the region out, never invent data
+            print(f"skip region {p['id']}: {type(exc).__name__}: {exc}")
+            continue
+        regions[p["id"]] = {**p, "geometry": f["geometry"]}
+    return regions
+
+
+def common_last_year(regions: dict, grids: dict) -> int:
+    years = [last_complete_year(g.time[np.isfinite(g.values).any(axis=(1, 2))]) for g in grids.values()]
+    for rid in regions:
+        for spec in VARIABLES.values():
+            s = acquire.get_series(spec["catalog_id"], rid).dropna()
+            years.append(last_complete_year(pd.DatetimeIndex(s.index)))
+    return min(years)
+
+
+def remove_stale(folder: Path, written: set[str]) -> None:
+    for f in folder.glob("*.json"):
+        if f.name not in written:
+            f.unlink()
+            print(f"removed stale {folder.name}/{f.name}")
+
+
+def main(runs: int, bootstrap: int) -> None:
+    global Y1
+    sys.stdout.reconfigure(encoding="utf-8")
+    regions = regions_with_data()
+    grids = {var: Grid(var) for var in VARIABLES}
+    Y1 = common_last_year(regions, grids)
+    print(f"period {Y0}-01 to {Y1}-12 (last calendar year complete in every input)")
 
     cells = {}
+    written_maps = set()
     for var in VARIABLES:
-        layer, cells[var] = map_layer(world, var, rng)
+        layer, cells[var] = map_layer(grids[var], var)
         write_json(OUT / "map" / f"{var}.json", layer)
-        print(f"map {var}: limit {layer['limit']}, significant cells {sum(layer['significant'])}")
+        written_maps.add(f"{var}.json")
+        print(f"map {var}: limit {layer['limit']}, cells {sum(v is not None for v in layer['slope_per_decade'])}, "
+              f"significant {sum(layer['significant'])}")
+    any_cells = next(iter(cells.values()))
+    for r in regions.values():
+        r["mask"] = region_mask(any_cells, shape(r["geometry"]))
 
     results = {}
     for rid, region in regions.items():
         for var in VARIABLES:
-            results[(rid, var)] = analyse(world, var, region, cells[var], rng)
+            results[(rid, var)] = analyse(var, region, cells[var])
     attach_neighbours(results, regions)
     for a in results.values():
         build_insights(a, regions)
 
+    # deeper checks: the team's climate_stats pipeline, one document (one BH family) per region
+    for rid, region in regions.items():
+        doc = stats_document(region, bootstrap)
+        out = climate_analyze(doc)
+        write_json(OUT / "stats" / f"{rid}.json", out)
+        for var in VARIABLES:
+            dc = deeper_checks(var, out, rid)
+            results[(rid, var)]["deeper_checks"] = dc
+        print(f"stats {rid}: {out['insights_audit']['tested']} tests, {out['insights_audit']['significant']} pass BH")
+
     compares = {}
     ids = list(regions)
+    written_cmp = set()
     for var in VARIABLES:
         for i, ra in enumerate(ids):
             for rb in ids[i + 1:]:
                 c = compare(results[(ra, var)], results[(rb, var)], var)
                 compares[frozenset((ra, rb, var))] = c
-                write_json(OUT / "compare" / f"{ra}__{rb}__{var}.json", c)
+                name = f"{ra}__{rb}__{var}.json"
+                write_json(OUT / "compare" / name, c)
+                written_cmp.add(name)
 
     cases = []
     for c in CASES:
+        if c["region_id"] not in regions or c.get("compare_region_id", c["region_id"]) not in regions:
+            print(f"skip case {c['id']}: region without data")
+            continue
         ans, head, lvl = case_answer(c, results, compares)
-        cases.append({**c, "answer": ans, "headline": head, "level": lvl})
+        teaser = c["teaser"].replace("{years}", str(Y1 - Y0 + 1))
+        cases.append({**c, "teaser": teaser, "answer": ans, "headline": head, "level": lvl})
 
+    written_an = set()
     for (rid, var), a in results.items():
         internal = a.pop("_internal")
+        dc = a["deeper_checks"]
         print(f"{rid:13s} {var:6s} {a['verdict']['level']:9s} {a['trend']['display']['rate']:36s} "
-              f"insights={len(a['insights'])} passed={a['insights_audit']['passed']} shown={a['insights_audit']['shown']}")
-        write_json(OUT / "analysis" / f"{rid}__{var}.json", a)
+              f"insights={len(a['insights'])} passed={a['insights_audit']['passed']} "
+              f"deeper={dc['clear']}/{dc['available']}")
+        name = f"{rid}__{var}.json"
+        write_json(OUT / "analysis" / name, a)
+        written_an.add(name)
         a["_internal"] = internal
+    for folder, names in ((OUT / "analysis", written_an), (OUT / "compare", written_cmp),
+                          (OUT / "map", written_maps), (OUT / "stats", {f"{r}.json" for r in regions})):
+        remove_stale(folder, names)
 
     index = {
-        "schema_version": SCHEMA_VERSION, "synthetic": True,
+        "schema_version": SCHEMA_VERSION, "synthetic": False,
         "generated": dt.date.today().isoformat(),
         "default_case": "02",  # D7: air temperature reads fastest on a bare map
         "cases": cases,
@@ -1128,7 +1447,8 @@ def main(seed: int, runs: int) -> None:
 
 if __name__ == "__main__":
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument("--seed", type=int, default=7)
     ap.add_argument("--runs", type=int, default=300, help="Monte-Carlo runs for validation.json")
+    ap.add_argument("--bootstrap", type=int, default=999,
+                    help="resampling replicates for the climate_stats deeper checks (pipeline default 999)")
     args = ap.parse_args()
-    main(args.seed, args.runs)
+    main(args.runs, args.bootstrap)

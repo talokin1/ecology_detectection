@@ -97,6 +97,7 @@ export const S = {
       closer: 'Seasons and months',
       extremes: 'Extreme months',
       data: 'Data and downloads',
+      deeper: 'Deeper checks',
     },
     views: { year: 'Each year', month: 'Each month', raw: 'Actual values' },
     yearHelp: 'Each bar is one year compared with the normal for that time of year. Bars above zero: higher than normal.',
@@ -163,7 +164,7 @@ export const S = {
       { title: 'Pick what to look at', text: 'Each square on the map shows how fast this value changed per decade since 1981.' },
       { title: 'Read the colours', text: 'Strong colour: a clear trend. Greyish: could still be chance. Hatched: not enough data.' },
       { title: 'Click a region for its answer', text: 'You get the rate, its 95% range and how sure we are, right next to the map.' },
-      { title: 'Compare places', text: 'The same variable can move in opposite directions in different places. Here the north gets wetter while the south dries out.' },
+      { title: 'Compare places', text: 'The same variable can move in opposite directions in different places. Pick two regions to see whether their trends really differ.' },
     ],
   },
   about: {
@@ -209,7 +210,7 @@ export const S = {
     lead: 'Every number on this site comes from one open-source analysis pipeline. Here is what it does, why, and how we checked that it does not cry wolf.',
     toc: [
       ['pipeline', 'The five steps'], ['trend-test', 'The trend test'], ['false-alarms', 'Why the correction'],
-      ['verdict-levels', 'Verdict levels'], ['fdr', 'Many checks'], ['limitations', 'Limits'], ['data', 'Data'], ['glossary', 'Glossary'],
+      ['verdict-levels', 'Verdict levels'], ['fdr', 'Many checks'], ['deeper', 'Deeper checks'], ['limitations', 'Limits'], ['data', 'Data'], ['glossary', 'Glossary'],
     ] as [string, string][],
     steps: [
       ['Average the region', 'We average every grid square inside the outline. Squares near the poles are smaller, so they count less (cos-latitude weights).'],
@@ -253,6 +254,17 @@ export const S = {
     ] as [string, string][],
   },
   /** Short in-place explanations behind each finding's help button (plan A11, decision D5). */
+  deeper: {
+    events: 'Days and seasons',
+    methods: 'Checks on the main trend',
+    whatIs: 'What is',
+    note: 'Note:',
+    unavailable: 'Not available for this region.',
+    reason: (r: string) => `Not available here: ${r.replace(/_/g, ' ')}.`,
+    none: 'No deeper checks for this region yet.',
+    download: 'Download all numbers (JSON)',
+    summary: (clear: number, available: number) => `${clear} of ${available} extra checks show a clear change`,
+  },
   help: {
     'trend-test': "The rate is Sen's slope of the monthly differences from normal; the 95% range comes from the Mann-Kendall test corrected for month-to-month memory.",
     'signal-noise': 'We compare the total change along the trend with the typical year-to-year swing. The year it stays bigger than that swing is the time of emergence.',
