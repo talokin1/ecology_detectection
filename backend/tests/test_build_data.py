@@ -263,3 +263,10 @@ def test_write_manifest(bd, tmp_path):
 def test_write_manifest_empty_cache(bd, tmp_path):
     m = bd.write_manifest(tmp_path, freeze_date="2026-11-14")
     assert (m["n_files"], m["total_bytes"], m["files"]) == (0, 0, [])
+
+
+def test_manifest_skips_unfinished_partial_files(bd, tmp_path):
+    d = tmp_path / "earthdata"
+    d.mkdir()
+    (d / "omno2d_x.csv.partial.csv").write_text("date,value\n2005-01-01,1\n", encoding="utf-8")
+    assert bd.build_manifest(tmp_path)["n_files"] == 0

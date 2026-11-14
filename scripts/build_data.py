@@ -286,7 +286,8 @@ def manifest_entry(path: Path, cache_root: Path) -> dict:
 def build_manifest(cache_root: Path, freeze_date: str | None = None) -> dict:
     cache_root = Path(cache_root)
     files = sorted(
-        (p for d in MANIFEST_DIRS if (cache_root / d).is_dir() for p in (cache_root / d).rglob("*.csv")),
+        (p for d in MANIFEST_DIRS if (cache_root / d).is_dir() for p in (cache_root / d).rglob("*.csv")
+         if not p.name.endswith(".partial.csv")),  # unfinished resumable fetches are not frozen data
         key=lambda p: p.relative_to(cache_root).as_posix(),
     )
     entries = [manifest_entry(p, cache_root) for p in files]
