@@ -68,6 +68,43 @@
       "variable": "NDVI"
     },
     {
+      "accessed": null,
+      "bbox": null,
+      "bytes": 227007,
+      "first": "2004-10-01",
+      "git_commit": null,
+      "has_provenance": false,
+      "land_only": null,
+      "last": "2026-11-11",
+      "path": "earthdata/omno2d_daily_89cb466a32bb.csv",
+      "region_name": null,
+      "rows": 8028,
+      "sha256": "f4ae9b6b07b26f566fd09b86be636fa14b16accdc23d1c54b2a657c9e8646e62",
+      "source": null,
+      "variable": null
+    },
+    {
+      "accessed": "2026-11-14T14:56:15Z",
+      "bbox": {
+        "lat_max": 50.7,
+        "lat_min": 50.2,
+        "lon_max": 30.9,
+        "lon_min": 30.2
+      },
+      "bytes": 7680,
+      "first": "2004-10-01",
+      "git_commit": "18a83d0",
+      "has_provenance": true,
+      "land_only": null,
+      "last": "2026-10-01",
+      "path": "earthdata/omno2d_e46f99fdee59.csv",
+      "region_name": "Kyiv",
+      "rows": 265,
+      "sha256": "ca943bc66c2fc501c4421a21b010005d362f46a6a4c6c7d884c39ed6578322a3",
+      "source": "omno2d",
+      "variable": "NO2_trop"
+    },
+    {
       "accessed": "2026-11-14T14:15:47Z",
       "bbox": {
         "lat_max": 71.0,
@@ -1518,6 +1555,6 @@
     }
   ],
   "freeze_date": "2026-11-14",
-  "n_files": 72,
-  "total_bytes": 6804058
+  "n_files": 74,
+  "total_bytes": 7038745
 }

@@ -1,0 +1,139 @@
+{
+  "source": "NASA GES DISC, OMI/Aura OMNO2d v004 via Earthdata OPeNDAP (Earthdata Login)",
+  "source_url": "https://opendap.earthdata.nasa.gov/collections/C3333493715-GES_DISC/granules/<granule>",
+  "short_name": "OMNO2d",
+  "version": "004",
+  "doi": "10.5067/AURA/OMI/DATA3407",
+  "landing_page": "https://www.earthdata.nasa.gov/data/catalog/ges-disc-limsn7l1rat-001",
+  "variable": {
+    "variable": "NO2_trop",
+    "source": "omno2d",
+    "long_name": "Tropospheric nitrogen dioxide column (OMI, cloud-screened)",
+    "units": "molecules/cm^2",
+    "definition": "The amount of NO2 gas, mostly from cars, power plants and industry, in the air between the ground and about 10 km up, counted as molecules above each square centimetre.",
+    "source_variable": "/HDFEOS/GRIDS/ColumnAmountNO2/Data_Fields/ColumnAmountNO2TropCloudScreened",
+    "source_units": "molec/cm2"
+  },
+  "units_note": "values are in molecules/cm^2; they are often reported in 1e15 molecules/cm^2",
+  "region_name": "Kyiv",
+  "bbox": {
+    "lat_min": 50.2,
+    "lat_max": 50.7,
+    "lon_min": 30.2,
+    "lon_max": 30.9
+  },
+  "grid_rows": [
+    561,
+    562
+  ],
+  "grid_cols": [
+    841,
+    843
+  ],
+  "cell_centres": {
+    "lat": [
+      50.375,
+      50.625
+    ],
+    "lon": [
+      30.375,
+      30.875
+    ],
+    "n_cells": 6
+  },
+  "time_range": {
+    "start": "2004-10",
+    "end": "2026-09"
+  },
+  "granule_days": {
+    "first": "2004-10-01",
+    "last": "2026-11-11",
+    "n": 8028
+  },
+  "n_days_valid": 3960,
+  "n_months": 208,
+  "n_months_total": 265,
+  "months_dropped_few_days": [
+    "2004-11",
+    "2005-11",
+    "2006-11",
+    "2006-12",
+    "2008-04",
+    "2008-09",
+    "2009-03",
+    "2009-11",
+    "2009-12",
+    "2010-10",
+    "2010-11",
+    "2010-12",
+    "2011-11",
+    "2011-12",
+    "2012-10",
+    "2012-11",
+    "2013-09",
+    "2013-11",
+    "2013-12",
+    "2014-11",
+    "2015-01",
+    "2015-11",
+    "2015-12",
+    "2016-03",
+    "2016-10",
+    "2016-11",
+    "2017-10",
+    "2017-11",
+    "2017-12",
+    "2018-12",
+    "2019-11",
+    "2020-01",
+    "2020-11",
+    "2021-01",
+    "2021-04",
+    "2021-11",
+    "2021-12",
+    "2022-04",
+    "2022-09",
+    "2022-11",
+    "2022-12",
+    "2023-01",
+    "2023-02",
+    "2023-04",
+    "2023-10",
+    "2023-11",
+    "2023-12",
+    "2024-01",
+    "2024-02",
+    "2024-11",
+    "2024-12",
+    "2025-01",
+    "2025-10",
+    "2025-11",
+    "2025-12",
+    "2026-04",
+    "2026-10"
+  ],
+  "rules": {
+    "min_valid_area_fraction": 0.5,
+    "min_valid_days": 10
+  },
+  "accessed": "2026-11-14T14:56:15Z",
+  "processing": [
+    "OPeNDAP subset of 0.25\u00b0 cells whose centres fall inside the bbox, one request per daily granule",
+    "masked _FillValue -1.26765e+30 (scale_factor 1, add_offset 0); negative values kept",
+    "daily box mean with cos(latitude) weights over valid cells; valid area fraction recorded",
+    "day used only if valid cells cover >= 50% of the box area",
+    "monthly value = mean of the used days' box means",
+    "month set to NaN if fewer than 10 days were used",
+    "trailing calendar month dropped if the granules stop before its last day"
+  ],
+  "caveats": [
+    "OMI row anomaly (since 2007, worse after 2009) removes part of the swath, so fewer valid days in later years; the affected rows are flagged and excluded in the product.",
+    "Cloud-screened: only retrievals with cloud fraction < 30 % are gridded, so cloudy days (frequent in winter) are missing and the monthly mean is a clear-sky mean.",
+    "Daily L3 has gaps (orbit gaps, missing granules, screening); months with too few valid days are dropped, more often in winter.",
+    "Aura overpass is about 13:30 local solar time: one early-afternoon snapshot per day, not a daily average; afternoon NO2 is lower than morning rush-hour NO2.",
+    "Tropospheric column (whole lower atmosphere), not ground-level concentration.",
+    "Aura has been drifting from its original orbit in recent years (later local overpass time); check the OMNO2 README before relying on the last years of the record."
+  ],
+  "script": "backend/trend_detective/omi_no2.py",
+  "git_commit": "18a83d0"
+}
