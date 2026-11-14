@@ -581,25 +581,25 @@
       "variable": "PRECTOTCORR"
     },
     {
-      "accessed": "2026-11-14T14:16:57Z",
+      "accessed": "2026-11-14T16:17:53Z",
       "bbox": {
         "lat_max": 52.5,
         "lat_min": 44.0,
         "lon_max": 40.5,
         "lon_min": 22.0
       },
-      "bytes": 16049,
+      "bytes": 16055,
       "first": "1981-01-01",
-      "git_commit": "b47dff5",
+      "git_commit": "a0e79f6",
       "has_provenance": true,
       "kind": "series",
-      "land_only": false,
+      "land_only": true,
       "last": "2026-09-01",
-      "path": "power_zarr/merra2_PRECTOTCORR_SUM_3d18bd2d0015.csv",
+      "path": "power_zarr/merra2_PRECTOTCORR_SUM_85ad566d27ae.csv",
       "region_id": "ukraine",
       "region_name": "Ukraine",
       "rows": 549,
-      "sha256": "79bdab3bde2d5fb1f7d6725ca79e91c717d2761b06cdeb9ac80c097c02cf1142",
+      "sha256": "8d79886118fefe33c20970c6eba7c8b9b0802ec2555dfd36aa34afc117dfdbdc",
       "source": "merra2",
       "variable": "PRECTOTCORR_SUM"
     },
@@ -926,25 +926,25 @@
       "variable": "T2M"
     },
     {
-      "accessed": "2026-11-14T14:17:19Z",
+      "accessed": "2026-11-14T16:17:52Z",
       "bbox": {
         "lat_max": 52.5,
         "lat_min": 44.0,
         "lon_max": 40.5,
         "lon_min": 22.0
       },
-      "bytes": 16178,
+      "bytes": 16179,
       "first": "1981-01-01",
-      "git_commit": "b47dff5",
+      "git_commit": "a0e79f6",
       "has_provenance": true,
       "kind": "series",
-      "land_only": false,
+      "land_only": true,
       "last": "2026-09-01",
-      "path": "power_zarr/merra2_T2M_MAX_5d7bbc9d8b5e.csv",
+      "path": "power_zarr/merra2_T2M_MAX_28a423836e3d.csv",
       "region_id": "ukraine",
       "region_name": "Ukraine",
       "rows": 549,
-      "sha256": "7bb8b6e9d6a8f86311502e224a78f3aa70d97e1272cdf6fe409ddb947bc4b994",
+      "sha256": "3839ce622c06b94430d0d4466d9002caccbcd5896b7d5e36c3bd33ede7c81718",
       "source": "merra2",
       "variable": "T2M_MAX"
     },
@@ -1641,5 +1641,5 @@
   ],
   "freeze_date": "2026-11-14",
   "n_files": 71,
-  "total_bytes": 32842135
+  "total_bytes": 32842142
 }
