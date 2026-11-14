@@ -52,5 +52,12 @@
     "kept source units; stored as float32 with zlib compression"
   ],
   "script": "backend/trend_detective/grids.py",
-  "git_commit": "95254d1"
+  "git_commit": "95254d1",
+  "bbox": {
+    "lat_min": -90.0,
+    "lat_max": 90.0,
+    "lon_min": -180.0,
+    "lon_max": 180.0
+  },
+  "region_name": "Global (2° grid; see grid field)"
 }

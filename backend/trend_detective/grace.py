@@ -200,6 +200,7 @@ def region_series(
         "region_name": region.name,
         "bbox": {"lat_min": region.lat_min, "lat_max": region.lat_max,
                  "lon_min": region.lon_min, "lon_max": region.lon_max},
+        "land_only": True,  # JPL land_mask cells only (B1-07)
         "time_range": {"start": s.index[0].strftime("%Y-%m"), "end": s.index[-1].strftime("%Y-%m")},
         "n_months": int(len(s)),
         "missing_months": gaps,

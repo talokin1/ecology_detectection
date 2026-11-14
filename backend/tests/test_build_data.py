@@ -270,3 +270,24 @@ def test_manifest_skips_unfinished_partial_files(bd, tmp_path):
     d.mkdir()
     (d / "omno2d_x.csv.partial.csv").write_text("date,value\n2005-01-01,1\n", encoding="utf-8")
     assert bd.build_manifest(tmp_path)["n_files"] == 0
+
+
+def test_manifest_lists_grids_and_preset_ids(bd, tmp_path):
+    """B1-02: committed map grids are frozen too; B1-03: series carry the preset id."""
+    root = tmp_path / "cache"
+    prov = {"variable": {"variable": "T2M", "source": "merra2"}, "region_name": "Ukraine",
+            "bbox": {"lat_min": 44.0, "lat_max": 52.5, "lon_min": 22.0, "lon_max": 40.5}}
+    _write_csv(root / "power_zarr" / "merra2_T2M_x.csv", "time,value\n2001-01-01,1.5\n", prov)
+    grid = root / "grids" / "merra2_T2M_2deg.nc"
+    grid.parent.mkdir(parents=True)
+    grid.write_bytes(b"CDF\x01fake")
+    gprov = {"variable": {"variable": "T2M", "source": "merra2"}, "n_months": 549,
+             "time_range": {"start": "1981-01", "end": "2026-09"}}
+    grid.with_name(grid.name + ".provenance.json").write_text(json.dumps(gprov), encoding="utf-8")
+    m = bd.build_manifest(root, freeze_date="2026-11-14")
+    by_path = {f["path"]: f for f in m["files"]}
+    assert set(by_path) == {"grids/merra2_T2M_2deg.nc", "power_zarr/merra2_T2M_x.csv"}
+    g = by_path["grids/merra2_T2M_2deg.nc"]
+    assert (g["kind"], g["rows"], g["first"], g["last"]) == ("grid", 549, "1981-01", "2026-09")
+    assert by_path["power_zarr/merra2_T2M_x.csv"]["region_id"] == "ukraine"
+    assert "grids" in m["directories"]

@@ -239,6 +239,7 @@ def region_series(
         "region_name": region.name,
         "bbox": {"lat_min": region.lat_min, "lat_max": region.lat_max,
                  "lon_min": region.lon_min, "lon_max": region.lon_max},
+        "land_only": True,  # MOD13C2 NDVI is a land product (B1-07)
         "grid_rows": [rows.start, rows.stop - 1],
         "grid_cols": [cols.start, cols.stop - 1],
         "time_range": {"start": kept.index[0].strftime("%Y-%m"), "end": kept.index[-1].strftime("%Y-%m")},

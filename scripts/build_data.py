@@ -44,7 +44,8 @@ from trend_detective.earthdata import NotCachedError  # noqa: E402
 
 DEFAULT_JOBS = REPO_ROOT / "data" / "catalog" / "build.yaml"
 MANIFEST_NAME = "MANIFEST.json"
-MANIFEST_DIRS = ("power_zarr", "earthdata")  # data/cache/raw is deliberately not frozen
+MANIFEST_DIRS = ("power_zarr", "earthdata", "grids")  # data/cache/raw is deliberately not frozen
+GRID_SUFFIXES = (".nc",)  # committed map grids (ADR-006); listed with their sidecar time range
 ASSESSMENT_STATUSES = ("ok", "caution", "too_short", "no_variation")
 NOT_ERRORS = (*ASSESSMENT_STATUSES, "no data", "not cached", "skipped")
 
@@ -260,12 +261,29 @@ def _csv_summary(path: Path) -> tuple[int, str | None, str | None]:
     return rows, first, last
 
 
+def _region_id(bbox: dict | None) -> str | None:
+    """Preset id whose bbox equals the sidecar bbox (B1-03), else ``None`` (custom box or grid)."""
+    if not bbox:
+        return None
+    key = (bbox.get("lon_min"), bbox.get("lat_min"), bbox.get("lon_max"), bbox.get("lat_max"))
+    for pid, e in acquire.list_regions().items():
+        if tuple(float(v) for v in e["bbox"]) == key:
+            return pid
+    return None
+
+
 def manifest_entry(path: Path, cache_root: Path) -> dict:
-    rows, first, last = _csv_summary(path)
     sidecar = path.with_name(path.name + ".provenance.json")
     prov = json.loads(sidecar.read_text(encoding="utf-8")) if sidecar.exists() else {}
+    if path.suffix in GRID_SUFFIXES:
+        tr = prov.get("time_range") or {}
+        rows, first, last = prov.get("n_months"), tr.get("start"), tr.get("end")
+    else:
+        rows, first, last = _csv_summary(path)
     var = prov.get("variable")
     return {
+        "kind": "grid" if path.suffix in GRID_SUFFIXES else "series",
+        "region_id": _region_id(prov.get("bbox")) if path.suffix not in GRID_SUFFIXES else None,
         "path": path.relative_to(cache_root).as_posix(),
         "bytes": path.stat().st_size,
         "sha256": _sha256(path),
@@ -286,8 +304,9 @@ def manifest_entry(path: Path, cache_root: Path) -> dict:
 def build_manifest(cache_root: Path, freeze_date: str | None = None) -> dict:
     cache_root = Path(cache_root)
     files = sorted(
-        (p for d in MANIFEST_DIRS if (cache_root / d).is_dir() for p in (cache_root / d).rglob("*.csv")
-         if not p.name.endswith(".partial.csv")),  # unfinished resumable fetches are not frozen data
+        (p for d in MANIFEST_DIRS if (cache_root / d).is_dir() for p in (cache_root / d).rglob("*")
+         if p.is_file() and p.suffix in (".csv", *GRID_SUFFIXES)
+         and not p.name.endswith(".partial.csv")),  # unfinished resumable fetches are not frozen data
         key=lambda p: p.relative_to(cache_root).as_posix(),
     )
     entries = [manifest_entry(p, cache_root) for p in files]
