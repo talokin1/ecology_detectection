@@ -1,0 +1,56 @@
+{
+  "source": "NASA POWER Zarr archive (AWS Open Data)",
+  "source_url": "https://nasa-power.s3.us-west-2.amazonaws.com/syn1deg/temporal/power_syn1deg_monthly_temporal_utc.zarr",
+  "short_name": "power_syn1deg_monthly_temporal_utc.zarr",
+  "version": "POWER Version 10.0.0",
+  "doi": null,
+  "landing_page": "https://power.larc.nasa.gov/",
+  "registry_page": "https://registry.opendata.aws/nasa-power/",
+  "variable": {
+    "variable": "ALLSKY_SFC_SW_DWN",
+    "source": "syn1deg",
+    "long_name": "All Sky Surface Shortwave Downward Irradiance",
+    "units": "W m-2",
+    "definition": "The total solar irradiance incident (direct plus diffuse) on a horizontal plane at the surface of the earth under all sky conditions. An alternative term for the total solar irradiance is the \"Global Horizontal Irradiance\" or GHI."
+  },
+  "grid": {
+    "lat0": -89.0,
+    "lon0": -179.0,
+    "dlat": 2.0,
+    "dlon": 2.0,
+    "nlat": 90,
+    "nlon": 180,
+    "grid_reference": "lat0/lon0 are the centre of the south-west cell; rows go north, columns east"
+  },
+  "native_grid": {
+    "nlat": 180,
+    "nlon": 360,
+    "lat_first": -89.5,
+    "lat_last": 89.5,
+    "lon_first": -179.5,
+    "lon_last": 179.5
+  },
+  "method": "overlap",
+  "frequency": "monthly",
+  "n_months": 308,
+  "time_range": {
+    "start": "2001-01",
+    "end": "2026-08"
+  },
+  "months_without_data_kept_as_nan": [],
+  "accessed": "2026-11-14T20:21:20Z",
+  "land_only": false,
+  "processing": [
+    "read the whole globe for the variable from the temporal (location-chunked) store, in latitude bands covering the full time axis",
+    "masked fill value -999.0",
+    "coarsened to 2 deg cells with edges at multiples of 2 from -90 / -180",
+    "each native cell is split between target cells in proportion to footprint overlap (native edges halfway between centres, clipped to +-90, longitude wraps)",
+    "cell value = mean of native cells weighted by cos(latitude of native centre) x assigned fraction, ignoring missing native cells (native polar rows get weight 0)",
+    "valid_fraction = weighted share of the cell's native area with data, per month",
+    "dropped 40 trailing time steps with no data (the store pre-allocates future dates)",
+    "time labelled by month start",
+    "kept source units; stored as float32 with zlib compression"
+  ],
+  "script": "backend/trend_detective/grids.py",
+  "git_commit": "9f0af72"
+}

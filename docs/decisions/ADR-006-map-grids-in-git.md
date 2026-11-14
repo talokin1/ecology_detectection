@@ -34,6 +34,13 @@ Each committed grid has a provenance sidecar and an entry in `data/cache/MANIFES
   Its time axis keeps months without a solution as all-NaN (33 months, including the 2017-07 → 2018-05 gap).
   Neighbouring 2° cells are not independent (mascons are ~3°), and glaciers/ice sheets count as land in the
   product mask, so their large negative values are ice loss; both are caveats in the sidecar.
+- 2026-11-14 (evening): 2° grids for every POWER catalog variable added (12 more: PRECTOTCORR, GWETROOT,
+  SNODP, EVLAND, FRSEAICE, FRSNO, TO3, TQV from MERRA-2; ALLSKY_SFC_SW_DWN, CLOUD_AMT, AOD_55_ADJ from
+  CERES SYN1deg; IMERG_PRECTOT), each whitelisted by name. All 14 grids together: 191 MB (4.8–27.9 MB each).
+  Check: the mean of each grid over the 2°-aligned NW India box equals an independently computed
+  overlap-weighted mean of the native cells (r = 1.00000, difference 0); against the cached box *series*
+  r >= 0.998, because that series counts native cells centred on the box edge in full rather than by their
+  inside fraction (largest effect on soil wetness and snow depth at the Himalayan edge).
 - Other resolutions/variables are rebuilt with `python scripts/fetch_grid.py --variable <VAR> --resolution 2`.
 - CLAUDE.md:66 should read: `data/cache   Pre-fetched NetCDF/Zarr/CSV (git-ignored if large, except map
   grids listed in .gitignore (ADR-006); document how to rebuild)` (lead edits CLAUDE.md).
