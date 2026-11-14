@@ -271,6 +271,7 @@ export function MethodsPage() {
           <li>NASA POWER is based on the MERRA-2 reanalysis: a weather model corrected by observations, about 50 km per grid square. It cannot see frost in a valley or a single field.</li>
           <li>The start and end of the period are always the whole record. We never pick a start year that makes a trend look stronger.</li>
           <li>The map uses one value per year per square; regional investigations use monthly data.</li>
+          <li>GRACE water storage has a real resolution of about 300 km (3°). Two ways of cutting a region out of it (cells chosen by their centre with JPL’s land mask, or cells weighted by how much of them overlaps the region) give regional trends about 4% apart. That is within the product’s own uncertainty; we use the first and keep the second as a cross-check. GRACE also has an 11-month gap between missions (July 2017 to May 2018), which every GRACE file states.</li>
         </ul>
       </section>
 
