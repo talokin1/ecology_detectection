@@ -104,3 +104,17 @@ def test_live_nw_india_depletion(tmp_path):
     s = grace.region_series(Region("NW India", 26, 32, 72, 78), cache_dir=tmp_path)
     assert s.attrs["provenance"]["missing_months_match_published"]
     assert s.loc["2020":].mean() < s.loc[:"2006"].mean()
+
+
+def test_mission_gap_of_11_months_is_stated_as_caveat():
+    """Q6: the GRACE -> GRACE-FO gap (2017-07..2018-05) is 11 months, below LONG_GAP_MONTHS = 12,
+    so assess() does not flag it; the safeguard is the mission-gap caveat in the provenance."""
+    from trend_detective import acquire
+
+    assert acquire.LONG_GAP_MONTHS == 12  # kept on purpose (no tuning to catch one known case)
+    s = acquire.get_series("terrestrial_water_storage_grace", "ukraine")  # frozen cache, offline
+    a = s.attrs["assessment"]
+    assert a["longest_gap_months"] == 11 and a["checks"]["no_long_gaps"]
+    caveats = " ".join(s.attrs["provenance"]["caveats"])
+    assert "2017-07 to 2018-05" in caveats and "GRACE-FO" in caveats
+    assert {"2017-07", "2018-05"} <= set(s.attrs["provenance"]["missing_months"])
