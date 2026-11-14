@@ -44,6 +44,18 @@ python .claude/skills/trend-stats/scripts/validate_type1.py # Monte-Carlo valida
 ```
 Copy `.env.example` to `.env` for Earthdata credentials (never commit `.env`).
 
+## Offline JSON statistics
+
+Analyze supplied regional daily/monthly/annual values without NASA access:
+
+```bash
+python scripts/analyze_climate.py --input examples/climate/input.json --output statistics.json
+```
+
+Install `requirements-climate-stats.txt` for the standalone dependency set. See
+[input format, computed statistics and limitations](docs/climate-statistics-pipeline.md).
+The bundled example data are synthetic.
+
 ## Use of Super Intelligence (SI)
 This project uses SI tools (Claude by Anthropic) as a development assistant. See
 [`docs/08-si-usage-log.md`](docs/08-si-usage-log.md).

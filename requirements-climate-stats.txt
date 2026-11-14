@@ -1,0 +1,6 @@
+# Standalone offline JSON statistics; no NASA download or web-app dependencies.
+numpy>=2.0,<3
+scipy>=1.11,<2
+pandas>=2.2,<4
+PyYAML>=6,<7
+jsonschema>=4.18,<5
