@@ -10,12 +10,7 @@ import { useTheme } from '../state/theme';
 import { S } from '../strings/en';
 
 const OURS = 'MK Yue-Wang (default)';
-const TEST_LABEL: Record<string, string> = {
-  'MK Yue-Wang (default)': 'Mann-Kendall + Yue-Wang (ours)',
-  'OLS n_eff': 'Regression, effective n (ours, second test)',
-  'MK original': 'Mann-Kendall, no correction',
-  'MK Hamed-Rao': 'Mann-Kendall + Hamed-Rao',
-};
+const M = S.methods;
 
 function FalseAlarmChart({ v, n }: { v: Validation; n: number }) {
   const el = useRef<HTMLDivElement>(null);
@@ -28,48 +23,49 @@ function FalseAlarmChart({ v, n }: { v: Validation; n: number }) {
       if (!alive) return;
       const c = themeColors();
       const present = new Set(v.rows.map((r) => r.test));
-      // draw the grey references first and our test last, on top
+      // grey references first, our test last (on top)
       const order = ['MK original', 'MK Hamed-Rao', 'OLS n_eff', OURS].filter((t) => present.has(t));
+      const rowsOf = (t: string) => v.rows.filter((r) => r.test === t && r.n_months === n).sort((p, q) => p.phi - q.phi);
       const data = order.map((t) => {
-        const rows = v.rows.filter((r) => r.test === t && r.n_months === n).sort((p, q) => p.phi - q.phi);
+        const rows = rowsOf(t);
         const ours = t === OURS;
-        const second = t === 'OLS n_eff';
-        const color = ours ? c.ink : second ? c.text2 : c.lineStrong;
+        const color = ours ? c.ink : t === 'OLS n_eff' ? c.text2 : c.lineStrong;
         return {
-          type: 'scatter', mode: 'lines+markers', name: TEST_LABEL[t] ?? t,
+          type: 'scatter', mode: 'lines+markers', name: M.tests[t] ?? t,
           x: rows.map((r) => r.phi), y: rows.map((r) => r.false_alarm_rate * 100),
           line: { color, width: ours ? 3 : 2 }, marker: { color, size: ours ? 9 : 7, line: { color: c.bg, width: 2 } },
-          hovertemplate: `${TEST_LABEL[t] ?? t}<br>memory φ = %{x}: %{y:.1f}% false alarms<extra></extra>`,
+          hovertemplate: rows.map((r) => `${M.tests[t] ?? t}<br>φ = ${r.phi}: ${r.false_alarm_text} false alarms<extra></extra>`),
         };
       });
       // direct labels at the line ends, nudged apart so they never overlap
-      const ends = order.map((t) => {
-        const r = v.rows.filter((x) => x.test === t && x.n_months === n).sort((p, q) => p.phi - q.phi);
-        return { t, y: r[r.length - 1].false_alarm_rate * 100, x: r[r.length - 1].phi };
-      }).sort((p, q) => p.y - q.y);
       const yMax = Math.max(...v.rows.filter((r) => r.n_months === n).map((r) => r.false_alarm_rate * 100)) * 1.1;
-      const gap = yMax / 11;
-      ends.forEach((e, i) => { if (i > 0 && e.y - ends[i - 1].y < gap) e.y = ends[i - 1].y + gap; });
+      const ends = order.map((t) => {
+        const r = rowsOf(t);
+        return { t, x: r[r.length - 1].phi, y: r[r.length - 1].false_alarm_rate * 100 };
+      }).sort((p, q) => p.y - q.y);
+      ends.forEach((e, i) => { if (i > 0 && e.y - ends[i - 1].y < yMax / 11) e.y = ends[i - 1].y + yMax / 11; });
       const labels = ends.map((e) => ({
-        x: e.x, y: e.y, xanchor: 'left', xshift: 12, showarrow: false, text: e.t === OURS ? `<b>${TEST_LABEL[e.t]}</b>` : TEST_LABEL[e.t] ?? e.t,
+        x: e.x, y: e.y, xanchor: 'left', xshift: 12, showarrow: false, text: e.t === OURS ? `<b>${M.tests[e.t]}</b>` : M.tests[e.t] ?? e.t,
         font: { size: 12.5, color: e.t === OURS ? c.text : c.text2 },
       }));
+      const narrow = node.clientWidth < 640;
       P.react(node, data, {
-        height: 340, margin: { l: 56, r: 280, t: 10, b: 48 },
-        paper_bgcolor: 'rgba(0,0,0,0)', plot_bgcolor: 'rgba(0,0,0,0)', showlegend: false,
+        height: narrow ? 420 : 340, margin: { l: 56, r: narrow ? 16 : 290, t: 10, b: narrow ? 130 : 48 },
+        paper_bgcolor: 'rgba(0,0,0,0)', plot_bgcolor: 'rgba(0,0,0,0)', showlegend: narrow,
+        legend: { orientation: 'h', y: -0.35, font: { size: 12 } },
         font: { family: FONT, size: 12, color: c.text2 },
         hoverlabel: { bgcolor: c.bg, bordercolor: c.lineStrong, font: { family: FONT, color: c.text } },
-        xaxis: { title: { text: 'How much each month "remembers" the previous one (φ)' }, tickvals: [0, 0.3, 0.6], range: [-0.05, 0.68], showgrid: false, zeroline: false, linecolor: c.lineStrong, ticks: 'outside', tickcolor: c.lineStrong, fixedrange: true },
-        yaxis: { title: { text: 'False alarms (%)' }, range: [0, yMax], gridcolor: c.line, zeroline: false, fixedrange: true, ticksuffix: '%' },
+        xaxis: { title: { text: M.xTitle }, tickvals: [0, 0.3, 0.6], range: [-0.05, 0.68], showgrid: false, zeroline: false, linecolor: c.lineStrong, ticks: 'outside', tickcolor: c.lineStrong, fixedrange: true },
+        yaxis: { title: { text: M.yTitle }, range: [0, yMax], gridcolor: c.line, zeroline: false, fixedrange: true, ticksuffix: '%' },
         shapes: [{ type: 'line', xref: 'paper', x0: 0, x1: 1, y0: 5, y1: 5, line: { color: c.ink, width: 1 } }],
-        annotations: [...labels, { x: 0.45, y: 5, yanchor: 'top', yshift: -4, xanchor: 'center', showarrow: false, text: '5%: what an honest test should give', font: { size: 12, color: c.text } }],
+        annotations: [...(narrow ? [] : labels), { x: 0.45, y: 5, yanchor: 'top', yshift: -4, xanchor: 'center', showarrow: false, text: M.honest, font: { size: 12, color: c.text } }],
       }, { displayModeBar: false, responsive: true });
     });
     return () => {
       alive = false;
     };
   }, [v, n, theme]);
-  return <div ref={el} role="img" aria-label={`False-alarm rate of four trend tests for ${n}-month series as month-to-month memory grows.`} />;
+  return <div ref={el} role="img" aria-label={`False-alarm rate of four trend tests for ${n}-month series as month-to-month memory grows. ${v.summary}`} />;
 }
 
 function Audit({ index }: { index: Index }) {
@@ -79,7 +75,7 @@ function Audit({ index }: { index: Index }) {
   }, [index]);
   return (
     <table className="table">
-      <thead><tr><th>Case</th><th>Main verdict</th><th className="num">Checks run</th><th className="num">Held up</th><th className="num">Shown as findings</th></tr></thead>
+      <thead><tr>{M.auditHead.map((h, i) => <th key={h} className={i > 1 ? 'num' : ''}>{h}</th>)}</tr></thead>
       <tbody>
         {rows.map(({ id, title, a }) => (
           <tr key={id}>
@@ -95,39 +91,20 @@ function Audit({ index }: { index: Index }) {
   );
 }
 
-const STEPS = [
-  ['Average the region', 'We average every grid square inside the outline. Squares near the poles are smaller, so they count less (cos-latitude weights).'],
-  ['Remove the seasons', 'January is compared with January, July with July. What is left is the change from normal, called the anomaly.'],
-  ['Measure the slope', "Sen's slope: the middle value of the slopes between all pairs of months. A few odd months cannot pull it around."],
-  ['Test it, honestly', 'Mann-Kendall test with a correction for month-to-month memory, plus a second, independent regression test.'],
-  ['Say it in words', 'The verdict and every finding are written from fixed templates. A finding never sounds stronger than the test behind it.'],
-];
-
-const GLOSSARY: [string, string][] = [
-  ['Anomaly', 'How much a month differs from its normal: January is compared with January, not with July.'],
-  ['Trend', 'A steady, long drift in one direction.'],
-  ["Sen's slope", 'The middle value of the slopes between all pairs of points. A few odd months do not shift it.'],
-  ['Mann-Kendall test', 'Counts whether later values are larger than earlier ones more often than chance would allow. It looks only at the order, not the sizes.'],
-  ['Memory (autocorrelation)', 'Neighbouring months are alike: a dry July often has a dry August. Without correcting for it, a test finds false trends far too often.'],
-  ['p-value', 'If there were really no trend, the chance of seeing one this strong or stronger. It is not the chance that the trend is real.'],
-  ['Likely range', 'The 95% confidence interval: the range in which the true rate of change most likely lies.'],
-  ['False discovery rate', 'Run many tests and a few will look significant by chance. This correction keeps the share of such false findings small.'],
-  ['Reanalysis', 'A weather model that is continuously corrected with observations. It has no gaps, but it is not a direct measurement.'],
-];
-
 export function MethodsPage() {
   const index = useData(api.index, 'index');
   const val = useData(api.validation, 'validation');
   const [params] = useSearchParams();
   const [n, setN] = useState(240);
   const focus = params.get('s');
-  useScreenContext({ variable: 'Methods' }, []);
+  useScreenContext({ variable: S.nav.methods }, []);
 
   useEffect(() => {
     if (!focus || !index.data) return;
     const el = document.getElementById(focus);
     if (el) {
-      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+      el.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' });
       el.classList.add('is-focus');
       const t = setTimeout(() => el.classList.remove('is-focus'), 2200);
       return () => clearTimeout(t);
@@ -140,28 +117,26 @@ export function MethodsPage() {
   return (
     <div className="page methods">
       <header className="page__header">
-        <h1>{S.methods.title}</h1>
-        <p className="lead">Every number on this site comes from one open-source analysis pipeline. Here is what it does, why, and how we checked that it does not cry wolf.</p>
+        <h1>{M.title}</h1>
+        <p className="lead">{M.lead}</p>
       </header>
 
       <nav className="toc" aria-label="On this page">
-        {[['pipeline', 'The five steps'], ['trend-test', 'The trend test'], ['false-alarms', 'Why the correction'], ['verdict-levels', 'Verdict levels'], ['fdr', 'Many checks'], ['limitations', 'Limits'], ['data', 'Data'], ['glossary', 'Glossary']].map(([id, t]) => (
-          <a key={id} href={`#/methods?s=${id}`}>{t}</a>
-        ))}
+        {M.toc.map(([id, t]) => <Link key={id} to={`/methods?s=${id}`}>{t}</Link>)}
       </nav>
 
       <section id="pipeline" className="msec">
         <h2>The five steps</h2>
         <ol className="steps">
-          {STEPS.map(([t, d], i) => (
-            <li key={t}><span className="steps__n">{i + 1}</span><strong>{t}</strong><p>{d}</p></li>
+          {M.steps.map(([t, d], i) => (
+            <li key={t}><span className="steps__n">{String(i + 1).padStart(2, '0')}</span><strong>{t}</strong><p>{d}</p></li>
           ))}
         </ol>
       </section>
 
       <section id="trend-test" className="msec">
         <h2>The trend test</h2>
-        <p>We measure the rate of change with <strong>Sen's slope</strong> (Sen, 1968) and test it with the <strong>Mann-Kendall test</strong> (Mann, 1945; Kendall, 1975), corrected for month-to-month memory with the <strong>Yue-Wang</strong> method (Yue &amp; Wang, 2004). The slope is reported per decade with a 95% likely range.</p>
+        <p>We measure the rate of change with <strong>Sen's slope</strong> (Sen, 1968) and test it with the <strong>Mann-Kendall test</strong> (Mann, 1945; Kendall, 1975), corrected for month-to-month memory with the <strong>Yue-Wang</strong> method (Yue &amp; Wang, 2004). The slope is reported per decade with its 95% range.</p>
         <div className="formula">
           <div>anomaly<sub>t</sub> = value<sub>t</sub> − mean of the same calendar month</div>
           <div>slope = median of (a<sub>j</sub> − a<sub>i</sub>) / (t<sub>j</sub> − t<sub>i</sub>) over all pairs i &lt; j</div>
@@ -171,28 +146,28 @@ export function MethodsPage() {
 
       <section id="two-tests" className="msec">
         <h2>Two independent tests</h2>
-        <p>As a second opinion we fit an ordinary regression line and judge it with an <strong>effective sample size</strong>, n<sub>eff</sub> = n (1 − r<sub>1</sub>) / (1 + r<sub>1</sub>): 528 similar months can carry as little information as 150 independent ones. If the two tests reach different levels, the card says so and shows the <strong>weaker</strong> verdict.</p>
+        <p>As a second opinion we fit an ordinary regression line and judge it with an <strong>effective sample size</strong>, n<sub>eff</sub> = n (1 − r<sub>1</sub>) / (1 + r<sub>1</sub>): 528 similar months can carry as little information as 150 independent ones. If the two tests reach different levels, the page shows both p-values and reports the <strong>weaker</strong> verdict.</p>
       </section>
 
       <section id="false-alarms" className="msec">
         <div className="msec__head">
-          <h2>Why the correction matters</h2>
-          <div className="segmented" role="tablist" aria-label="Series length">
+          <h2>{M.falseAlarmsTitle}</h2>
+          <div className="segmented" role="group" aria-label="Series length">
             {[120, 240, 480].map((m) => (
-              <button key={m} type="button" role="tab" aria-selected={n === m} className={n === m ? 'is-active' : ''} onClick={() => setN(m)}>{m / 12} years</button>
+              <button key={m} type="button" aria-pressed={n === m} className={n === m ? 'is-active' : ''} onClick={() => setN(m)}>{M.years(m)}</button>
             ))}
           </div>
         </div>
-        <p>We generated thousands of series that have <strong>no trend at all</strong> but do have month-to-month memory, and counted how often each test still shouted “trend”. An honest test should do so 5% of the time. The classic test does it up to a third of the time; ours stays near 5%.</p>
+        <p>{M.falseAlarmsBody} {val.data?.summary}</p>
         {val.data ? <FalseAlarmChart v={val.data} n={n} /> : val.error ? <p className="muted">{val.error.message}</p> : <Loading />}
         {val.data && (
           <details className="table-twin">
-            <summary>Show the numbers as a table</summary>
+            <summary>{M.tableToggle}</summary>
             <table className="table">
-              <thead><tr><th>Test</th><th className="num">φ</th><th className="num">False alarms</th><th className="num">Power</th></tr></thead>
+              <thead><tr>{M.tableHead.map((h, i) => <th key={h} className={i ? 'num' : ''}>{h}</th>)}</tr></thead>
               <tbody>
                 {val.data.rows.filter((r) => r.n_months === n).map((r) => (
-                  <tr key={`${r.test}${r.phi}`}><td>{TEST_LABEL[r.test] ?? r.test}</td><td className="num">{r.phi}</td><td className="num">{(r.false_alarm_rate * 100).toFixed(1)}%</td><td className="num">{(r.power * 100).toFixed(0)}%</td></tr>
+                  <tr key={`${r.test}${r.phi}`}><td>{M.tests[r.test] ?? r.test}</td><td className="num">{r.phi}</td><td className="num">{r.false_alarm_text}</td><td className="num">{r.power_text}</td></tr>
                 ))}
               </tbody>
             </table>
@@ -205,14 +180,8 @@ export function MethodsPage() {
         <h2>Verdict levels</h2>
         <table className="table levels">
           <tbody>
-            {[
-              ['strong', 'Strong evidence', 'The 99% likely range of the slope excludes zero (p < 0.01).'],
-              ['moderate', 'Evidence', 'The 95% range excludes zero (p < 0.05).'],
-              ['weak', 'A hint, not proof', 'The 90% range excludes zero (p < 0.10).'],
-              ['none', 'No clear trend yet', 'Otherwise. We still show the slope and how many more years would be needed.'],
-              ['insufficient', 'Not enough data to judge', 'Less than 10 years, or less than 80% of months with data.'],
-            ].map(([lvl, h, d]) => (
-              <tr key={lvl}><td className="levels__scale"><EvidenceScale level={lvl} compact /></td><td><strong>{h}</strong></td><td>{d}</td></tr>
+            {M.levels.map(([lvl, h, d]) => (
+              <tr key={lvl}><td className="levels__scale"><EvidenceScale level={lvl} /></td><td><strong>{h}</strong></td><td>{d}</td></tr>
             ))}
           </tbody>
         </table>
@@ -230,12 +199,12 @@ export function MethodsPage() {
 
       <section id="seasons" className="msec">
         <h2>Seasons</h2>
-        <p>Each season is a series of one value per year (winter = December to February). It gets the same Sen + Mann-Kendall test. We say “winters change twice as fast” only if the fastest season passes the false-discovery filter and its likely range does not overlap the slowest season’s.</p>
+        <p>Each season is a series of one value per year (winter = December to February) and gets the same Sen and Mann-Kendall test. We say one season changes faster only if it passes the false-discovery filter and its 95% range does not overlap the slowest season’s. Otherwise we name the fastest season and say plainly that we cannot yet tell it apart.</p>
       </section>
 
       <section id="months" className="msec">
         <h2>Months</h2>
-        <p>Same idea for each of the 12 calendar months (Hirsch, Slack &amp; Smith, 1982). Twelve tests are many, so each month must pass the false-discovery filter before it can appear in a finding.</p>
+        <p>Same idea for each of the 12 calendar months (Hirsch, Slack &amp; Smith, 1982). Twelve tests are many, so each month must pass the false-discovery filter before it can appear in a finding. The bars show 95% ranges, matching the filter level.</p>
       </section>
 
       <section id="extremes" className="msec">
@@ -245,7 +214,7 @@ export function MethodsPage() {
 
       <section id="fdr" className="msec">
         <h2>Many checks, few findings</h2>
-        <p>For each case we run 12 monthly, 4 seasonal and 1 extremes check. Run enough tests and some will look significant by luck, so we apply the Benjamini-Hochberg false-discovery-rate correction (q = 0.10) to the whole family and show only what holds up. The main verdict is not filtered: it is the one question we declared in advance.</p>
+        <p>Besides the main test, each investigation runs 17 follow-up checks: 12 months, 4 seasons and extreme months. Run enough tests and some will look significant by luck, so we apply the Benjamini-Hochberg false-discovery-rate correction (q = 0.05, the same level as the maps) to the whole family. Only findings marked “Follow-up check” come from this family. The main verdict is not filtered: it is the one question we declared in advance.</p>
         <Audit index={index.data} />
       </section>
 
@@ -261,16 +230,16 @@ export function MethodsPage() {
 
       <section id="compare" className="msec">
         <h2>Comparing two regions</h2>
-        <p>Two trends that look different may still differ by chance. We take the month-by-month difference between the regions and test whether that difference has a trend of its own. Only then do we say “the trends really differ”.</p>
+        <p>{S.compare.explain}</p>
       </section>
 
       <section id="limitations" className="msec">
         <h2>What this cannot tell you</h2>
         <ul className="bullets">
           <li>It describes change; it does not say what caused it. Words like “because of climate change” are attribution, which we do not do.</li>
-          <li>NASA POWER is based on the MERRA-2 reanalysis: a weather model corrected by observations, about 50 km per grid square. It cannot see frost in a valley or a single field.</li>
-          <li>The start and end of the period are always the whole record. We never pick a start year that makes a trend look stronger.</li>
-          <li>The map uses one value per year per square; regional investigations use monthly data.</li>
+          <li>NASA POWER is based on the MERRA-2 reanalysis: a weather model corrected by observations, about 50 km per grid square. It cannot see frost in a valley or a single field. The map is regridded to 1°.</li>
+          <li>The trend is a straight line through the whole record. We never pick a start year that makes a trend look stronger.</li>
+          <li>The world map uses Web Mercator, which enlarges areas near the poles.</li>
         </ul>
       </section>
 
@@ -285,9 +254,7 @@ export function MethodsPage() {
       <section id="glossary" className="msec">
         <h2>Glossary</h2>
         <dl className="glossary">
-          {GLOSSARY.map(([t, d]) => (
-            <div key={t}><dt>{t}</dt><dd>{d}</dd></div>
-          ))}
+          {M.glossary.map(([t, d]) => <div key={t}><dt>{t}</dt><dd>{d}</dd></div>)}
         </dl>
       </section>
     </div>

@@ -61,7 +61,7 @@ variables:
 
   - id: root_zone_soil_wetness_power
     name: Root-zone soil wetness
-    definition: How full the soil near plant roots is with water, from 0 (dry) to 1 (saturated).
+    definition: How full the soil near plant roots is with water, shown in percent of saturation (0% = bone dry, 100% = soaked).
     why_it_trends: Shifts in rainfall and higher evaporation from warming can dry or wet soils over decades.
     source: power
     parameter: GWETROOT

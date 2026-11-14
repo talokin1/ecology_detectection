@@ -1,15 +1,18 @@
-import { useMemo } from 'react';
+import { lazy, Suspense, useMemo } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { api } from '../data/load';
 import { useData } from '../data/useData';
-import type { AnalysisResult, Case, Index, Region, VariableRef } from '../data/types.gen';
-import { TrendMap } from '../components/TrendMap';
+import type { AnalysisResult, Case, Compare, Index, MapLayer, Region, VariableRef } from '../data/types.gen';
 import { MapLegend } from '../components/MapLegend';
-import { EvidenceScale } from '../components/VerdictCard';
-import { SeriesChart } from '../components/SeriesChart';
+import { EvidenceScale, Readout } from '../components/VerdictCard';
+import { InsightList } from '../components/InsightList';
+import { TrendChart } from '../components/SeriesChart';
 import { ErrorState, Loading, useScreenContext } from '../components/Shell';
+import { Kicker } from './CasePage';
 import { REGION_COLORS } from '../theme/palettes';
 import { S } from '../strings/en';
+
+const TrendMap = lazy(() => import('../components/TrendMap').then((m) => ({ default: m.TrendMap })));
 
 export function CompareRoute() {
   const { a, b } = useParams();
@@ -39,34 +42,47 @@ export function CompareView({ index, a, b, variableId, theCase }: { index: Index
     [variableId, a, b],
   );
 
-  if (!ra || !rb || !variable || a === b) return <ErrorState>Pick two different prepared regions to compare.</ErrorState>;
+  if (!ra || !rb || !variable || a === b) return <ErrorState>{S.compare.pickTwo}</ErrorState>;
   const err = da.error ?? db.error ?? cmp.error;
   if (err) return <ErrorState error={err} />;
   if (!da.data || !db.data || !cmp.data) return <Loading />;
   return <CompareBody index={index} ra={ra} rb={rb} variable={variable} A={da.data} B={db.data} cmp={cmp.data} layer={layer.data} theCase={theCase} />;
 }
 
+const signed = (v: number) => `${v > 0 ? '+' : v < 0 ? '−' : ''}${Math.abs(v)}`;
+
 function CompareBody({ index, ra, rb, variable, A, B, cmp, layer, theCase }: {
-  index: Index; ra: Region; rb: Region; variable: VariableRef; A: AnalysisResult; B: AnalysisResult;
-  cmp: Awaited<ReturnType<typeof api.compare>>; layer?: Awaited<ReturnType<typeof api.map>>; theCase?: Case;
+  index: Index; ra: Region; rb: Region; variable: VariableRef; A: AnalysisResult; B: AnalysisResult; cmp: Compare; layer?: MapLayer; theCase?: Case;
 }) {
   const navigate = useNavigate();
+  const grey = 'rgba(122,129,139,0.55)';
   const yRange = useMemo<[number, number]>(() => {
-    const vals = [...A.series.anomaly, ...B.series.anomaly].filter((v): v is number => v !== null);
+    const vals = [...A.series.annual.anomaly, ...B.series.annual.anomaly].filter((v): v is number => v !== null);
     const m = Math.max(...vals.map(Math.abs));
-    return [-m * 1.05, m * 1.05];
+    return [-m * 1.1, m * 1.1];
   }, [A, B]);
-  // the stored file may hold the pair in the other order; the gap's sign then flips
-  const flipped = cmp.region_a !== ra.id;
-  const colors = { [ra.id]: REGION_COLORS[0], [rb.id]: REGION_COLORS[1] };
+  const regionChart = (d: AnalysisResult) => ({
+    bars: {
+      x: d.series.annual.years.map((y) => `${y}-07-01`), y: d.series.annual.anomaly, colors: grey,
+      hover: d.series.annual.years.map((y, i) => (d.series.annual.anomaly[i] === null ? `${y}: no data` : `${y}: ${signed(d.series.annual.anomaly[i] as number)} ${d.series.anomaly_units} vs normal`)),
+    },
+    line: d.trend.line, band: d.trend.band95,
+  });
+  const g = cmp.gap_series;
+  const gapChart = {
+    bars: { x: g.dates, y: g.diff, colors: grey, opacity: 0.7, hover: g.dates.map((dt, i) => (g.diff[i] === null ? `${dt}: no data` : `${dt}: ${signed(g.diff[i] as number)}`)) },
+    line: g.line, band: g.band95,
+  };
   const go = (x: string, y: string, v: string) => navigate(`/compare/${x}/${y}?var=${v}`);
+  const period = variable.period;
+  const footer = `${variable.long_name}, ${ra.name} and ${rb.name}, ${period}. ${A.provenance.dataset}${A.provenance.synthetic ? ' (SYNTHETIC DEMO DATA)' : ''}. Trend Detective.`;
+  const rows = [{ r: ra, d: A, c: REGION_COLORS[0], k: 'A' }, { r: rb, d: B, c: REGION_COLORS[1], k: 'B' }];
 
   return (
     <article className="case compare">
       <header className="case__header">
         <div className="kicker">{theCase ? `${S.case.caseLabel} ${theCase.id} · ${theCase.title}` : S.compare.title}</div>
-        <h2 className="step"><span className="step__n">1</span>{S.case.steps.question}</h2>
-        <h1 className="case__question">{theCase?.question ?? `Does ${variable.long_name.toLowerCase()} change the same way in ${ra.name} and ${rb.name}?`}</h1>
+        <h1 className="case__question">{theCase?.question ?? S.compare.question(variable.long_name.toLowerCase(), ra.name_in_sentence, rb.name_in_sentence)}</h1>
         {theCase?.teaser && <p className="case__teaser">{theCase.teaser}</p>}
         <div className="compare__pickers">
           <label>
@@ -76,13 +92,13 @@ function CompareBody({ index, ra, rb, variable, A, B, cmp, layer, theCase }: {
             </select>
           </label>
           <label>
-            <span className="muted"><i className="sw sw--dot" style={{ background: REGION_COLORS[0] }} /> A</span>
+            <span className="muted"><i className="sw sw--line-c" style={{ background: REGION_COLORS[0] }} /> A</span>
             <select value={ra.id} onChange={(e) => e.target.value !== rb.id && go(e.target.value, rb.id, variable.id)}>
               {index.regions.map((r) => <option key={r.id} value={r.id} disabled={r.id === rb.id}>{r.name}</option>)}
             </select>
           </label>
           <label>
-            <span className="muted"><i className="sw sw--dot" style={{ background: REGION_COLORS[1] }} /> B</span>
+            <span className="muted"><i className="sw sw--line-c" style={{ background: REGION_COLORS[1] }} /> B</span>
             <select value={rb.id} onChange={(e) => e.target.value !== ra.id && go(ra.id, e.target.value, variable.id)}>
               {index.regions.map((r) => <option key={r.id} value={r.id} disabled={r.id === ra.id}>{r.name}</option>)}
             </select>
@@ -90,52 +106,72 @@ function CompareBody({ index, ra, rb, variable, A, B, cmp, layer, theCase }: {
         </div>
       </header>
 
-      <div className="compare__grid">
-        <section className="panel">
-          <h2 className="step"><span className="step__n">2</span>{S.case.steps.where}</h2>
-          <div className="where-map where-map--tall">
-            <TrendMap layer={layer} regions={index.regions} activeRegionIds={[ra.id, rb.id]} regionColors={colors}
-              fit={union(ra, rb)} showLabels scrollZoom={false}
-              onRegionClick={(id) => navigate(`/region/${id}?var=${variable.id}`)}
-              ariaLabel={`Map of the trend of ${variable.long_name.toLowerCase()} with ${ra.name} and ${rb.name} outlined.`} />
-          </div>
-          {layer && <MapLegend layer={layer} compact />}
-        </section>
+      <Readout value={cmp.display.rate_value} unit={`${cmp.display.rate_unit} · ${cmp.display.gap_label.toLowerCase()}`}
+        headline={theCase?.headline ?? cmp.headline} level={cmp.level} rangeLine={`${cmp.display.range} · ${cmp.gap_text}`}
+        answer={theCase?.answer ?? cmp.answer} extra={<p className="readout__summary">{cmp.summary}</p>} />
 
-        <section className="panel">
-          <h2 className="step"><span className="step__n">3</span>{S.case.steps.overTime}</h2>
-          {[{ r: ra, d: A, c: REGION_COLORS[0], k: 'A' }, { r: rb, d: B, c: REGION_COLORS[1], k: 'B' }].map(({ r, d, c, k }) => (
+      <div className="grid75">
+        <section className="sec">
+          <Kicker n={1}>{S.case.sections.overTime}</Kicker>
+          {rows.map(({ r, d, c, k }) => (
             <div key={r.id} className="compare__row">
               <div className="compare__rowhead">
                 <Link to={`/region/${r.id}?var=${variable.id}`} className="compare__name">
-                  <i className="sw sw--dot" style={{ background: c }} />{k} · {r.name}
+                  <i className="sw sw--line-c" style={{ background: c }} />{k} · {r.name}
                 </Link>
-                <div className="compare__verdict">
-                  <EvidenceScale level={d.verdict.level} compact />
-                  <span className="compare__headline">{d.verdict.headline}</span>
-                  <span className="compare__rate">{d.trend.display.rate}</span>
-                </div>
+                <span className="compare__verdict"><EvidenceScale level={d.verdict.level} word size="sm" /> · {d.trend.display.rate}</span>
               </div>
-              <SeriesChart a={d} variable={variable} view="anomaly" height={210} yRange={yRange} showAnnotation={false}
+              <TrendChart {...regionChart(d)} accent={c} height={190} yRange={yRange} yTitle={d.series.anomaly_units} footer={footer}
                 ariaLabel={`${variable.long_name} in ${r.name}: ${d.verdict.headline}, ${d.trend.display.annotation}.`} />
             </div>
           ))}
+          <div className="compare__row compare__row--gap">
+            <div className="compare__rowhead">
+              <span className="compare__name">{g.label}</span>
+              <span className="compare__verdict"><EvidenceScale level={cmp.level} word size="sm" /> · {cmp.display.rate}</span>
+            </div>
+            <TrendChart {...gapChart} height={190} yTitle={variable.units} footer={footer} ariaLabel={`${g.label}. ${cmp.sentence}`} />
+            <p className="help">{S.compare.gapNote}</p>
+          </div>
+        </section>
+
+        <section className="sec">
+          <Kicker n={2}>{S.case.sections.where}</Kicker>
+          <div className="where-map where-map--tall">
+            <Suspense fallback={<Loading height={380} />}>
+              <TrendMap layer={layer} regions={[ra, rb]} activeRegionIds={[ra.id, rb.id]} fit={union(ra, rb)} scrollZoom={false}
+                labels={{ [ra.id]: { prefix: 'A' }, [rb.id]: { prefix: 'B' } }}
+                onRegionClick={(id) => navigate(`/region/${id}?var=${variable.id}`)}
+                ariaLabel={`Map of the trend of ${variable.long_name.toLowerCase()} with ${ra.name} (A) and ${rb.name} (B) outlined.`} />
+            </Suspense>
+          </div>
+          {layer && <MapLegend layer={layer} />}
+          <div className="answer">
+            <p className="answer__sentence">{cmp.sentence}</p>
+            <p className="help">{S.compare.explain} <Link to="/methods?s=compare">{S.case.howDoWeKnow}</Link></p>
+          </div>
         </section>
       </div>
 
-      <section className={`answer${cmp.differ ? ' answer--yes' : ''}`}>
-        <h2 className="step"><span className="step__n">4</span>{S.compare.question}</h2>
-        <p className="answer__main">{cmp.answer}</p>
-        <p className="answer__sentence">{cmp.sentence}</p>
-        <dl className="verdict__numbers">
-          <div>
-            <dt>{S.compare.gap} ({flipped ? `${rb.name} minus ${ra.name}` : `${ra.name} minus ${rb.name}`})</dt>
-            <dd className="verdict__big">{cmp.display.rate}</dd>
-            <dd className="verdict__range">{cmp.display.range}</dd>
-          </div>
-        </dl>
-        <p className="help">{S.compare.explain} <Link to="/methods?s=compare">{S.case.howDoWeKnow}</Link></p>
-      </section>
+      {theCase && (
+        <div className="grid-2">
+          {rows.map(({ r, d, c, k }) => (
+            <section key={r.id} className="sec">
+              <Kicker n={k === 'A' ? 3 : 4}>{`${k} · ${r.name}`}</Kicker>
+              <div className="mini-verdict">
+                <i className="sw sw--line-c" style={{ background: c }} />
+                <div>
+                  <p className="mini-verdict__headline">{d.verdict.headline}</p>
+                  <EvidenceScale level={d.verdict.level} word size="sm" />
+                  <p className="mini-verdict__rate">{d.trend.display.rate} · {d.trend.display.range}</p>
+                  <p className="help">{d.verdict.sentence}</p>
+                </div>
+              </div>
+              <InsightList a={d} variableId={variable.id} compact />
+            </section>
+          ))}
+        </div>
+      )}
     </article>
   );
 }

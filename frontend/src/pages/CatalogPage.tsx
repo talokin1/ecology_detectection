@@ -7,7 +7,7 @@ import { S } from '../strings/en';
 export function CatalogPage() {
   const cat = useData(api.catalog, 'catalog');
   const [params, setParams] = useSearchParams();
-  useScreenContext({ variable: 'All variables' }, []);
+  useScreenContext({ variable: S.catalog.title }, []);
   if (cat.error) return <ErrorState error={cat.error} />;
   if (!cat.data) return <Loading />;
   const topic = params.get('topic') ?? '';
@@ -20,9 +20,19 @@ export function CatalogPage() {
   };
   const rows = cat.data.variables
     .filter((v) => !topic || v.topic === topic)
-    .filter((v) => !place || v.anywhere || v.place_types.includes(place))
-    .sort((x, y) => Number(y.status === 'ready') - Number(x.status === 'ready'));
+    .filter((v) => !place || v.anywhere || v.place_types.includes(place));
+  const ready = rows.filter((v) => v.status === 'ready');
+  const next = rows.filter((v) => v.status !== 'ready');
   const topicLabel = Object.fromEntries(cat.data.topics.map((t) => [t.id, t.label]));
+
+  const chips = (key: string, value: string, options: { id: string; label: string }[]) => (
+    <div className="chips">
+      <button type="button" className={`chip${!value ? ' is-active' : ''}`} aria-pressed={!value} onClick={() => set(key, '')}>{S.catalog.all}</button>
+      {options.map((o) => (
+        <button key={o.id} type="button" className={`chip${value === o.id ? ' is-active' : ''}`} aria-pressed={value === o.id} onClick={() => set(key, o.id)}>{o.label}</button>
+      ))}
+    </div>
+  );
 
   return (
     <div className="page">
@@ -31,55 +41,35 @@ export function CatalogPage() {
         <p className="lead">{S.catalog.intro}</p>
       </header>
       <div className="filters" role="group" aria-label="Filters">
-        <div className="filters__row">
-          <span className="filters__label">{S.catalog.topic}</span>
-          <div className="chips">
-            <button type="button" className={`chip${!topic ? ' is-active' : ''}`} aria-pressed={!topic} onClick={() => set('topic', '')}>{S.catalog.all}</button>
-            {cat.data.topics.map((t) => (
-              <button key={t.id} type="button" className={`chip${topic === t.id ? ' is-active' : ''}`} aria-pressed={topic === t.id} onClick={() => set('topic', t.id)}>{t.label}</button>
-            ))}
-          </div>
-        </div>
-        <div className="filters__row">
-          <span className="filters__label">{S.catalog.place}</span>
-          <div className="chips">
-            <button type="button" className={`chip${!place ? ' is-active' : ''}`} aria-pressed={!place} onClick={() => set('place', '')}>{S.catalog.all}</button>
-            {cat.data.place_types.map((p) => (
-              <button key={p.id} type="button" className={`chip${place === p.id ? ' is-active' : ''}`} aria-pressed={place === p.id} onClick={() => set('place', p.id)}>{p.label}</button>
-            ))}
-          </div>
-        </div>
+        <div className="filters__row"><span className="filters__label">{S.catalog.topic}</span>{chips('topic', topic, cat.data.topics)}</div>
+        <div className="filters__row"><span className="filters__label">{S.catalog.place}</span>{chips('place', place, cat.data.place_types)}</div>
       </div>
-      <p className="muted catalog__count">{S.catalog.count(rows.length)}</p>
-      <table className="catalog">
-        <thead>
-          <tr>
-            <th scope="col">Variable</th>
-            <th scope="col">{S.catalog.whyTrends}</th>
-            <th scope="col">Source</th>
-            <th scope="col"><span className="visually-hidden">Status</span></th>
-          </tr>
-        </thead>
+
+      <h2 className="catalog__section">{S.catalog.readyTitle(ready.length)}</h2>
+      {ready.length === 0 && <p className="muted">{S.catalog.none}</p>}
+      <ul className="ready">
+        {ready.map((v) => (
+          <li key={v.id} className="ready__item">
+            <div>
+              <h3 className="ready__name">{v.name}</h3>
+              <p className="ready__def">{v.definition}</p>
+              <p className="ready__why"><span className="muted">{S.catalog.whyTrends}:</span> {v.why_it_trends}</p>
+              <p className="ready__src">{v.source_short} · {v.period} · {topicLabel[v.topic] ?? v.topic}</p>
+            </div>
+            {v.app_variable_id && <Link className="btn btn--primary" to={`/?var=${v.app_variable_id}&case=none`}>{S.catalog.explore}</Link>}
+          </li>
+        ))}
+      </ul>
+
+      <h2 className="catalog__section">{S.catalog.nextTitle(next.length)}</h2>
+      <table className="catalog-next">
+        <thead><tr><th scope="col">Variable</th><th scope="col">{S.catalog.whyTrends}</th><th scope="col">Source</th></tr></thead>
         <tbody>
-          {rows.map((v) => (
-            <tr key={v.id} className={v.status === 'ready' ? 'is-ready' : ''}>
-              <td>
-                <div className="catalog__name">{v.name}</div>
-                <div className="catalog__def">{v.definition}</div>
-                <div className="catalog__topic">{topicLabel[v.topic] ?? v.topic}</div>
-              </td>
-              <td className="catalog__why">{v.why_it_trends}</td>
-              <td className="catalog__src">
-                <div>{v.source}</div>
-                <div className="muted">{v.period}{v.resolution ? ` · ${v.resolution}` : ''}</div>
-              </td>
-              <td className="catalog__status">
-                {v.status === 'ready' && v.app_variable_id ? (
-                  <Link className="btn btn--primary" to={`/?var=${v.app_variable_id}&case=none`}>{S.catalog.ready} →</Link>
-                ) : (
-                  <span className="muted">{S.catalog.planned}</span>
-                )}
-              </td>
+          {next.map((v) => (
+            <tr key={v.id}>
+              <td><span className="catalog-next__name">{v.name}</span><span className="catalog-next__def">{v.definition}</span></td>
+              <td>{v.why_it_trends}</td>
+              <td className="catalog-next__src">{v.source_short}<br />{v.period}</td>
             </tr>
           ))}
         </tbody>

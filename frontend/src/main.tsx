@@ -8,7 +8,7 @@ import '@fontsource/inter/700.css';
 import './theme/tokens.css';
 import './styles.css';
 import { initTheme } from './state/theme';
-import { ErrorState, Loading, Shell } from './components/Shell';
+import { ErrorState, Loading, RouteError, Shell } from './components/Shell';
 import { S } from './strings/en';
 
 initTheme();
@@ -28,12 +28,12 @@ const router = createHashRouter([
     element: <Shell />,
     errorElement: <ErrorState>{S.errors.notFound}</ErrorState>,
     children: [
-      { index: true, element: wrap(<MapPage />) },
-      { path: 'case/:id', element: wrap(<CaseRoute />) },
-      { path: 'region/:rid', element: wrap(<RegionRoute />) },
-      { path: 'compare/:a/:b', element: wrap(<CompareRoute />) },
-      { path: 'catalog', element: wrap(<CatalogPage />) },
-      { path: 'methods', element: wrap(<MethodsPage />) },
+      { index: true, element: wrap(<MapPage />), errorElement: <RouteError /> },
+      { path: 'case/:id', element: wrap(<CaseRoute />), errorElement: <RouteError /> },
+      { path: 'region/:rid', element: wrap(<RegionRoute />), errorElement: <RouteError /> },
+      { path: 'compare/:a/:b', element: wrap(<CompareRoute />), errorElement: <RouteError /> },
+      { path: 'catalog', element: wrap(<CatalogPage />), errorElement: <RouteError /> },
+      { path: 'methods', element: wrap(<MethodsPage />), errorElement: <RouteError /> },
       { path: '*', element: <ErrorState>{S.errors.notFound}</ErrorState> },
     ],
   },
