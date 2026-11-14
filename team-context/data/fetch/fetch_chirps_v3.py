@@ -4,12 +4,14 @@ from __future__ import annotations
 import time, ssl, urllib.request
 from pathlib import Path
 
+from locate import GLOBAL_DATA, LOG_DIR
+
 URL = "https://data.chc.ucsb.edu/products/CHIRPS/v3.0/monthly/global/netcdf/chirps-v3.0.monthly.nc"
-DEST = Path("/workspace/global_data/chirps_v3/chirps-v3.0.monthly.nc")
+DEST = GLOBAL_DATA / "chirps_v3" / "chirps-v3.0.monthly.nc"
 EXPECTED = 8960342547
 UA = "SpaceAppsTrendDetective/1.0"
 CTX = ssl.create_default_context()
-LOG = Path("/workspace/spaceapps/analysis/scripts/global_fetch/chirps_fetch.log")
+LOG = LOG_DIR / "chirps_fetch.log"
 
 def log(m):
     line = time.strftime("%H:%M:%S ") + m

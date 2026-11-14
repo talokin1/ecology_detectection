@@ -4,12 +4,14 @@ from __future__ import annotations
 import re, ssl, time, urllib.request
 from pathlib import Path
 
+from locate import FETCH_DIR, GLOBAL_DATA
+
 BASE = "https://opendata.dwd.de/climate_environment/GPCC/GPCC_Precipitation_Analysis_Monthly/Version_2025/100_degree/"
-OUT = Path("/workspace/global_data/gpcc_v2025_1deg")
+OUT = GLOBAL_DATA / "gpcc_v2025_1deg"
 OUT.mkdir(parents=True, exist_ok=True)
 UA = {"User-Agent": "SpaceAppsTrendDetective/1.0"}
 CTX = ssl.create_default_context()
-META = Path("/workspace/spaceapps/analysis/scripts/global_fetch/gpcc_listing.json")
+META = FETCH_DIR / "logs" / "gpcc_listing.json"
 
 def log(m):
     print(m, flush=True)

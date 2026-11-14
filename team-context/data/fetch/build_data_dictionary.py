@@ -9,8 +9,10 @@ import pandas as pd
 import shapefile
 from scipy import stats
 
-ROOT = Path("/workspace/ukraine_samples")
-OUT = Path("/workspace/spaceapps/analysis")
+from locate import FETCH_DIR, UKRAINE_SAMPLES
+
+ROOT = UKRAINE_SAMPLES
+OUT = FETCH_DIR.parent / "docs"
 BBOX = dict(lon_min=22.1, lon_max=40.2, lat_min=44.4, lat_max=52.4)
 MONTHS = ["JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"]
 COLS = ["category","status","source_folder","product","variable","description","units",
@@ -551,7 +553,7 @@ def analyze_not_pulled():
         dict(variable="MERRA-2 M2TMNXSLV (monthly 2-D single-level diagnostics)",
              product="M2TMNXSLV.5.12.4", units="various",
              description="Native GES DISC monthly MERRA-2 meteorology. POWER already supplies T2M and PRECTOTCORR for this bbox without GES DISC; this collection is the native archive (more fields, global files).",
-             caveats="GES DISC app is now approved and verified; MERRA-2 monthly downloads work with the EARTHDATA_TOKEN bearer. Not yet pulled into /workspace/ukraine_samples/."),
+             caveats="GES DISC app is now approved and verified; MERRA-2 monthly downloads work with the EARTHDATA_TOKEN bearer. Not yet pulled into $UKRAINE_SAMPLES/."),
         dict(variable="MERRA-2 M2TMNXFLX (monthly surface flux / precip)",
              product="M2TMNXFLX.5.12.4", units="various",
              description="Native GES DISC monthly MERRA-2 flux collection, including precipitation. Overlaps POWER PRECTOTCORR.",
@@ -693,7 +695,7 @@ def write_markdown(sizes, overlaps):
     L.append("# Ukraine sample data dictionary")
     L.append("")
     L.append("NASA Space Apps 2026, *Be An Earth System Trend Detective!*  ")
-    L.append("Computed from files in `/workspace/ukraine_samples/` on 14 November 2026 (Europe/Kiev). Numbers are not invented.")
+    L.append("Computed from files in `$UKRAINE_SAMPLES/` on 14 November 2026 (Europe/Kiev). Numbers are not invented.")
     L.append("")
     L.append("## Overview")
     L.append("")
@@ -779,7 +781,7 @@ def write_extras(sizes, overlaps):
     L = []
     L.append("# Ukraine sample data — overview extras")
     L.append("")
-    L.append("14 November 2026, Europe/Kiev. Companion to `data_dictionary.md`. Overlap statistics are computed from the revised annual series in `/workspace/ukraine_samples/analysis/`. Global sizes use cited CMR / catalog / directory figures. GES DISC is now approved and verified (MERRA-2 monthly and GLDAS NOAH 0.25 monthly download with the EARTHDATA_TOKEN bearer); those sources are accessible but not yet pulled.")
+    L.append("14 November 2026, Europe/Kiev. Companion to `data_dictionary.md`. Overlap statistics are computed from the revised annual series in `$UKRAINE_SAMPLES/analysis/`. Global sizes use cited CMR / catalog / directory figures. GES DISC is now approved and verified (MERRA-2 monthly and GLDAS NOAH 0.25 monthly download with the EARTHDATA_TOKEN bearer); those sources are accessible but not yet pulled.")
     L.append("")
     L.append("## 1. Overlaps")
     L.append("")

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Fetch small official global products into /workspace/global_data/.
+"""Fetch small official global products into $GLOBAL_DATA.
 
 Never prints credentials. Uses EARTHDATA_TOKEN only as a Bearer header for GRACE.
 """
@@ -12,7 +12,9 @@ import time
 import urllib.request
 from pathlib import Path
 
-ROOT = Path("/workspace/global_data")
+from locate import GLOBAL_DATA, UKRAINE_SAMPLES
+
+ROOT = GLOBAL_DATA
 UA = "SpaceAppsTrendDetective/1.0 (global monthly archive)"
 CTX = ssl.create_default_context()
 
@@ -92,9 +94,9 @@ def main():
     # Prefer local copies when already present (faster, same official files)
     local_aliases = {
         str(ROOT / "gistemp/gistemp1200_GHCNv4_ERSSTv5.nc.gz"):
-            Path("/workspace/ukraine_samples/extra/gistemp/gistemp1200_GHCNv4_ERSSTv5.nc.gz"),
+            UKRAINE_SAMPLES / "extra" / "gistemp" / "gistemp1200_GHCNv4_ERSSTv5.nc.gz",
         str(ROOT / "hadcrut5/HadCRUT.5.2.0.0.analysis.anomalies.ensemble_mean.nc"):
-            Path("/workspace/ukraine_samples/extra/hadcrut5/HadCRUT.5.2.0.0.analysis.anomalies.ensemble_mean.nc"),
+            UKRAINE_SAMPLES / "extra" / "hadcrut5" / "HadCRUT.5.2.0.0.analysis.anomalies.ensemble_mean.nc",
     }
 
     ok, err = 0, 0

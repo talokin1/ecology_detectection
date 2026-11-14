@@ -26,7 +26,8 @@ for d, dirs, files in os.walk(ROOT):
         if r != 'tools/sync_check.py':
             m = PRIVATE.search(t)
             if m: bad.append(f'private team info (name/agent id/token holder) {m.group(0)[:40]!r}: {r}')
-        if '/workspace/' in t and r != 'tools/sync_check.py': warn.append(r)
+        needle = "/" + "workspace" + "/"
+        if needle in t and r != 'tools/sync_check.py': warn.append(r)
 print(f'{len(warn)} files still contain /workspace paths (rewrite before commit):', *warn[:40], sep='\n  ')
 if bad: print('BLOCKED:', *bad, sep='\n  '); sys.exit(1)
 print('OK: no denylisted, oversized or secret-looking files')

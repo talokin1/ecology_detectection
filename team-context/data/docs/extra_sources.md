@@ -2,13 +2,13 @@
 
 Compiled 14 November 2026, Europe/Kiev, for NASA Space Apps 2026 “Earth System Trend Detective”. Our team does data analysis only. Ukraine (bbox 22.1–40.2°E, 44.4–52.4°N) is a **test cut-out** of global products, not the final domain.
 
-Already on disk in `/workspace/ukraine_samples/` and therefore treated as “have already”, not re-downloaded: NASA POWER, GHCN/GSOM, MODIS CMG (LST, EVI/NDVI), SWOT, MERRA-2, GLDAS, IMERG, AIRS, OMI (in progress), GRACE (in progress on another worker — not downloaded here).
+Already on disk under `$UKRAINE_SAMPLES` and therefore treated as “have already”, not re-downloaded: NASA POWER, GHCN/GSOM, MODIS CMG (LST, EVI/NDVI), SWOT, MERRA-2, GLDAS, IMERG, AIRS, OMI (NO2 monthly means through 2026-11; ozone through 2018-12), GRACE JPL mascon RL06.3Mv04 CRI (downloaded; the “not downloaded” note below is stale).
 
 URLs below were checked this turn unless marked unverified. File sizes are from HTTP `Content-Length` or directory listings, not guesses. Licence text that was not read in full is marked as such.
 
 ## What was downloaded this turn
 
-All under `/workspace/ukraine_samples/extra/`. Global official files were kept only when they were already small; larger grids were subsetted and discarded. **No further GHCN-family temperature grids were downloaded** after the first-pass GISTEMP / HadCRUT / Berkeley cuts; those existing official files were *re-subset* only.
+All under `$UKRAINE_SAMPLES/extra/`. Global official files were kept only when they were already small; larger grids were subsetted and discarded. **No further GHCN-family temperature grids were downloaded** after the first-pass GISTEMP / HadCRUT / Berkeley cuts; those existing official files were *re-subset* only.
 
 | Path | What it is | Size (on disk) |
 |---|---|---|
@@ -27,7 +27,7 @@ All under `/workspace/ukraine_samples/extra/`. Global official files were kept o
 | `era5_arco/era5_arco_ukraine_bbox_monthly_SAMPLE_1940-1951.nc` + `.csv` + land mask | ARCO ERA5 **method sample only** (1940-01–1951-12, 144 months). Full 1940–2026 hourly pull stopped: no monthly/year-chunked ARCO store; each year took ~4 min. | 6.2 MB + 13 KB + 19 KB |
 | `cci_sm/cci_sm_combined_v09_2_ukraine_bbox_monthly.nc` + `.csv` | ESA CCI SM COMBINED v09.2 daily→monthly OPeNDAP bbox extract, **complete**: 1978-11–2024-12 (554 months, including 1992). Open, no login. sm==1.0 masked in the assembled monthly files. | 3.8 MB + 33 KB |
 
-Each source folder has a short README describing the **global** product, the subset method, land/ocean treatment, and independence caveats. Scripts: `/workspace/ukraine_samples/extra/_scripts/`.
+Each source folder has a short README describing the **global** product, the subset method, land/ocean treatment, and independence caveats. Scripts: `$UKRAINE_SAMPLES/extra/_scripts/`.
 
 No Ukraine-only or Europe-only datasets were downloaded. E-OBS, ECA&D and UHMI/ClimUA are listed at the bottom as low-priority regional cross-checks only.
 

@@ -14,7 +14,9 @@ import urllib.request
 import urllib.error
 from pathlib import Path
 
-OUT = Path("/workspace/spaceapps/analysis/scripts/global_fetch/size_measurements_extra.json")
+from locate import FETCH_DIR, UKRAINE_SAMPLES
+
+OUT = FETCH_DIR / "size_measurements_extra.json"
 PROBE_DIR = Path("/tmp/slim_probes")
 PROBE_DIR.mkdir(parents=True, exist_ok=True)
 UA = "SpaceAppsTrendDetective/1.0"
@@ -209,7 +211,7 @@ def dap4_download(concept_id, short, version, producer, ce, dest, timeout=300):
 
 
 def power_scale():
-    root = Path("/workspace/ukraine_samples/nasa_power")
+    root = UKRAINE_SAMPLES / "nasa_power"
     files = sorted(root.glob("POWER_monthly_*.csv"))
     recs = []
     total = 0

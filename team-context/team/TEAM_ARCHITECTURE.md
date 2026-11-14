@@ -24,21 +24,21 @@ Communication: bot-to-bot messages through SendToAgent (priority=true only when 
 2. Big questions (direction, scope, trade-offs) go to the team lead directly; bots don't decide them among themselves.
 3. Scope: data analysis only (see section 1).
 4. Speed: time is critical. Take the simple performance wins: subset before loading, cache downloads with an exists-check, reuse outputs. Many jobs share the computer, so cap threads and parallel jobs (for example OMP_NUM_THREADS=2, 2 to 4 concurrent downloads), use `nice` for heavy jobs, and free RAM.
-5. Handoff docs: every bot keeps /workspace/spaceapps/handoff/<bot>.md with Done / In progress / Details / Files / Recreate, and updates it after every new piece of work. Never write secret values.
+5. Handoff docs: every bot keeps team-context/team/handoff/<bot>.md with Done / In progress / Details / Files / Recreate, and updates it after every new piece of work. Never write secret values.
 6. Migration trigger: when the team lead signals that tokens are running low, PM tells every bot to STOP, finish documenting what's left in its handoff file, and then the team lead and PM migrate.
 7. Statistical standard (from Critique): use autocorrelation-aware significance (AR(1)/HAC OLS, Hamed-Rao or prewhitened Mann-Kendall, time-aware Theil-Sen), and flag short records and multiple testing.
 
-## 4. File layout (/workspace/spaceapps/)
+## 4. File layout (team-context/)
 - TEAM_BRIEF.md: live status, findings, blockers and the review log (PM).
 - handoff/: this file plus one handoff file per bot (pm.md, thinker.md, worker.md, researcher.md, researcher2.md, critique.md).
 - analysis/: data dictionary, data-type summaries, size estimates, and global fetch scripts (analysis/scripts/global_fetch/).
 - pipeline/: PREPROCESSING_PLAN.md, run_pipeline.py, config/, data/, qc_report.md.
 - research/: scouting notes.
-Other locations: /workspace/ukraine_samples/ holds the Ukraine case study (the reference method is in _staging/revise_analysis.py + trend_methods.py). /workspace/critique/ holds reviews and recomputes. /workspace/global_data/ holds global downloads. The zips are /workspace/ukraine_part1..3_*.zip.
+Other locations: $UKRAINE_SAMPLES/ holds the Ukraine case study (the reference method is in _staging/revise_analysis.py + trend_methods.py). team-context/team/reviews/ holds reviews and recomputes. $GLOBAL_DATA/ holds global downloads. The zips are ukraine_part1..3_*.zip.
 
 ## 5. How to recreate this team in a future Grok Bot setup
-1. Create six agents in the Grok Bot app named Project manager, Thinker, Worker, Researcher, Researcher 2 and Critique. Give each the role text from section 2 as its description, plus "You are on the team lead's NASA Space Apps 2026 team; read /workspace/spaceapps/handoff/README_TEAM_ARCHITECTURE.md and your handoff file first."
-2. Copy /workspace/spaceapps/, /workspace/ukraine_samples/, /workspace/critique/ and /workspace/global_data/ (or the zips) onto the new computer at the same paths. Paths in the docs are absolute.
+1. Create six agents in the Grok Bot app named Project manager, Thinker, Worker, Researcher, Researcher 2 and Critique. Give each the role text from section 2 as its description, plus "You are on the team lead's NASA Space Apps 2026 team; read team-context/team/handoff/README_TEAM_ARCHITECTURE.md and your handoff file first."
+2. Copy team-context/ onto the new computer. Point `UKRAINE_SAMPLES` and `GLOBAL_DATA` at the sample tree and the global downloads (or restore those from the zips). Docs use those variables instead of machine-absolute paths.
 4. Python packages used: numpy, pandas, xarray, netCDF4, scipy, statsmodels, pymannkendall, matplotlib, requests (check each handoff's Recreate paragraph for extras).
 5. Update the new agent ids in section 2. Tell PM to message each bot to read its handoff file and continue from "In progress". Re-state rules 1 to 8 to every bot.
 6. Known access quirks: the AppEEARS API rejects the bearer token (use DAP4/OPeNDAP or a username/password login instead), and KNMI Climate Explorer needs a human check in a browser.

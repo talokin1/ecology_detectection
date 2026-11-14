@@ -1,6 +1,6 @@
 # Ukraine sample data — overview extras
 
-14 November 2026, Europe/Kiev. Companion to `data_dictionary.md`. Overlap statistics are computed from the revised annual series in `/workspace/ukraine_samples/analysis/`. Global sizes use cited CMR / catalog / directory figures. GES DISC is now approved and verified (MERRA-2 monthly and GLDAS NOAH 0.25 monthly download with the EARTHDATA_TOKEN bearer); MERRA-2, GLDAS 2.0/2.1, IMERG Final, and AIRS are now pulled into `/workspace/ukraine_samples/`. OMI is still downloading (partial 2004-10–2006-12 on disk). AppEEARS is accessible (Earthdata login verified 14 Nov 2026, 12:40 Europe/Kiev) but 1 km rasters are not yet pulled. Hydrology Data Rods is discontinued, not blocked.
+14 November 2026, Europe/Kiev. Companion to `data_dictionary.md`. Overlap statistics are computed from the revised annual series in `$UKRAINE_SAMPLES/analysis/`. Global sizes use cited CMR / catalog / directory figures. GES DISC is now approved and verified (MERRA-2 monthly and GLDAS NOAH 0.25 monthly download with the EARTHDATA_TOKEN bearer); MERRA-2, GLDAS 2.0/2.1, IMERG Final, and AIRS are now pulled into `$UKRAINE_SAMPLES/`. OMI is still downloading (partial 2004-10–2006-12 on disk). AppEEARS is accessible (Earthdata login verified 14 Nov 2026, 12:40 Europe/Kiev) but 1 km rasters are not yet pulled. Hydrology Data Rods is discontinued, not blocked.
 
 ## 1. Overlaps
 

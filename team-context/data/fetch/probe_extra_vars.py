@@ -8,7 +8,9 @@ from pathlib import Path
 
 UA = "SpaceAppsTrendDetective/1.0"
 CTX = ssl.create_default_context()
-OUT = Path("/workspace/spaceapps/analysis/scripts/global_fetch/extra_var_probes.json")
+from locate import FETCH_DIR
+
+OUT = FETCH_DIR / "extra_var_probes.json"
 
 def token():
     t = os.environ.get("EARTHDATA_TOKEN") or ""

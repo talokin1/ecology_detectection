@@ -1,16 +1,17 @@
 # Ukraine sample data dictionary
 
 NASA Space Apps 2026, *Be An Earth System Trend Detective!*  
-Computed from files in `/workspace/ukraine_samples/` on 14 November 2026 (Europe/Kiev). Numbers are not invented.
+Computed from files in `$UKRAINE_SAMPLES/` on 14 November 2026 (Europe/Kiev). Numbers are not invented.
 
 ## Overview
 
 - **Bounding box:** 22.1-40.2 E, 44.4-52.4 N — about twice Ukraine's area (~1.19 vs ~0.60 million km2). No country polygon or land mask.
 - **Extract size on disk:** 61.34 MiB (64,316,547 bytes).
-- **Dictionary rows:** 236 (180 observational, 42 derived, 8 metadata, 3 not yet pulled or still downloading, 2 still blocked, 1 discontinued). Newly pulled and added this pass: MERRA-2 SLV/FLX, GLDAS Noah 2.0 and 2.1, GPM IMERG V07 Final, AIRS 3STM 7.0 (19 variable rows). Still outstanding: OMI (download in progress; partial 2004-10–2006-12 on disk), GRACE (not downloaded), AppEEARS 1 km rasters (accessible, not yet pulled).
+- **Status stamp (14 Nov 2026, after the archive pass).** This dictionary was generated earlier in the day. Later pulls supersede three lines below: GRACE/GRACE-FO JPL mascon RL06.3Mv04 CRI **is downloaded** and is the pipeline headline series (−11.242 cm/decade on the bbox, overlap weights). OMI OMNO2d monthly bbox means run 2004-10 through 2026-11 (the row-anomaly era used for trends starts in 2007); OMTO3e ozone on disk stops at 2018-12. The AppEEARS Kyiv urban-heat task was still `processing` when checked again, so 1 km rasters are still not analysed. Read `team-context/stats/CAVEATS.md` before the older “not downloaded” sentences.
+- **Dictionary rows:** 236 (180 observational, 42 derived, 8 metadata, 3 not yet pulled or still downloading, 2 still blocked, 1 discontinued). Newly pulled and added this pass: MERRA-2 SLV/FLX, GLDAS Noah 2.0 and 2.1, GPM IMERG V07 Final, AIRS 3STM 7.0 (19 variable rows). The “OMI still downloading / GRACE not downloaded” sentences later in this file are stale; see the status stamp.
 - **Usable now for trend analysis:** NASA POWER (1981-2025 meteorology; 1984-2025 solar), native MERRA-2 SLV/FLX (Jan 1980–Sep 2026), NOAA GSOM (204 UP stations, 1900-Oct 2026, with coverage caveats), GHCN-Daily (28 UP cities; TAVG/TMAX/TMIN through 2026-11-06, PRCP through 2026-03-20, SNWD through 2026-03-12), MODIS Terra monthly CMG NDVI/EVI and LST day/night (Feb 2000-Oct 2026), GLDAS Noah 0.25° 2.0 (1948-2014) and 2.1 (Jan 2000–Jul 2026), GPM IMERG V07 Final (Jan 2000–Sep 2025), AIRS 3STM 7.0 (Sep 2002–Oct 2026). Short type-level descriptions are in `data_types_summary.md`.
 - **Usable only as a short-record methods demo:** SWOT Hydrocron WSE (2023-2026, 8 reaches).
-- **Still downloading / not yet pulled:** OMI OMNO2d (partial extract 2004-10-01 to 2006-12-31 is on disk; the rest is still downloading). AppEEARS 1 km rasters (MOD11A2, MCD12Q1) are accessible (Earthdata login verified 14 Nov 2026, 12:40 Europe/Kiev) but not yet pulled. GRACE mascons (PO.DAAC) were not downloaded.
+- **Still downloading / not yet pulled (stale as of the status stamp):** the OMI NO2 monthly file is now complete through 2026-11, GRACE mascons are downloaded, and AppEEARS 1 km rasters are still not pulled (task still `processing`). The sentences in the table body were generated before those pulls.
 - **Discontinued (not blocked):** Hydrology Data Rods (Giovanni / hydro1).
 - **Still blocked:** KNMI Climate Explorer, RADARSAT.
 
@@ -214,7 +215,7 @@ The CSV has all 126 fields, including discharge columns that are almost entirely
 5. **SWOT fill-value traps:** official sentinels are `-999` and `-999999999999`. Some uncertainty fields also contain implausible values with `|x| > 1e6` (for example `width_u`). Pass 012 of the sample shapefile does not intersect Ukraine.
 6. **The bbox is about twice Ukraine** and includes sea and neighbouring countries. POWER and MODIS means are bbox means, while GSOM/GHCN are Ukraine (UP) stations.
 7. **GHCN-Daily precipitation in 2020-2024 rests on two stations**; 2025 temperature uses only 9 of 24 long-record stations. Partial **2026** must be dropped from climate annual trends.
-8. **GES DISC extracts now on disk:** MERRA-2, GLDAS 2.0/2.1, IMERG Final, and AIRS are pulled (see `data_types_summary.md`). OMI is still downloading (partial 2004-10–2006-12 only). AppEEARS 1 km rasters are accessible but not yet pulled. GRACE is not downloaded. Hydrology Data Rods is discontinued, not blocked. KNMI and RADARSAT are still blocked.
+8. **GES DISC extracts now on disk:** MERRA-2, GLDAS 2.0/2.1, IMERG Final, and AIRS are pulled (see `data_types_summary.md`). OMI NO2 monthly bbox means are on disk through 2026-11; ozone (OMTO3e) stops at 2018-12. GRACE mascons are downloaded (the older “not downloaded” wording in the table is stale). AppEEARS 1 km rasters are still not pulled. Hydrology Data Rods is discontinued, not blocked. KNMI and RADARSAT are still blocked.
 
 ## Dataset DOIs
 

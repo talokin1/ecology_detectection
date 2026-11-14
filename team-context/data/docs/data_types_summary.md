@@ -1,6 +1,6 @@
 # Ukraine cut-out of global datasets — data types
 
-Computed 14 November 2026 (Europe/Kiev) from `/workspace/ukraine_samples/`. This is a Ukraine cut-out (bbox 22.1–40.2°E, 44.4–52.4°N, or Ukraine UP stations) of global datasets. Station gaps and valid rates are Ukraine-specific; a global pull of the same products will look different. Every date, count, gap, and percentage is calculated from the files.
+Computed 14 November 2026 (Europe/Kiev) from `$UKRAINE_SAMPLES/`. This is a Ukraine cut-out (bbox 22.1–40.2°E, 44.4–52.4°N, or Ukraine UP stations) of global datasets. Station gaps and valid rates are Ukraine-specific; a global pull of the same products will look different. Every date, count, gap, and percentage is calculated from the files.
 
 **Gap rule.** A gap is a run of 3 or more consecutive months in which more than 50% of *active* stations or reaches have no valid value. A station or reach is active in a month if that month falls between its first and last valid observation. Units that never report the variable are dropped first. Isolated 1–2 month holes are not listed as main gaps. For snow depth, summer non-reporting is out of season, not a gap; winter is November–March. For gridded series, a gap is 3 or more missing months in the series. Two valid rates are given for stations: **raw** (share of in-span station-months or station-days with a value, before dropping gap months) and **after excluding network gaps**. Incomplete 2026 (and IMERG’s incomplete 2025, which ends in September) should be dropped from climate annual trends.
 

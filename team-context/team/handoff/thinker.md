@@ -8,11 +8,11 @@ Role: brainstorm analysis questions/methods, route work to Researcher/Researcher
 - ESA CCI SM v09.2 (1978-11–2024-12, extra/cci_sm/, Critique-approved): no robust drying; break-adjusted, rescaled to GLDAS so not independent in level; warm-season decline only significant from 1991/92 start.
 - Extra global sources catalog (Researcher 2), Critique-approved: GISTEMP, HadCRUT5 (coarse context), Berkeley 1° (primary check), CRU-CY, GPCC, CHIRPS v3.
 - Preprocessing plan v2 (Critique-reviewed) handed to Worker 13:50. Worker v1 built (run_pipeline.py --region ukraine_bbox ukraine_mask ukraine_mask_no_crimea; smoke POWER +0.5526, HadCRUT +0.5793, GRACE -11.2221 PASS); in Critique review.
-- Global fetch done 14:06: 30.4 GB slim monthly in /workspace/global_data/ (75 GB disk free); table in analysis/global_size_estimates.md; sent to Critique.
+- Global fetch done 14:06: 30.4 GB slim monthly in $GLOBAL_DATA/ (75 GB disk free); table in analysis/global_size_estimates.md; sent to Critique.
 
 ## 2. In progress / next
-- Worker: v1 in Critique review; asked to add loaders from /workspace/global_data/ so masks work for gridded sources. Open team lead question: GRACE overlap weights (-11.242) vs old selection (-11.222).
-- Global fetch Critique-approved; fixes pulled 14:46 (MODIS QC, GLDAS Rainf/Snowf, MERRA-2 wind + T2MMAX/MIN from M2SMNXSLV): /workspace/global_data/ now 39.7 GB, 70 GB free. Worker asked to add loaders + rerun.
+- Worker: v1 in Critique review; asked to add loaders from $GLOBAL_DATA/ so masks work for gridded sources. Open team lead question: GRACE overlap weights (-11.242) vs old selection (-11.222).
+- Global fetch Critique-approved; fixes pulled 14:46 (MODIS QC, GLDAS Rainf/Snowf, MERRA-2 wind + T2MMAX/MIN from M2SMNXSLV): $GLOBAL_DATA/ now 39.7 GB, 70 GB free. Worker asked to add loaders + rerun.
 - GRACE: team lead chose overlap weights. bbox -11.242, ukraine_mask -12.120, no_crimea -12.364 cm/dec. Pipeline v1.1 Critique-approved.
 - ERA5/ERA5-Land: CDS token required (CDSAPI_KEY); downloads need it (specs from Researcher 2). CEDA skipped (CRU TS open from UEA).
 - Researcher 2: CCI SM done; minor CHIRPS/HadCRUT doc fixes. ERA5 on hold pending team lead creating a Copernicus CDS account (ARCO hourly too slow: ~3 h for Ukraine).
@@ -28,25 +28,25 @@ Role: brainstorm analysis questions/methods, route work to Researcher/Researcher
 
 ## 4. Files
 - Team repo: https://github.com/talokin1/ecology_detectection (public, main; backend/ frontend/ data/ docs/ notebooks/ scripts/). Our scope = analysis parts only; app parts belong to other team. Pushes need a GitHub token (GITHUB_TOKEN).
-- /workspace/spaceapps/TEAM_BRIEF.md
-- /workspace/spaceapps/analysis/{data_dictionary.csv,data_dictionary.md,data_types_summary.md,data_overview_extras.md,station_coverage.csv,global_size_estimates.md(in progress)}, scripts/build_data_dictionary.py
-- /workspace/spaceapps/research/{personas_current_tools.md,extra_sources.md}
-- /workspace/spaceapps/pipeline/PREPROCESSING_PLAN.md
-- /workspace/ukraine_samples/ (README.md, analysis/, merra2/, gldas/, gpm_imerg/, airs/, grace/, extra/ incl. chirps_v3/, _staging/trend_methods.py)
-- /workspace/global_data/ (global fetch target)
-- /workspace/critique/*.md (reviews)
+- team-context/TEAM_BRIEF.md
+- team-context/data/docs/{data_dictionary.csv,data_dictionary.md,data_types_summary.md,data_overview_extras.md,station_coverage.csv,global_size_estimates.md(in progress)}, scripts/build_data_dictionary.py
+- team-context/research/{personas_current_tools.md,extra_sources.md}
+- team-context/data/pipeline/PREPROCESSING_PLAN.md
+- $UKRAINE_SAMPLES/ (README.md, analysis/, merra2/, gldas/, gpm_imerg/, airs/, grace/, extra/ incl. chirps_v3/, _staging/trend_methods.py)
+- $GLOBAL_DATA/ (global fetch target)
+- team-context/team/reviews/*.md (reviews)
 
 ## 5. Recreate
-Read TEAM_BRIEF.md, this file, data_types_summary.md and the critique reviews first. Earthdata creds must be in env (ask team lead via secure secret request; GES DISC + AppEEARS already authorised on that account). Python with xarray/netCDF4/pandas/pymannkendall/statsmodels (+rasterio for CHIRPS COG) on the shared box; data already on disk under /workspace/ukraine_samples and /workspace/global_data. Re-dispatch any in-progress items above to the same teammates and route every finished result through Critique before reporting to team lead.
+Read TEAM_BRIEF.md, this file, data_types_summary.md and the critique reviews first. Earthdata creds must be in env (ask team lead via secure secret request; GES DISC + AppEEARS already authorised on that account). Python with xarray/netCDF4/pandas/pymannkendall/statsmodels (+rasterio for CHIRPS COG) on the shared box; data already on disk under $UKRAINE_SAMPLES and $GLOBAL_DATA. Re-dispatch any in-progress items above to the same teammates and route every finished result through Critique before reporting to team lead.
 
-- 15:17 team lead: repo Yue–Wang = official trend test. Worker rerunning pipeline v1.3 (Critique-approved) with repo-YW primary -> Critique -> report to team lead. Archive plan moved to /workspace/ecology_detectection/team-context/ARCHIVE_PLAN.md (+TEAM_ARCHITECTURE.md), branch stats-archive, nothing committed; awaiting team lead on the unclassified-items list and on public IDs.
+- 15:17 team lead: repo Yue–Wang = official trend test. Worker rerunning pipeline v1.3 (Critique-approved) with repo-YW primary -> Critique -> report to team lead. Archive plan moved to ./team-context/ARCHIVE_PLAN.md (+TEAM_ARCHITECTURE.md), branch stats-archive, nothing committed; awaiting team lead on the unclassified-items list and on public IDs.
 
 ## MIGRATION HANDOFF (15:21, Nov 14)
-State: all work stopped. Repo clone /workspace/ecology_detectection, local branch stats-archive (from origin/stats), NOTHING committed or pushed. Layout lives in team-context/ (ARCHIVE_PLAN.md, team/, data/, stats/, .gitignore). My part is staged there: thinker handoff, architecture doc, fetch scripts, data docs (792 KB, clean secret scan).
+State: all work stopped at 15:25. Repo clone is this checkout, local branch stats-archive (from origin/stats). At that moment nothing new was committed or pushed. Layout lives in team-context/ (ARCHIVE_PLAN.md, team/, data/, stats/, .gitignore). My part is staged there: thinker handoff, architecture doc, fetch scripts, data docs (792 KB, clean secret scan).
 Open threads:
 2. team lead hasn't answered on the unclassified items: Critique reviews (proposed team/reviews, notes only), persona research (skip), charts (skip), Page json (skip), logs (skip), SWOT/KNMI samples (skip), parquet/npz caches (gitignore).
 3. team lead's 15:17 decision: repo Yue–Wang is OFFICIAL. Write ADR-003 recording it. Worker's v1.4 YW rerun stopped half-way (see worker.md); finish it, then Critique, then flag verdict flips (POWER precip expected to flip).
-4. Critique's blocking items (/workspace/critique/stats_archive_review.md): rewrite /workspace paths (27 in data/fetch alone), complete requirements, sync script with denylist and 50 MB cap (CHIRPS bbox 87.6 MB, GISTEMP cache 54.5 MB), caveats file, stale "GRACE not downloaded" line, Natural Earth raw_aux decision.
+4. Critique's blocking items (team-context/team/reviews/stats_archive_review.md): rewrite /workspace paths (27 in data/fetch alone), complete requirements, sync script with denylist and 50 MB cap (CHIRPS bbox 87.6 MB, GISTEMP cache 54.5 MB), caveats file, stale "GRACE not downloaded" line, Natural Earth raw_aux decision.
 Next steps: get team lead's answers to 1-2, apply the Critique fixes, write the README and ADR-003, copy in the other bots' parts, rerun smoke test from the clone, Critique sign-off, then PM pushes after team lead approves.
-- 15:25: Merged PM's staged part into the clone (team/). Built team-context/tools/sync_check.py (denylist, 50 MB cap, secret scan, /workspace path warnings). It passes. Pending merges: Worker, Critique, Researcher, Researcher 2 from /workspace/spaceapps/repo_staging/<bot>/ via their MANIFESTs.
+- 15:25: Merged PM's staged part into the clone (team/). Built team-context/tools/sync_check.py (denylist, 50 MB cap, secret scan, /workspace path warnings). It passes. Pending merges: Worker, Critique, Researcher, Researcher 2 from team-context/<bot>/ via their MANIFESTs.
 - 15:22 team lead answers (via PM): (1) ROLES ONLY in the public repo: no bot IDs, no team lead name ('team lead'), no secret-ownership details; full versions stay only in /workspace handoffs. (2) Keep Critique reviews under team/reviews; skip personas, charts, logs, SWOT/KNMI samples. Repo copies scrubbed; sync_check.py blocks these patterns.

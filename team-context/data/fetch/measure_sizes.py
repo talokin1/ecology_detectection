@@ -18,7 +18,9 @@ import urllib.request
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
-OUT = Path("/workspace/spaceapps/analysis/scripts/global_fetch/size_measurements.json")
+from locate import FETCH_DIR
+
+OUT = FETCH_DIR / "size_measurements.json"
 UA = "SpaceAppsTrendDetective/1.0 (global size inventory; contact via Earthdata account)"
 CTX = ssl.create_default_context()
 

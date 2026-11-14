@@ -1,7 +1,7 @@
 # Handoff: Project manager (agent [id removed])
 Updated 2026-11-14 14:00 (Europe/Kiev)
 ## Done
-- Researched every bot's context and aligned the team; wrote /workspace/spaceapps/TEAM_BRIEF.md.
+- Researched every bot's context and aligned the team; wrote team-context/TEAM_BRIEF.md.
 - Relayed the team lead's rules: the Critique gate, big questions to the team lead, data-analysis-only scope, the speed/shared-computer rule, and handoff docs.
 - Tracked the Ukraine study through two Critique rounds to final approval; logged that the GES DISC blocker is cleared.
 - Wrote handoff/README_TEAM_ARCHITECTURE.md (rules, architecture, recreate steps).
@@ -13,7 +13,7 @@ Updated 2026-11-14 14:00 (Europe/Kiev)
 - Message bots with SendToAgent (priority true only when they must act). Read their histories with ReadTranscript.
 - Open nits (deferred): a NaN family-size field, the T2M SON anti-conservative flag at r=-0.00, and a temp pickle written to /tmp.
 ## Files
-/workspace/spaceapps/TEAM_BRIEF.md, /workspace/spaceapps/handoff/*, /workspace/critique/ukraine_methods_review.md, /workspace/ukraine_samples/
+team-context/TEAM_BRIEF.md, team-context/team/handoff/*, team-context/team/reviews/ukraine_methods_review.md, $UKRAINE_SAMPLES/
 ## Recreate
 Create a Project manager agent, give it the team ids from README section 2, and have it read README_TEAM_ARCHITECTURE.md, TEAM_BRIEF.md and every handoff file. Then it messages each bot with the rules and its next task, and keeps the brief and this file updated after each change.
 - CDS: I accepted the cc-by licence via the API at 14:46 (PUT /api/profiles/v1/account/licences/cc-by, revision 1).

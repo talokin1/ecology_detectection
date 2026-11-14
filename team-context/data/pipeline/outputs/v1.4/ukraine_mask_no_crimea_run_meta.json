@@ -1,0 +1,366 @@
+{
+ "region": "ukraine_mask_no_crimea",
+ "region_cfg": {
+  "type": "polygon",
+  "shapefile": "data/raw_aux/natural_earth/ne_10m_admin_0_countries/ne_10m_admin_0_countries.shp",
+  "adm0_a3": "UKR",
+  "crimea": "excluded",
+  "description": "Ukraine without Crimea (Natural Earth 10m v5.1.1 default de-facto file; matches Berkeley Earth country polygon)"
+ },
+ "bounds": [
+  22.13283980300011,
+  45.21356842700004,
+  40.1595430910001,
+  52.36894928000008
+ ],
+ "sources": {
+  "nasa_power": {
+   "source": "nasa_power",
+   "status": "ok",
+   "variables": {
+    "T2M": {
+     "n_cells_in_file": 464,
+     "grid": "16x29",
+     "n_cells_weight_gt0": 279,
+     "sum_frac": 225.3817775519916
+    },
+    "T2M_MAX": {
+     "n_cells_in_file": 464,
+     "grid": "16x29",
+     "n_cells_weight_gt0": 279,
+     "sum_frac": 225.3817775519916
+    },
+    "T2M_MIN": {
+     "n_cells_in_file": 464,
+     "grid": "16x29",
+     "n_cells_weight_gt0": 279,
+     "sum_frac": 225.3817775519916
+    },
+    "PRECTOTCORR": {
+     "n_cells_in_file": 464,
+     "grid": "16x29",
+     "n_cells_weight_gt0": 279,
+     "sum_frac": 225.3817775519916
+    },
+    "QV2M": {
+     "n_cells_in_file": 464,
+     "grid": "16x29",
+     "n_cells_weight_gt0": 279,
+     "sum_frac": 225.3817775519916
+    },
+    "WS10M": {
+     "n_cells_in_file": 464,
+     "grid": "16x29",
+     "n_cells_weight_gt0": 279,
+     "sum_frac": 225.3817775519916
+    },
+    "ALLSKY_SFC_SW_DWN": {
+     "n_cells_in_file": 144,
+     "grid": "8x18",
+     "n_cells_weight_gt0": 97,
+     "sum_frac": 69.85056948541289
+    }
+   },
+   "seconds": 0.2
+  },
+  "grace": {
+   "source": "grace",
+   "status": "ok",
+   "file": "$GLOBAL_DATA/grace/GRCTellus.JPL.200204_202609.GLO.RL06.3M.MSCNv04CRI.nc",
+   "n_mascons": 13,
+   "n_land_cells_weight_gt0": 336,
+   "time_center_vs_csv_max_days": 0,
+   "seconds": 0.1
+  },
+  "hadcrut5": {
+   "source": "hadcrut5",
+   "status": "ok",
+   "n_cells_weight_gt0": 9,
+   "sum_frac": 2.821649406799645,
+   "seconds": 0.2
+  },
+  "gistemp": {
+   "source": "gistemp",
+   "status": "ok",
+   "n_cells_weight_gt0": 34,
+   "seconds": 0.0
+  },
+  "berkeley": {
+   "source": "berkeley",
+   "status": "ok",
+   "n_cells_weight_gt0": 104,
+   "weight": "area x overlap x land_mask fraction",
+   "seconds": 0.2
+  },
+  "chirps": {
+   "source": "chirps",
+   "status": "ok",
+   "path": "global_grid_overlap_weights",
+   "file": "$GLOBAL_DATA/chirps_v3/chirps-v3.0.monthly.nc",
+   "cache": "chirps_ukraine_mask_no_crimea_4db0ad7d0d866240.parquet",
+   "seconds": 0.0
+  },
+  "cci_sm": {
+   "source": "cci_sm",
+   "status": "ok",
+   "note": "record 1978-11..1991-12 only",
+   "seconds": 0.0
+  },
+  "merra2": {
+   "source": "merra2",
+   "status": "ok",
+   "path": "global_grid_overlap_weights",
+   "products": [
+    {
+     "product": "merra2_slv",
+     "dir": "$GLOBAL_DATA/merra2_slv_slim",
+     "n_files": 561,
+     "window_cells": "16x30",
+     "cache": "merra2_slv_ukraine_mask_no_crimea_aa61321b17197e1c.parquet",
+     "status": "cached"
+    },
+    {
+     "product": "merra2_flx",
+     "dir": "$GLOBAL_DATA/merra2_flx_slim",
+     "n_files": 561,
+     "window_cells": "16x30",
+     "cache": "merra2_flx_ukraine_mask_no_crimea_5d9d466823bbb76a.parquet",
+     "status": "cached"
+    },
+    {
+     "product": "merra2_wind",
+     "dir": "$GLOBAL_DATA/merra2_slv_wind",
+     "n_files": 561,
+     "window_cells": "16x30",
+     "cache": "merra2_wind_ukraine_mask_no_crimea_5a96b214510ee3bd.parquet",
+     "status": "cached"
+    },
+    {
+     "product": "merra2_ext",
+     "dir": "$GLOBAL_DATA/merra2_statm_extremes",
+     "n_files": 561,
+     "window_cells": "16x30",
+     "cache": "merra2_ext_ukraine_mask_no_crimea_54d3127caec77b56.parquet",
+     "status": "cached"
+    }
+   ],
+   "seconds": 0.1
+  },
+  "gldas20": {
+   "source": "gldas20",
+   "status": "ok",
+   "path": "global_grid_overlap_weights",
+   "products": [
+    {
+     "product": "gldas20",
+     "dir": "$GLOBAL_DATA/gldas20_slim",
+     "n_files": 804,
+     "window_cells": "30x73",
+     "cache": "gldas20_ukraine_mask_no_crimea_9c1e4daabd4ad915.parquet",
+     "status": "cached"
+    },
+    {
+     "product": "gldas20_rainf",
+     "dir": "$GLOBAL_DATA/gldas20_rainf",
+     "n_files": 804,
+     "window_cells": "30x73",
+     "cache": "gldas20_rainf_ukraine_mask_no_crimea_4bbe9d9128a6dd30.parquet",
+     "status": "cached"
+    }
+   ],
+   "seconds": 0.1
+  },
+  "gldas21": {
+   "source": "gldas21",
+   "status": "ok",
+   "path": "global_grid_overlap_weights",
+   "products": [
+    {
+     "product": "gldas21",
+     "dir": "$GLOBAL_DATA/gldas21_slim",
+     "n_files": 319,
+     "window_cells": "30x73",
+     "cache": "gldas21_ukraine_mask_no_crimea_84eb1de5d083d909.parquet",
+     "status": "cached"
+    },
+    {
+     "product": "gldas21_rainf",
+     "dir": "$GLOBAL_DATA/gldas21_rainf",
+     "n_files": 319,
+     "window_cells": "30x73",
+     "cache": "gldas21_rainf_ukraine_mask_no_crimea_605fc222e2eaced4.parquet",
+     "status": "cached"
+    }
+   ],
+   "seconds": 0.1
+  },
+  "gpm_imerg": {
+   "source": "gpm_imerg",
+   "status": "ok",
+   "path": "global_grid_overlap_weights",
+   "products": [
+    {
+     "product": "gpm_imerg",
+     "dir": "$GLOBAL_DATA/gpm_imerg_slim",
+     "n_files": 333,
+     "window_cells": "72x181",
+     "cache": "gpm_imerg_ukraine_mask_no_crimea_9eb48dfc0ade45fd.parquet",
+     "status": "cached"
+    }
+   ],
+   "seconds": 0.0
+  },
+  "airs": {
+   "source": "airs",
+   "status": "ok",
+   "path": "global_grid_overlap_weights",
+   "products": [
+    {
+     "product": "airs",
+     "dir": "$GLOBAL_DATA/airs3stm_slim",
+     "n_files": 290,
+     "window_cells": "8x19",
+     "cache": "airs_ukraine_mask_no_crimea_de4a01c0cdd1cab8.parquet",
+     "status": "cached"
+    }
+   ],
+   "seconds": 0.0
+  },
+  "modis": {
+   "source": "modis",
+   "status": "ok",
+   "path": "global_grid_overlap_weights",
+   "products": [
+    {
+     "product": "mod13c2_qc",
+     "dir": "$GLOBAL_DATA/mod13c2_slim",
+     "n_files": 321,
+     "window_cells": "144x362",
+     "cache": "mod13c2_qc_ukraine_mask_no_crimea_6dd43cef093614f5.parquet",
+     "status": "cached"
+    },
+    {
+     "product": "mod11c3_qc",
+     "dir": "$GLOBAL_DATA/mod11c3_slim",
+     "n_files": 321,
+     "window_cells": "144x362",
+     "cache": "mod11c3_qc_ukraine_mask_no_crimea_2ccfd0f41b94d056.parquet",
+     "status": "cached"
+    }
+   ],
+   "qc": "per-pixel QC applied before area averaging (see qc_report: MODIS QC rules)",
+   "seconds": 0.1
+  },
+  "omi": {
+   "source": "omi",
+   "status": "skipped",
+   "reason": "samples hold only a pre-computed Ukraine-bbox mean (no grid); not valid for this region",
+   "seconds": 0.0
+  },
+  "gpcc": {
+   "source": "gpcc",
+   "status": "ok",
+   "path": "global_grid_overlap_weights",
+   "n_files": 47,
+   "cache": "gpcc_ukraine_mask_no_crimea_ae1e98ebed965be8.parquet",
+   "seconds": 0.0
+  },
+  "cru_cy": {
+   "source": "cru_cy",
+   "status": "ok",
+   "mask": "CRU-CY country mask; Crimea in/out undocumented -> mask mismatch vs region",
+   "seconds": 0.1
+  },
+  "berkeley_country": {
+   "source": "berkeley_country",
+   "status": "ok",
+   "mask": "Berkeley polygon 553,101 km\u00b2, 45.21-52.37N: Crimea EXCLUDED",
+   "seconds": 0.0
+  },
+  "ghcn": {
+   "source": "ghcn",
+   "status": "ok",
+   "n_stations_in_region": 24,
+   "n_qflag_values_removed": 3855,
+   "variables": {
+    "TAVG": {
+     "stations_with_data": 24,
+     "stations_with_any_baseline_month": 22,
+     "stations_with_full_12month_baseline": 22,
+     "stations_dropped_no_baseline": 2,
+     "stations_ending_before_2006": 0,
+     "station_months_failing_day_rule": 1089
+    },
+    "TMAX": {
+     "stations_with_data": 24,
+     "stations_with_any_baseline_month": 23,
+     "stations_with_full_12month_baseline": 17,
+     "stations_dropped_no_baseline": 1,
+     "stations_ending_before_2006": 0,
+     "station_months_failing_day_rule": 2949
+    },
+    "TMIN": {
+     "stations_with_data": 24,
+     "stations_with_any_baseline_month": 23,
+     "stations_with_full_12month_baseline": 18,
+     "stations_dropped_no_baseline": 1,
+     "stations_ending_before_2006": 0,
+     "station_months_failing_day_rule": 3554
+    },
+    "PRCP": {
+     "stations_with_data": 24,
+     "stations_with_any_baseline_month": 11,
+     "stations_with_full_12month_baseline": 4,
+     "stations_dropped_no_baseline": 13,
+     "stations_ending_before_2006": 20,
+     "station_months_failing_day_rule": 7013
+    }
+   },
+   "seconds": 1.5
+  },
+  "gsom": {
+   "source": "gsom",
+   "status": "ok",
+   "n_stations_in_region": 171,
+   "variables": {
+    "TAVG": {
+     "stations_with_data": 156,
+     "stations_with_any_baseline_month": 30,
+     "stations_with_full_12month_baseline": 7,
+     "stations_dropped_no_baseline": 126,
+     "stations_ending_before_2006": 44
+    },
+    "TMAX": {
+     "stations_with_data": 158,
+     "stations_with_any_baseline_month": 33,
+     "stations_with_full_12month_baseline": 10,
+     "stations_dropped_no_baseline": 125,
+     "stations_ending_before_2006": 39
+    },
+    "TMIN": {
+     "stations_with_data": 159,
+     "stations_with_any_baseline_month": 31,
+     "stations_with_full_12month_baseline": 7,
+     "stations_dropped_no_baseline": 128,
+     "stations_ending_before_2006": 11
+    },
+    "PRCP": {
+     "stations_with_data": 168,
+     "stations_with_any_baseline_month": 16,
+     "stations_with_full_12month_baseline": 7,
+     "stations_dropped_no_baseline": 152,
+     "stations_ending_before_2006": 161
+    }
+   },
+   "seconds": 0.2
+  },
+  "swot": {
+   "source": "swot",
+   "status": "skipped",
+   "reason": "samples hold only a pre-computed Ukraine-bbox mean (no grid); not valid for this region",
+   "seconds": 0.0
+  }
+ },
+ "n_series": 73,
+ "seconds": 20.6
+}

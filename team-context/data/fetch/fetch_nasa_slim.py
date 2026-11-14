@@ -17,9 +17,11 @@ import urllib.request
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
-ROOT = Path("/workspace/global_data")
-LOG = Path("/workspace/spaceapps/analysis/scripts/global_fetch/nasa_slim_fetch.log")
-PROGRESS = Path("/workspace/spaceapps/analysis/scripts/global_fetch/nasa_slim_progress.json")
+from locate import GLOBAL_DATA, LOG_DIR
+
+ROOT = GLOBAL_DATA
+LOG = LOG_DIR / "nasa_slim_fetch.log"
+PROGRESS = LOG_DIR / "nasa_slim_progress.json"
 UA = "SpaceAppsTrendDetective/1.0"
 CTX = ssl.create_default_context()
 LOCK = threading.Lock()

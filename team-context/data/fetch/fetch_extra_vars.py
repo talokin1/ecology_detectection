@@ -18,9 +18,11 @@ import urllib.request
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
-ROOT = Path("/workspace/global_data")
-LOG = Path("/workspace/spaceapps/analysis/scripts/global_fetch/extra_vars_fetch.log")
-PROGRESS = Path("/workspace/spaceapps/analysis/scripts/global_fetch/extra_vars_progress.json")
+from locate import GLOBAL_DATA, LOG_DIR
+
+ROOT = GLOBAL_DATA
+LOG = LOG_DIR / "extra_vars_fetch.log"
+PROGRESS = LOG_DIR / "extra_vars_progress.json"
 PROBE_DIR = Path("/tmp/extra_var_month_probes")
 UA = "SpaceAppsTrendDetective/1.0"
 CTX = ssl.create_default_context()
@@ -272,7 +274,7 @@ def main():
             rec["est_total"] = (rec.get("bytes") or 0) * n
             probe_results[key] = rec
             log(f"  probe {key}: ok={rec.get('ok')} bytes={rec.get('bytes')} est_total={rec.get('est_total')} s={rec.get('seconds')} err={rec.get('error')}")
-        Path("/workspace/spaceapps/analysis/scripts/global_fetch/extra_var_month_probes.json").write_text(
+        (LOG_DIR / "extra_var_month_probes.json").write_text(
             json.dumps(probe_results, indent=2)
         )
 

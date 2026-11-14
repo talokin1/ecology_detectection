@@ -13,7 +13,7 @@ team-context/
 ```
 Open: Critique reviews and research notes don't fit cleanly (see "unclassified" list).
 
-## Critique blocking fixes (15:01, /workspace/critique/stats_archive_review.md) — before first commit
+## Critique blocking fixes (15:01, team-context/team/reviews/stats_archive_review.md) — before first commit
 1. DECIDED by team lead 15:17: repo MK + Yue–Wang (repo trend_stats.py) is OFFICIAL; HAC/HR lag-3 are sensitivity columns. Write ADR-003 recording this (Critique's reconciliation proposal rejected); docs/10-methods.md and ADR-002 stay. Worker re-running pipeline v1.3 with repo-YW primary; Critique reviews verdict diff.
 2. Rewrite hardcoded /workspace paths (smoke_test.py, grace_method.py, GRACE time_center CSV); add pandas, pyarrow, statsmodels, pymannkendall, xarray, netCDF4, PyYAML, pyshp, shapely to requirements. Smoke expectations: POWER +0.5526, HadCRUT +0.5793, GRACE -11.242 ±0.005.
 3. Write sync script with denylist + 50 MB cap (CHIRPS bbox 87.6 MB, GISTEMP cache 54.5 MB over cap); gitignore .nc4, data caches, .cdsapirc, cookies.txt; keep GRACE MD5 in manifest.

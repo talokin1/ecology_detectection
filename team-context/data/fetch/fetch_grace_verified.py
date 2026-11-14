@@ -2,10 +2,11 @@
 """Re-download GRACE JPL mascon CRI and verify MD5 + Content-Length. Never prints credentials."""
 from __future__ import annotations
 import hashlib, os, ssl, time, urllib.request
-from pathlib import Path
+
+from locate import GLOBAL_DATA
 
 URL = "https://archive.podaac.earthdata.nasa.gov/podaac-ops-cumulus-protected/TELLUS_GRAC-GRFO_MASCON_CRI_GRID_RL06.3_V4/GRCTellus.JPL.200204_202609.GLO.RL06.3M.MSCNv04CRI.nc"
-DEST = Path("/workspace/global_data/grace/GRCTellus.JPL.200204_202609.GLO.RL06.3M.MSCNv04CRI.nc")
+DEST = GLOBAL_DATA / "grace" / "GRCTellus.JPL.200204_202609.GLO.RL06.3M.MSCNv04CRI.nc"
 OFFICIAL_MD5 = "1567b9401ec2a704aab16598fcce5e70"
 UA = "SpaceAppsTrendDetective/1.0"
 CTX = ssl.create_default_context()
