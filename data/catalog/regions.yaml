@@ -1,0 +1,67 @@
+# Region presets — Earth System Trend Detective
+# A region is a latitude/longitude box: bbox = [west, south, east, north] in degrees,
+# longitudes -180..180 (west > east means the box crosses the antimeridian).
+# Users can also give any box directly; presets are the named boxes the app offers and the
+# offline precompute covers. English only; `description` is plain language for students.
+#
+# STATUS: the entries below are the boxes used for pipeline checks on 2026-11-14.
+# The final list (case files) is a team decision; edit freely.
+
+version: 0.1
+regions:
+  - id: ukraine
+    name: Ukraine
+    bbox: [22.0, 44.0, 40.5, 52.5]
+    biomes: [steppe, agriculture]
+    description: Eastern European plains, mostly farmland, with a cold-winter climate.
+
+  - id: sahel
+    name: Sahel (West and Central Africa)
+    bbox: [-15.0, 10.0, 35.0, 18.0]
+    biomes: [steppe, desert]
+    description: The semi-arid belt south of the Sahara, known for severe droughts in the 1970s-80s.
+
+  - id: arctic_cap
+    name: Arctic (north of 70°N)
+    bbox: [-180.0, 70.0, 180.0, 90.0]
+    biomes: [arctic, ocean]
+    description: The Arctic Ocean and surrounding coasts, where sea ice forms and melts each year.
+
+  - id: nw_india
+    name: North-west India (Punjab, Haryana, Rajasthan)
+    bbox: [72.0, 26.0, 78.0, 32.0]
+    biomes: [agriculture, aquifer]
+    description: Heavily irrigated farmland that pumps large amounts of groundwater.
+
+  # ---- Case regions proposed 2026-11-14 for the plan-v2 first-wave cases (status: proposed,
+  # ---- pending team approval). Boxes were fixed from region definitions BEFORE any trend was
+  # ---- computed for them; do not adjust them after looking at results.
+  - id: south_ukraine
+    name: Southern Ukraine (steppe)
+    bbox: [28.5, 44.4, 37.5, 48.5]
+    land_only: true
+    status: proposed
+    case: 1 (drought, root-zone soil wetness and precipitation)
+    biomes: [steppe, agriculture]
+    description: The southern steppe farmland of Odesa, Mykolaiv, Kherson and Zaporizhzhia regions and Crimea.
+    rationale: Follows the southern steppe oblasts; 93% land by area, Black Sea cells excluded by land_only.
+
+  - id: north_europe
+    name: Northern Europe (Fennoscandia and the Baltic states)
+    bbox: [5.0, 55.0, 31.0, 71.0]
+    land_only: true
+    status: proposed
+    case: 3 (opposite precipitation trends, northern side)
+    biomes: [boreal, mountain]
+    description: Norway, Sweden, Finland, Denmark and the Baltic states.
+    rationale: Approximates the European part of IPCC AR6 region NEU (Iturbide et al., 2020); 85% land, sea excluded by land_only.
+
+  - id: south_europe
+    name: Southern Europe (Mediterranean)
+    bbox: [-10.0, 36.0, 28.0, 45.0]
+    land_only: true
+    status: proposed
+    case: 3 (opposite precipitation trends, southern side)
+    biomes: [mediterranean, agriculture]
+    description: Spain, Portugal, southern France, Italy, the Balkans and Greece.
+    rationale: Approximates the European part of IPCC AR6 region MED (Iturbide et al., 2020); 76% land, sea excluded by land_only.
