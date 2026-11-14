@@ -19,7 +19,9 @@ Catalog of approved variables: `data/catalog/variables.yaml`. Access details per
    (CSV export). The Giovanni cloud time-series API returns single points only.
 4. **MODIS land products for a small area?** → AppEEARS (async task; poll status) or `earthaccess`
    + subsetting of the 0.05° CMG monthly product.
-5. **Hydrology point series?** → GES DISC Hydrology Data Rods (GLDAS/NLDAS).
+5. **Hydrology series?** → Hydrology Data Rods was **discontinued** (GES DISC alert 2025-10-01). Use POWER
+   (MERRA-2 `GWETROOT`, `GWETTOP`, `EVLAND`), GRACE (`backend/trend_detective/grace.py`), or GLDAS files via
+   earthaccess/OPeNDAP.
 
 ## Rules
 - **Auth**: Earthdata Login via `~/.netrc` (`machine urs.earthdata.nasa.gov login … password …`) or

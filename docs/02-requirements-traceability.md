@@ -17,12 +17,12 @@ Priority: **M** = mandatory by challenge/rules · **S** = strongly scored (judgi
 ## Challenge considerations (scored implicitly)
 | ID | Requirement | Pri | Acceptance criteria | Owner | Status | Evidence |
 |---|---|---|---|---|---|---|
-| R-10 | Simple definitions of variables | S | Each catalog entry has ≤ 2-sentence definition + "why it might trend" | | todo | |
+| R-10 | Simple definitions of variables | S | Each catalog entry has ≤ 2-sentence definition + "why it might trend" | | doing | All 28 catalog entries have a definition, why_it_trends, `how_measured` (satellite vs model) and `topic`; texts of 7 new POWER entries and both new fields pending team review |
 | R-11 | Question-driven search (what / where) | S | Wizard of ≤ 4 questions returns ranked variable suggestions | | todo | |
 | R-12 | Demonstration examples users can watch | S | ≥ 2 guided "case files" playable end-to-end | | todo | |
 | R-13 | SI suggests variables from region type / literature | C | Suggestions grounded in catalog; sources/rationale shown; disclosed as SI | | todo | |
 | R-14 | Non-significant trends still informative | S | "Years until detectable" estimate + explanation | | todo | |
-| R-15 | Regional opposite-sign trends ("where") | S | Per-pixel trend map with significance stippling, or two-region comparison | | todo | |
+| R-15 | Regional opposite-sign trends ("where") | S | Per-pixel trend map with significance stippling, or two-region comparison | | doing | Data side: global monthly T2M grid at 2° (area-conserving overlap regridding, 26 MB, `backend/trend_detective/grids.py`, `scripts/fetch_grid.py`); per-cell trends + FDR are the stats team's (`map.json`). Case regions for the two-region comparison in ADR-004 |
 | R-16 | Seasonal cycle handled | S | Deseasonalisation on by default for sub-annual data, toggle to view raw | | todo | |
 | R-17 | Daily/monthly data support | C | Monthly default; daily aggregated to monthly | | todo | |
 
