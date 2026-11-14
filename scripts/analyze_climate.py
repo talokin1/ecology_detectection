@@ -10,8 +10,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "backend"))
 
-from trend_detective.climate_stats import analyze_file
-from trend_detective.climate_stats.contracts import catalog
+from trend_detective.climate_stats import analyze_file  # noqa: E402
+from trend_detective.climate_stats.contracts import catalog  # noqa: E402
 
 
 def main(argv: list[str] | None = None) -> int:

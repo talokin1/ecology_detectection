@@ -11,14 +11,6 @@ export const S = {
   share: 'Copy link',
   shared: 'Link copied',
   theme: { light: 'Light theme', dark: 'Dark theme', switchTo: (t: string) => `Switch to ${t} theme` },
-  synthetic: {
-    strong: 'Synthetic data.',
-    banner: 'The numbers on this site are synthetic, made to test the design. They are not results yet.',
-    more: 'Why?',
-    tag: 'Synthetic data',
-    tagAria: 'Synthetic data: the numbers are not real measurements yet. Open About this data.',
-    dismiss: 'Dismiss this notice',
-  },
   shell: { menu: 'More options', tour: 'Take the 25-second tour', about: 'About this tool', copied: 'Link copied to the clipboard' },
 
   explore: {
@@ -63,7 +55,6 @@ export const S = {
   legend: {
     expand: 'Explain the colours',
     close: 'Hide legend',
-    demo: 'Demo data, not real measurements.',
     projection: 'This map enlarges areas near the poles.',
     credit: 'Basemap: Natural Earth (public domain).',
   },
@@ -177,7 +168,6 @@ export const S = {
       'Open the full analysis for the chart, the findings and the tests behind them.',
     ],
     data: 'About this data',
-    syntheticNotice: 'The numbers currently on this site are synthetic. They were generated to look like NASA POWER monthly data so that we could build and test the design. The statistics are computed from them with the real pipeline, but they describe no real place. Real NASA data replace them file by file.',
     sources: 'Data sources',
     sourceList: [
       ['NASA POWER (MERRA-2 meteorology)', 'https://power.larc.nasa.gov/', 'temperature, precipitation, soil wetness (planned real data)'],

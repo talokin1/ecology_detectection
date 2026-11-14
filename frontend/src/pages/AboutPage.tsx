@@ -35,7 +35,6 @@ export function AboutPage() {
 
       <section id="data" className="msec">
         <h2>{A.data}</h2>
-        {index.data?.synthetic && <p className="callout">{A.syntheticNotice}</p>}
         <h3 className="h3">{A.sources}</h3>
         <ul className="bullets">
           {A.sourceList.map(([name, url, what]) => (

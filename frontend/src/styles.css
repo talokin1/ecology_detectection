@@ -86,8 +86,6 @@ code { font-size: var(--fs-small); background: var(--surface-2); padding: 1px 5p
 .topbar__actions { display: flex; gap: 2px; }
 .context-line { display: none; }
 
-.synthetic { background: var(--ink); color: var(--ink-contrast); font-size: var(--fs-small); padding: 7px 20px; line-height: 1.4; }
-.synthetic a { color: inherit; }
 
 .main { flex: 1; display: flex; flex-direction: column; min-height: 0; }
 

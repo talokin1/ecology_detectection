@@ -84,16 +84,16 @@ describe('format', () => {
 });
 
 describe('exporters', () => {
-  it('writes the series as it is, with provenance, units and the synthetic flag', () => {
+  it('writes the series as it is, with provenance and units', () => {
     const a = {
       period: { start: '1981-01', end: '1981-02' },
-      provenance: { dataset: 'X', synthetic: true, version: null, doi: null, accessed: '2026-11-14', caveat: 'c' },
+      provenance: { dataset: 'X', synthetic: false, version: null, doi: null, accessed: '2026-11-14', caveat: 'c' },
       series: { dates: ['1981-01', '1981-02'], raw: [1.5, null], anomaly: [0.1, null], baseline: 'b', anomaly_units: '°C' },
       trend: { display: { annotation: '+0.1 per decade' } },
       verdict: { headline: 'H' },
     } as unknown as AnalysisResult;
     const csv = seriesCsv(a, 'Var', 'Reg');
-    expect(csv).toContain('SYNTHETIC');
+    expect(csv).toContain('# source: X;');
     expect(csv).toContain('accessed: 2026-11-14');
     expect(csv).toContain('1981-01,1.5,0.1');
     expect(csv).toContain('1981-02,,');

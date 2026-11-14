@@ -37,6 +37,14 @@ inside, on a right or top edge outside, so neighbouring regions never share a ce
 cells only. The ice-sheet regions (Greenland/Iceland, East and West Antarctica) are not built because the
 land mask excludes ice sheets. Rule and list: `docs/decisions/ADR-005-*.md`, amendment 1.
 
+The web app's four European regions are outlines too, but real borders (Natural Earth 1:10m, Ukrainian
+point of view; `data/catalog/regions_countries.yaml`, built by `scripts/make_country_regions.py`): Ukraine
+with Crimea (231 MERRA-2 cell centres inside), southern Ukraine as six admin-1 units (52), northern Europe
+as seven countries (748; Åland is a separate Natural Earth unit and is not included) and southern Europe as
+twelve countries, Kosovo included as part of Serbia in the Ukrainian-POV file (493). Same cell-centre rule, land cells
+only. The Sahel stays a box. The map outline drawn for each region is the same polygon the numbers are
+averaged over. ADR-005 amendment 2.
+
 ## Data-quality checks before any trend (acquisition layer)
 Before a regional series is analysed, `backend/trend_detective/acquire.py::assess` checks whether it
 can be investigated for a trend at all, and tells the user why not in plain language:

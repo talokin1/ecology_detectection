@@ -134,7 +134,7 @@ function CaseBody({ index, a, region, variable, theCase, layer }: {
   const question = theCase?.question ?? S.case.question(variable.long_name.toLowerCase(), region.name_in_sentence);
   const fileBase = `trend-detective_${region.id}_${variable.id}`;
   const props = useMemo(() => chartProps(a, variable, view), [a, variable, view]);
-  const footer = `${variable.long_name}, ${region.name}, ${period}. ${a.provenance.dataset}${a.provenance.synthetic ? ' (SYNTHETIC DEMO DATA, not a result)' : ''}. Trend Detective.`;
+  const footer = `${variable.long_name}, ${region.name}, ${period}. ${a.provenance.dataset}. Trend Detective.`;
   const seasonInsight = a.insights.find((i) => i.kind === 'season' || i.kind === 'season_unresolved');
 
   return (
@@ -180,7 +180,7 @@ function CaseBody({ index, a, region, variable, theCase, layer }: {
                 ariaLabel={`Map of ${region.name} showing the trend of ${variable.long_name.toLowerCase()} in each grid square.`} />
             </Suspense>
           </div>
-          {layer && legendOpen && <LegendChip layer={layer} synthetic={layer.provenance.synthetic} caption={S.map.caseMapCaption} onClose={() => setLegendOpen(false)} />}
+          {layer && legendOpen && <LegendChip layer={layer} caption={S.map.caseMapCaption} onClose={() => setLegendOpen(false)} />}
           {layer && !legendOpen && <button type="button" className="btn btn--quiet" onClick={() => setLegendOpen(true)}>{S.explore.legend}</button>}
         </section>
       </div>

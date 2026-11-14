@@ -526,7 +526,7 @@ def robustness(dates, raw, level: str) -> dict:
 def analyse(var, region, cells):
     spec = VARIABLES[var]
     name_s = sentence_name(region)
-    dates, raw, attrs = regional_series(var, region["id"])
+    dates, raw, attrs = regional_series(var, region["preset"])
     if not np.isfinite(raw).all():
         raise ValueError(f"{var} / {region['id']}: {int((~np.isfinite(raw)).sum())} missing months in "
                          f"{Y0}-{Y1}; the app's annual and seasonal statistics need a complete record")
@@ -1032,10 +1032,11 @@ def cs_values(s: pd.Series, daily: bool) -> list[dict]:
 def stats_document(region: dict, bootstrap: int) -> dict | None:
     """Input document for trend_detective.climate_stats for one region (real cached data)."""
     rid, lat = region["id"], float(region["centroid"][1])
+    src = region["preset"]  # the area the numbers are averaged over (real borders for Europe)
     common = {"region_id": rid, "latitude": lat}
     series = []
     for var, cid, units in (("t2m", "air_temperature_power", "degC"), ("soil", "root_zone_soil_wetness_power", "1")):
-        s = acquire.get_series(cid, rid)
+        s = acquire.get_series(cid, src)
         s = s[(s.index.year >= Y0) & (s.index.year <= Y1)]
         series.append({"id": var, "variable_id": cid, "frequency": "monthly", "units": units,
                        "values": cs_values(s, False), **common})
@@ -1043,7 +1044,7 @@ def stats_document(region: dict, bootstrap: int) -> dict | None:
     daily = {}
     for key, param in DAILY.items():
         try:
-            d = acquire.get_input_series(param, rid, store="merra2_daily")
+            d = acquire.get_input_series(param, src, store="merra2_daily")
         except Exception:  # noqa: BLE001 - not every region has daily inputs in the cache
             daily_ok = False
             break
@@ -1061,13 +1062,13 @@ def stats_document(region: dict, bootstrap: int) -> dict | None:
              "values": cs_values(daily["precip"], True), **common},
         ]
     else:
-        s = acquire.get_series("precipitation_power", rid)
+        s = acquire.get_series("precipitation_power", src)
         s = s[(s.index.year >= Y0) & (s.index.year <= Y1)]
         series.append({"id": "precip", "variable_id": "precipitation_power", "frequency": "monthly",
                        "units": "mm/day", "values": cs_values(s, False), **common})
     return {
         "schema_version": "1.0",
-        "metadata": {"project": "Earth System Trend Detective web app", "region_id": rid,
+        "metadata": {"project": "Earth System Trend Detective web app", "region_id": rid, "region_preset": src,
                      "source": "data/cache (NASA POWER MERRA-2, frozen; see MANIFEST.json)",
                      "period": f"{Y0}-01 to {Y1}-12"},
         "config": {"baseline": [1981, 2010], "alpha": 0.05, "fdr_q": 0.05, "bootstrap_samples": bootstrap,
@@ -1314,13 +1315,14 @@ def regions_with_data() -> dict:
     presets = acquire.list_regions()
     regions = {}
     for f in regions_fc["features"]:
-        p = f["properties"]
-        if p["id"] not in presets:
-            print(f"skip region {p['id']}: no preset in data/catalog/regions.yaml, so no cached data")
+        p = dict(f["properties"])
+        p["preset"] = p.get("preset") or p["id"]
+        if p["preset"] not in presets:
+            print(f"skip region {p['id']}: no preset {p['preset']!r} in the region catalog, so no cached data")
             continue
         try:
             for spec in VARIABLES.values():
-                acquire.get_series(spec["catalog_id"], p["id"])
+                acquire.get_series(spec["catalog_id"], p["preset"])
         except Exception as exc:  # noqa: BLE001 - report and leave the region out, never invent data
             print(f"skip region {p['id']}: {type(exc).__name__}: {exc}")
             continue
@@ -1330,9 +1332,9 @@ def regions_with_data() -> dict:
 
 def common_last_year(regions: dict, grids: dict) -> int:
     years = [last_complete_year(g.time[np.isfinite(g.values).any(axis=(1, 2))]) for g in grids.values()]
-    for rid in regions:
+    for r in regions.values():
         for spec in VARIABLES.values():
-            s = acquire.get_series(spec["catalog_id"], rid).dropna()
+            s = acquire.get_series(spec["catalog_id"], r["preset"]).dropna()
             years.append(last_complete_year(pd.DatetimeIndex(s.index)))
     return min(years)
 

@@ -5272,6 +5272,29 @@
       "variable": "GWETROOT"
     },
     {
+      "accessed": "2026-11-14T23:28:50Z",
+      "bbox": {
+        "lat_max": 71.165,
+        "lat_min": 53.887,
+        "lon_max": 31.57,
+        "lon_min": 4.645
+      },
+      "bytes": 16422,
+      "first": "1981-01-01",
+      "git_commit": "a043eab",
+      "has_provenance": true,
+      "kind": "series",
+      "land_only": true,
+      "last": "2026-09-01",
+      "path": "power_zarr/merra2_GWETROOT_818070b119cf.csv",
+      "region_id": "north_europe_countries",
+      "region_name": "Northern Europe (Fennoscandia and the Baltic states)",
+      "rows": 549,
+      "sha256": "53c94cb8bad3dd394eab6e3b83a80f63b6626bd8a7d515020539e4216fbaf424",
+      "source": "merra2",
+      "variable": "GWETROOT"
+    },
+    {
       "accessed": "2026-11-14T18:04:02Z",
       "bbox": {
         "lat_max": 65.0,
@@ -5847,6 +5870,29 @@
       "variable": "GWETROOT"
     },
     {
+      "accessed": "2026-11-14T23:30:26Z",
+      "bbox": {
+        "lat_max": 48.222,
+        "lat_min": 44.383,
+        "lon_max": 37.221,
+        "lon_min": 28.199
+      },
+      "bytes": 16645,
+      "first": "1981-01-01",
+      "git_commit": "a043eab",
+      "has_provenance": true,
+      "kind": "series",
+      "land_only": true,
+      "last": "2026-09-01",
+      "path": "power_zarr/merra2_GWETROOT_ee469844bbb8.csv",
+      "region_id": "south_ukraine_oblasts",
+      "region_name": "Southern Ukraine (steppe)",
+      "rows": 549,
+      "sha256": "2708c3016b503e4d530cf767362f2c8c3fbb93027572134d96f1f18daebce23c",
+      "source": "merra2",
+      "variable": "GWETROOT"
+    },
+    {
       "accessed": "2026-11-14T18:08:18Z",
       "bbox": {
         "lat_max": 71.0,
@@ -5870,6 +5916,29 @@
       "variable": "GWETROOT"
     },
     {
+      "accessed": "2026-11-14T23:26:14Z",
+      "bbox": {
+        "lat_max": 47.085,
+        "lat_min": 34.815,
+        "lon_max": 28.604,
+        "lon_min": -9.497
+      },
+      "bytes": 16510,
+      "first": "1981-01-01",
+      "git_commit": "a043eab",
+      "has_provenance": true,
+      "kind": "series",
+      "land_only": true,
+      "last": "2026-09-01",
+      "path": "power_zarr/merra2_GWETROOT_eeeb5eaadf4c.csv",
+      "region_id": "south_europe_countries",
+      "region_name": "Southern Europe (Mediterranean)",
+      "rows": 549,
+      "sha256": "d2348d7d8758d237aeb038fac0432c4ed07eda89a8663403b9cbd9993d504366",
+      "source": "merra2",
+      "variable": "GWETROOT"
+    },
+    {
       "accessed": "2026-11-14T18:02:08Z",
       "bbox": {
         "lat_max": 81.0,
@@ -5889,6 +5958,29 @@
       "region_name": "North-western North America (IPCC AR6 NWN)",
       "rows": 549,
       "sha256": "ed1910573d7b54ae3eb1924fa7bee26fd02e3670e3aa0df19ed3f3cb327bc9a8",
+      "source": "merra2",
+      "variable": "GWETROOT"
+    },
+    {
+      "accessed": "2026-11-14T23:23:20Z",
+      "bbox": {
+        "lat_max": 52.367,
+        "lat_min": 44.381,
+        "lon_max": 40.16,
+        "lon_min": 22.133
+      },
+      "bytes": 16562,
+      "first": "1981-01-01",
+      "git_commit": "a043eab",
+      "has_provenance": true,
+      "kind": "series",
+      "land_only": true,
+      "last": "2026-09-01",
+      "path": "power_zarr/merra2_GWETROOT_f4ffe93b0a49.csv",
+      "region_id": "ukraine_border",
+      "region_name": "Ukraine",
+      "rows": 549,
+      "sha256": "1b790ebd7109a13ef8819a92f7ec511e6ae9dda2ab554a2613189d0e280c4787",
       "source": "merra2",
       "variable": "GWETROOT"
     },
@@ -6031,6 +6123,29 @@
       "variable": "PRECTOTCORR"
     },
     {
+      "accessed": "2026-11-14T23:23:15Z",
+      "bbox": {
+        "lat_max": 52.367,
+        "lat_min": 44.381,
+        "lon_max": 40.16,
+        "lon_min": 22.133
+      },
+      "bytes": 16315,
+      "first": "1981-01-01",
+      "git_commit": "a043eab",
+      "has_provenance": true,
+      "kind": "series",
+      "land_only": true,
+      "last": "2026-09-01",
+      "path": "power_zarr/merra2_PRECTOTCORR_29fd8ad3833a.csv",
+      "region_id": "ukraine_border",
+      "region_name": "Ukraine",
+      "rows": 549,
+      "sha256": "87033b68d17ca627cb58bc5d1126754261ba3911fd43b6431d91c430099ab04c",
+      "source": "merra2",
+      "variable": "PRECTOTCORR"
+    },
+    {
       "accessed": "2026-11-14T18:04:00Z",
       "bbox": {
         "lat_max": 65.0,
@@ -6165,6 +6280,29 @@
       "region_name": "Central Australia (IPCC AR6 CAU)",
       "rows": 549,
       "sha256": "95a8bfd50bb6536625f007354d91fcb23c7566a24d1bd65b5a16444c5e8ddd40",
+      "source": "merra2",
+      "variable": "PRECTOTCORR"
+    },
+    {
+      "accessed": "2026-11-14T23:30:04Z",
+      "bbox": {
+        "lat_max": 48.222,
+        "lat_min": 44.383,
+        "lon_max": 37.221,
+        "lon_min": 28.199
+      },
+      "bytes": 16402,
+      "first": "1981-01-01",
+      "git_commit": "a043eab",
+      "has_provenance": true,
+      "kind": "series",
+      "land_only": true,
+      "last": "2026-09-01",
+      "path": "power_zarr/merra2_PRECTOTCORR_4d044dde7d68.csv",
+      "region_id": "south_ukraine_oblasts",
+      "region_name": "Southern Ukraine (steppe)",
+      "rows": 549,
+      "sha256": "6a8bdb40f02afecb1a016e7d72a638c6decc9692e714bc3dee6e085954d79d28",
       "source": "merra2",
       "variable": "PRECTOTCORR"
     },
@@ -6487,6 +6625,29 @@
       "region_name": "North-eastern Africa (IPCC AR6 NEAF)",
       "rows": 549,
       "sha256": "8085a9d46fa4aad5beb1b9e639b2388ae839a39eba2c2dca3537374706483a75",
+      "source": "merra2",
+      "variable": "PRECTOTCORR"
+    },
+    {
+      "accessed": "2026-11-14T23:26:12Z",
+      "bbox": {
+        "lat_max": 47.085,
+        "lat_min": 34.815,
+        "lon_max": 28.604,
+        "lon_min": -9.497
+      },
+      "bytes": 16312,
+      "first": "1981-01-01",
+      "git_commit": "a043eab",
+      "has_provenance": true,
+      "kind": "series",
+      "land_only": true,
+      "last": "2026-09-01",
+      "path": "power_zarr/merra2_PRECTOTCORR_99a6d9558cc2.csv",
+      "region_id": "south_europe_countries",
+      "region_name": "Southern Europe (Mediterranean)",
+      "rows": 549,
+      "sha256": "0659db59258b64e3db3557cf5e4843679285e190297f77710c4d67894a3cfa20",
       "source": "merra2",
       "variable": "PRECTOTCORR"
     },
@@ -6924,6 +7085,29 @@
       "region_name": "Northern Australia (IPCC AR6 NAU)",
       "rows": 549,
       "sha256": "eb3e27f41c07350622ec3989caa5c7e35b0d13e0a2997e75fd3388276b1a5610",
+      "source": "merra2",
+      "variable": "PRECTOTCORR"
+    },
+    {
+      "accessed": "2026-11-14T23:28:41Z",
+      "bbox": {
+        "lat_max": 71.165,
+        "lat_min": 53.887,
+        "lon_max": 31.57,
+        "lon_min": 4.645
+      },
+      "bytes": 16213,
+      "first": "1981-01-01",
+      "git_commit": "a043eab",
+      "has_provenance": true,
+      "kind": "series",
+      "land_only": true,
+      "last": "2026-09-01",
+      "path": "power_zarr/merra2_PRECTOTCORR_d4a313269829.csv",
+      "region_id": "north_europe_countries",
+      "region_name": "Northern Europe (Fennoscandia and the Baltic states)",
+      "rows": 549,
+      "sha256": "e991b2a63573ba5205b0ed5b93395d9b0d59c5bf68eaa206945067974f346e8b",
       "source": "merra2",
       "variable": "PRECTOTCORR"
     },
@@ -8423,6 +8607,29 @@
       "variable": "T2M"
     },
     {
+      "accessed": "2026-11-14T23:27:10Z",
+      "bbox": {
+        "lat_max": 47.085,
+        "lat_min": 34.815,
+        "lon_max": 28.604,
+        "lon_min": -9.497
+      },
+      "bytes": 16181,
+      "first": "1981-01-01",
+      "git_commit": "a043eab",
+      "has_provenance": true,
+      "kind": "series",
+      "land_only": true,
+      "last": "2026-09-01",
+      "path": "power_zarr/merra2_T2M_2b33ef5dfe55.csv",
+      "region_id": "south_europe_countries",
+      "region_name": "Southern Europe (Mediterranean)",
+      "rows": 549,
+      "sha256": "49b986fdd17a32b5aeac479cd4408309b6b7d34bfb1db33158176c82372c4fca",
+      "source": "merra2",
+      "variable": "T2M"
+    },
+    {
       "accessed": "2026-11-14T18:01:48Z",
       "bbox": {
         "lat_max": 85.0,
@@ -8515,6 +8722,29 @@
       "variable": "T2M"
     },
     {
+      "accessed": "2026-11-14T23:28:53Z",
+      "bbox": {
+        "lat_max": 71.165,
+        "lat_min": 53.887,
+        "lon_max": 31.57,
+        "lon_min": 4.645
+      },
+      "bytes": 16409,
+      "first": "1981-01-01",
+      "git_commit": "a043eab",
+      "has_provenance": true,
+      "kind": "series",
+      "land_only": true,
+      "last": "2026-09-01",
+      "path": "power_zarr/merra2_T2M_3b928d460e45.csv",
+      "region_id": "north_europe_countries",
+      "region_name": "Northern Europe (Fennoscandia and the Baltic states)",
+      "rows": 549,
+      "sha256": "5bdc61fc0b957396b61c8429bde32c659438ab4368c55a6f55707add3a1b70ea",
+      "source": "merra2",
+      "variable": "T2M"
+    },
+    {
       "accessed": "2026-11-14T18:03:41Z",
       "bbox": {
         "lat_max": -10.0,
@@ -8557,6 +8787,29 @@
       "region_name": "North-western North America (IPCC AR6 NWN)",
       "rows": 549,
       "sha256": "23eb99c584af2c4e20951e7f489d731c7ad85962b696a4cc3107caf6669c1394",
+      "source": "merra2",
+      "variable": "T2M"
+    },
+    {
+      "accessed": "2026-11-14T23:23:11Z",
+      "bbox": {
+        "lat_max": 52.367,
+        "lat_min": 44.381,
+        "lon_max": 40.16,
+        "lon_min": 22.133
+      },
+      "bytes": 16339,
+      "first": "1981-01-01",
+      "git_commit": "a043eab",
+      "has_provenance": true,
+      "kind": "series",
+      "land_only": true,
+      "last": "2026-09-01",
+      "path": "power_zarr/merra2_T2M_3fa9a6ed7885.csv",
+      "region_id": "ukraine_border",
+      "region_name": "Ukraine",
+      "rows": 549,
+      "sha256": "00322bc69631ad67aa7289c3c462d8b0f21df5979e25c8053bd1d4d62d3800b0",
       "source": "merra2",
       "variable": "T2M"
     },
@@ -8902,6 +9155,29 @@
       "region_name": "Southern Australia (IPCC AR6 SAU)",
       "rows": 549,
       "sha256": "412469c8239123890481878b0c51b687270d96414be20b6e89f74f3e5f705125",
+      "source": "merra2",
+      "variable": "T2M"
+    },
+    {
+      "accessed": "2026-11-14T23:29:29Z",
+      "bbox": {
+        "lat_max": 48.222,
+        "lat_min": 44.383,
+        "lon_max": 37.221,
+        "lon_min": 28.199
+      },
+      "bytes": 16356,
+      "first": "1981-01-01",
+      "git_commit": "a043eab",
+      "has_provenance": true,
+      "kind": "series",
+      "land_only": true,
+      "last": "2026-09-01",
+      "path": "power_zarr/merra2_T2M_86b5d6803b55.csv",
+      "region_id": "south_ukraine_oblasts",
+      "region_name": "Southern Ukraine (steppe)",
+      "rows": 549,
+      "sha256": "adb3a619f7de79be3a460cf47a90568b3f8a7038f9e883deb515b5e4d96226cc",
       "source": "merra2",
       "variable": "T2M"
     },
@@ -11781,6 +12057,29 @@
       "variable": "PRECTOTCORR"
     },
     {
+      "accessed": "2026-11-14T23:27:59Z",
+      "bbox": {
+        "lat_max": 47.085,
+        "lat_min": 34.815,
+        "lon_max": 28.604,
+        "lon_min": -9.497
+      },
+      "bytes": 498854,
+      "first": "1980-12-31",
+      "git_commit": "a043eab",
+      "has_provenance": true,
+      "kind": "series",
+      "land_only": true,
+      "last": "2026-10-01",
+      "path": "power_zarr/merra2_daily_PRECTOTCORR_a415e4199f4e.csv",
+      "region_id": "south_europe_countries",
+      "region_name": "Southern Europe (Mediterranean)",
+      "rows": 16711,
+      "sha256": "85b0d19dae6b09f395e1cdcb1a61626b460927fdd6d6be008d16fc491d048fed",
+      "source": "merra2_daily",
+      "variable": "PRECTOTCORR"
+    },
+    {
       "accessed": "2026-11-14T14:18:10Z",
       "bbox": {
         "lat_max": 71.0,
@@ -11800,6 +12099,29 @@
       "region_name": "Northern Europe (Fennoscandia and the Baltic states)",
       "rows": 16711,
       "sha256": "0babe8406a74e9c05b4a988d4ed30c01250a2e543d4754952afa49bcf08f3bf1",
+      "source": "merra2_daily",
+      "variable": "PRECTOTCORR"
+    },
+    {
+      "accessed": "2026-11-14T23:27:59Z",
+      "bbox": {
+        "lat_max": 71.165,
+        "lat_min": 53.887,
+        "lon_max": 31.57,
+        "lon_min": 4.645
+      },
+      "bytes": 494045,
+      "first": "1980-12-31",
+      "git_commit": "a043eab",
+      "has_provenance": true,
+      "kind": "series",
+      "land_only": true,
+      "last": "2026-10-01",
+      "path": "power_zarr/merra2_daily_PRECTOTCORR_d7ef79ed023f.csv",
+      "region_id": "north_europe_countries",
+      "region_name": "Northern Europe (Fennoscandia and the Baltic states)",
+      "rows": 16711,
+      "sha256": "82cf34513877f0a9e8f147374682b7676fb60d25e70ba781071b5228f9c6c608",
       "source": "merra2_daily",
       "variable": "PRECTOTCORR"
     },
@@ -11827,6 +12149,29 @@
       "variable": "PRECTOTCORR"
     },
     {
+      "accessed": "2026-11-14T23:27:36Z",
+      "bbox": {
+        "lat_max": 52.367,
+        "lat_min": 44.381,
+        "lon_max": 40.16,
+        "lon_min": 22.133
+      },
+      "bytes": 502562,
+      "first": "1980-12-31",
+      "git_commit": "a043eab",
+      "has_provenance": true,
+      "kind": "series",
+      "land_only": true,
+      "last": "2026-10-01",
+      "path": "power_zarr/merra2_daily_PRECTOTCORR_ed80f5ec142c.csv",
+      "region_id": "ukraine_border",
+      "region_name": "Ukraine",
+      "rows": 16711,
+      "sha256": "93f5208e9f084821d094363ac85bc197545d120b3b2a6a814166ff409e28f99d",
+      "source": "merra2_daily",
+      "variable": "PRECTOTCORR"
+    },
+    {
       "accessed": "2026-11-14T16:05:36Z",
       "bbox": {
         "lat_max": 52.5,
@@ -11850,6 +12195,52 @@
       "variable": "PRECTOTCORR"
     },
     {
+      "accessed": "2026-11-14T23:27:43Z",
+      "bbox": {
+        "lat_max": 48.222,
+        "lat_min": 44.383,
+        "lon_max": 37.221,
+        "lon_min": 28.199
+      },
+      "bytes": 501779,
+      "first": "1980-12-31",
+      "git_commit": "a043eab",
+      "has_provenance": true,
+      "kind": "series",
+      "land_only": true,
+      "last": "2026-10-01",
+      "path": "power_zarr/merra2_daily_PRECTOTCORR_fa71799270a6.csv",
+      "region_id": "south_ukraine_oblasts",
+      "region_name": "Southern Ukraine (steppe)",
+      "rows": 16711,
+      "sha256": "2cd8569a44f71db8936780d6ce07aa9fcab1ea6027a9c778e8fc63dc684260ab",
+      "source": "merra2_daily",
+      "variable": "PRECTOTCORR"
+    },
+    {
+      "accessed": "2026-11-14T23:26:48Z",
+      "bbox": {
+        "lat_max": 71.165,
+        "lat_min": 53.887,
+        "lon_max": 31.57,
+        "lon_min": 4.645
+      },
+      "bytes": 498771,
+      "first": "1980-12-31",
+      "git_commit": "a043eab",
+      "has_provenance": true,
+      "kind": "series",
+      "land_only": true,
+      "last": "2026-10-01",
+      "path": "power_zarr/merra2_daily_T2M_MAX_05aa2b79393b.csv",
+      "region_id": "north_europe_countries",
+      "region_name": "Northern Europe (Fennoscandia and the Baltic states)",
+      "rows": 16711,
+      "sha256": "515fddb54fb998f94e63c6387d0b18fece1d515b95059e6a0f1d816d64f367fd",
+      "source": "merra2_daily",
+      "variable": "T2M_MAX"
+    },
+    {
       "accessed": "2026-11-14T14:18:15Z",
       "bbox": {
         "lat_max": 48.5,
@@ -11869,6 +12260,29 @@
       "region_name": "Southern Ukraine (steppe)",
       "rows": 16711,
       "sha256": "a44f47479498eec031a9df3b6361d0f37cd0a307989cdb294d60f59334be26be",
+      "source": "merra2_daily",
+      "variable": "T2M_MAX"
+    },
+    {
+      "accessed": "2026-11-14T23:26:25Z",
+      "bbox": {
+        "lat_max": 52.367,
+        "lat_min": 44.381,
+        "lon_max": 40.16,
+        "lon_min": 22.133
+      },
+      "bytes": 495833,
+      "first": "1980-12-31",
+      "git_commit": "a043eab",
+      "has_provenance": true,
+      "kind": "series",
+      "land_only": true,
+      "last": "2026-10-01",
+      "path": "power_zarr/merra2_daily_T2M_MAX_5e9998da9154.csv",
+      "region_id": "ukraine_border",
+      "region_name": "Ukraine",
+      "rows": 16711,
+      "sha256": "ded4f71eb37b1e8b509d260de51682314c024d49b9d8917f141f09703dfcb605",
       "source": "merra2_daily",
       "variable": "T2M_MAX"
     },
@@ -11942,6 +12356,52 @@
       "variable": "T2M_MAX"
     },
     {
+      "accessed": "2026-11-14T23:26:35Z",
+      "bbox": {
+        "lat_max": 48.222,
+        "lat_min": 44.383,
+        "lon_max": 37.221,
+        "lon_min": 28.199
+      },
+      "bytes": 494331,
+      "first": "1980-12-31",
+      "git_commit": "a043eab",
+      "has_provenance": true,
+      "kind": "series",
+      "land_only": true,
+      "last": "2026-10-01",
+      "path": "power_zarr/merra2_daily_T2M_MAX_d74fc34bafa2.csv",
+      "region_id": "south_ukraine_oblasts",
+      "region_name": "Southern Ukraine (steppe)",
+      "rows": 16711,
+      "sha256": "51f85a7564137fb20ec4847fd999b9007d8789cd519d154e98b7d3a0fc796f99",
+      "source": "merra2_daily",
+      "variable": "T2M_MAX"
+    },
+    {
+      "accessed": "2026-11-14T23:27:02Z",
+      "bbox": {
+        "lat_max": 47.085,
+        "lat_min": 34.815,
+        "lon_max": 28.604,
+        "lon_min": -9.497
+      },
+      "bytes": 493204,
+      "first": "1980-12-31",
+      "git_commit": "a043eab",
+      "has_provenance": true,
+      "kind": "series",
+      "land_only": true,
+      "last": "2026-10-01",
+      "path": "power_zarr/merra2_daily_T2M_MAX_dad26b54edb9.csv",
+      "region_id": "south_europe_countries",
+      "region_name": "Southern Europe (Mediterranean)",
+      "rows": 16711,
+      "sha256": "c417d83b8e7847d1949cbbee6e107c633960bb62e03c8933f87c2fdb63f0c4c7",
+      "source": "merra2_daily",
+      "variable": "T2M_MAX"
+    },
+    {
       "accessed": "2026-11-14T14:18:46Z",
       "bbox": {
         "lat_max": 48.5,
@@ -11961,6 +12421,52 @@
       "region_name": "Southern Ukraine (steppe)",
       "rows": 16711,
       "sha256": "d342afdf8f86fdcd3fc0bdb187fce766eff89f353b367e241b092b012920573e",
+      "source": "merra2_daily",
+      "variable": "T2M_MIN"
+    },
+    {
+      "accessed": "2026-11-14T23:27:40Z",
+      "bbox": {
+        "lat_max": 47.085,
+        "lat_min": 34.815,
+        "lon_max": 28.604,
+        "lon_min": -9.497
+      },
+      "bytes": 495004,
+      "first": "1980-12-31",
+      "git_commit": "a043eab",
+      "has_provenance": true,
+      "kind": "series",
+      "land_only": true,
+      "last": "2026-10-01",
+      "path": "power_zarr/merra2_daily_T2M_MIN_6ee3d1935cfd.csv",
+      "region_id": "south_europe_countries",
+      "region_name": "Southern Europe (Mediterranean)",
+      "rows": 16711,
+      "sha256": "ffdfc11534e0be516a9a3d29b6d3baf809096923b3426e33ba50cac0c5afeb62",
+      "source": "merra2_daily",
+      "variable": "T2M_MIN"
+    },
+    {
+      "accessed": "2026-11-14T23:27:21Z",
+      "bbox": {
+        "lat_max": 48.222,
+        "lat_min": 44.383,
+        "lon_max": 37.221,
+        "lon_min": 28.199
+      },
+      "bytes": 498249,
+      "first": "1980-12-31",
+      "git_commit": "a043eab",
+      "has_provenance": true,
+      "kind": "series",
+      "land_only": true,
+      "last": "2026-10-01",
+      "path": "power_zarr/merra2_daily_T2M_MIN_73e8f1f49c00.csv",
+      "region_id": "south_ukraine_oblasts",
+      "region_name": "Southern Ukraine (steppe)",
+      "rows": 16711,
+      "sha256": "2ef4e7a5cc7ce0375d687dc30b3d72290d1507ff165c4a19ebff92e8d991b4e3",
       "source": "merra2_daily",
       "variable": "T2M_MIN"
     },
@@ -12030,6 +12536,52 @@
       "region_name": "Southern Europe (Mediterranean)",
       "rows": 16711,
       "sha256": "a930a273d05e43fd9a844c73edd99a9db78270aed9a6968702d15a5fc4ac18f2",
+      "source": "merra2_daily",
+      "variable": "T2M_MIN"
+    },
+    {
+      "accessed": "2026-11-14T23:27:11Z",
+      "bbox": {
+        "lat_max": 52.367,
+        "lat_min": 44.381,
+        "lon_max": 40.16,
+        "lon_min": 22.133
+      },
+      "bytes": 499233,
+      "first": "1980-12-31",
+      "git_commit": "a043eab",
+      "has_provenance": true,
+      "kind": "series",
+      "land_only": true,
+      "last": "2026-10-01",
+      "path": "power_zarr/merra2_daily_T2M_MIN_d68a0c89fbb7.csv",
+      "region_id": "ukraine_border",
+      "region_name": "Ukraine",
+      "rows": 16711,
+      "sha256": "6af37f7d9a8f34fd2f16bcaf93d9a8ec30b9aa466a0c8bee391443fe0b6562d4",
+      "source": "merra2_daily",
+      "variable": "T2M_MIN"
+    },
+    {
+      "accessed": "2026-11-14T23:27:27Z",
+      "bbox": {
+        "lat_max": 71.165,
+        "lat_min": 53.887,
+        "lon_max": 31.57,
+        "lon_min": 4.645
+      },
+      "bytes": 499613,
+      "first": "1980-12-31",
+      "git_commit": "a043eab",
+      "has_provenance": true,
+      "kind": "series",
+      "land_only": true,
+      "last": "2026-10-01",
+      "path": "power_zarr/merra2_daily_T2M_MIN_f95ac7158b6b.csv",
+      "region_id": "north_europe_countries",
+      "region_name": "Northern Europe (Fennoscandia and the Baltic states)",
+      "rows": 16711,
+      "sha256": "f5b13533f2448e83440a008f69427c46636f607ec65c1e9dc325d23aeceb39ae",
       "source": "merra2_daily",
       "variable": "T2M_MIN"
     },
@@ -15416,6 +15968,6 @@
     }
   ],
   "freeze_date": "2026-11-14",
-  "n_files": 673,
-  "total_bytes": 214830018
+  "n_files": 697,
+  "total_bytes": 220998162
 }

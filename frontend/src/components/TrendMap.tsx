@@ -166,7 +166,7 @@ function baseStyle(): StyleSpecification {
     layers: [
       { id: 'ocean', type: 'background', paint: { 'background-color': cssVar('--map-ocean') } },
       { id: 'land', type: 'fill', source: 'land', paint: { 'fill-color': cssVar('--map-land') } },
-      { id: 'borders', type: 'line', source: 'countries', paint: { 'line-color': cssVar('--map-border'), 'line-width': ['interpolate', ['linear'], ['zoom'], 1, 0.4, 5, 0.9] } },
+      { id: 'borders', type: 'line', source: 'countries', paint: { 'line-color': cssVar('--map-border'), 'line-width': ['interpolate', ['linear'], ['zoom'], 1, 0.5, 4, 1.1, 7, 1.8] } },
       { id: 'coast', type: 'line', source: 'land', paint: { 'line-color': cssVar('--map-coast'), 'line-width': ['interpolate', ['linear'], ['zoom'], 1, 0.5, 5, 1.1] } },
       {
         id: 'stipple', type: 'circle', source: 'stipple', minzoom: 2.6,
@@ -178,7 +178,7 @@ function baseStyle(): StyleSpecification {
       },
       { id: 'regions-fill', type: 'fill', source: 'regions', paint: { 'fill-color': ink, 'fill-opacity': 0 } },
       { id: 'regions-halo', type: 'line', source: 'regions', paint: { 'line-color': cssVar('--map-halo'), 'line-width': ['case', ['any', ['==', ['get', 'active'], 1], ['==', ['get', 'hl'], 1]], 6, 3.5], 'line-opacity': 0.9 } },
-      { id: 'regions-line', type: 'line', source: 'regions', paint: { 'line-color': ink, 'line-width': ['case', ['==', ['get', 'hl'], 1], 3.5, ['==', ['get', 'active'], 1], 3, 1.3] } },
+      { id: 'regions-line', type: 'line', source: 'regions', paint: { 'line-color': ink, 'line-width': ['case', ['==', ['get', 'hl'], 1], 3.5, ['==', ['get', 'active'], 1], 3, 1.8] } },
     ],
   };
 }

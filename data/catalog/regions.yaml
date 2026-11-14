@@ -12,7 +12,7 @@ version: 0.1
 # Generated region sets read together with this file (acquire.list_regions). regions_ar6.yaml holds
 # the 46 IPCC AR6 WGI land reference regions as outlines (ids ar6_<acronym>); regenerate it with
 # scripts/make_ar6_regions.py, never by hand.
-include: [regions_ar6.yaml]
+include: [regions_ar6.yaml, regions_countries.yaml]
 regions:
   - id: ukraine
     name: Ukraine
