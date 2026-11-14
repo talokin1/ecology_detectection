@@ -20,6 +20,9 @@ node_modules/
 dist/
 .vite/
 .next/
+frontend/test-results/
+*.tsbuildinfo
+frontend/playwright-report/
 
 # Data (large raw files are rebuilt by scripts/; small curated outputs may be committed)
 data/cache/raw/
@@ -35,5 +38,11 @@ Thumbs.db
 .vscode/
 .idea/
 
+# Local translations for team discussion (repo is English-only)
+*.uk.md
+
 # Claude Code local overrides
 .claude/settings.local.json
+
+# Natural Earth downloads (rebuilt by scripts/make_geo.py)
+data/cache/naturalearth/

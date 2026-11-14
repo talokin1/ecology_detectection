@@ -1,0 +1,263 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "analysis.schema.json",
+  "title": "AnalysisResult",
+  "description": "Everything the Case screen shows for one region x variable. All numbers are rounded and all texts are written by the stats pipeline; the app draws them verbatim.",
+  "type": "object",
+  "required": ["schema_version", "variable_id", "region_id", "period", "record_years", "n", "series", "trend", "tests", "verdict", "years_to_detect", "emergence", "seasons", "monthly_profile", "extremes", "spatial", "neighbour", "insights", "insights_audit", "provenance"],
+  "properties": {
+    "schema_version": { "type": "string" },
+    "variable_id": { "type": "string" },
+    "region_id": { "type": "string" },
+    "period": { "$ref": "common.schema.json#/$defs/Period" },
+    "record_years": { "type": "number" },
+    "n": { "type": "integer", "description": "Number of valid months." },
+    "series": {
+      "type": "object",
+      "required": ["dates", "raw", "anomaly", "smooth12", "annual", "raw_label", "anomaly_label", "baseline"],
+      "properties": {
+        "dates": { "type": "array", "items": { "$ref": "common.schema.json#/$defs/YearMonth" } },
+        "raw": { "type": "array", "items": { "$ref": "common.schema.json#/$defs/NumOrNull" }, "description": "null = missing month (drawn as a gap)." },
+        "anomaly": { "type": "array", "items": { "$ref": "common.schema.json#/$defs/NumOrNull" } },
+        "smooth12": { "type": "array", "items": { "$ref": "common.schema.json#/$defs/NumOrNull" }, "description": "Centred 12-month running mean of anomalies (null at the edges)." },
+        "annual": {
+          "type": "object",
+          "required": ["years", "anomaly"],
+          "properties": {
+            "years": { "type": "array", "items": { "type": "integer" } },
+            "anomaly": { "type": "array", "items": { "$ref": "common.schema.json#/$defs/NumOrNull" } }
+          },
+          "additionalProperties": false
+        },
+        "raw_label": { "type": "string" },
+        "anomaly_label": { "type": "string" },
+        "baseline": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "trend": {
+      "type": "object",
+      "required": ["sen_per_decade", "ci90", "ci95", "ci99", "total_change", "total_change_ci95", "percent_change", "line", "band95", "display"],
+      "properties": {
+        "sen_per_decade": { "type": "number" },
+        "ci90": { "$ref": "common.schema.json#/$defs/Range" },
+        "ci95": { "$ref": "common.schema.json#/$defs/Range" },
+        "ci99": { "$ref": "common.schema.json#/$defs/Range" },
+        "total_change": { "type": "number" },
+        "total_change_ci95": { "$ref": "common.schema.json#/$defs/Range" },
+        "percent_change": { "$ref": "common.schema.json#/$defs/NumOrNull" },
+        "line": {
+          "type": "object",
+          "required": ["x", "y"],
+          "properties": {
+            "x": { "type": "array", "items": { "$ref": "common.schema.json#/$defs/YearMonth" } },
+            "y": { "type": "array", "items": { "type": "number" } }
+          },
+          "additionalProperties": false
+        },
+        "band95": {
+          "type": "object",
+          "required": ["x", "lower", "upper"],
+          "properties": {
+            "x": { "type": "array", "items": { "$ref": "common.schema.json#/$defs/YearMonth" } },
+            "lower": { "type": "array", "items": { "type": "number" } },
+            "upper": { "type": "array", "items": { "type": "number" } }
+          },
+          "additionalProperties": false
+        },
+        "display": {
+          "type": "object",
+          "required": ["rate", "rate_value", "rate_unit", "range", "total", "total_value", "total_unit", "total_label", "total_range", "percent", "annotation"],
+          "properties": {
+            "rate": { "type": "string" },
+            "rate_value": { "type": "string", "description": "Signed number only, e.g. +0.52" },
+            "rate_unit": { "type": "string" },
+            "total_value": { "type": "string" },
+            "total_unit": { "type": "string" },
+            "range": { "type": "string" },
+            "total": { "type": "string" },
+            "total_label": { "type": "string" },
+            "total_range": { "type": "string" },
+            "percent": { "type": ["string", "null"] },
+            "annotation": { "type": "string" }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "tests": {
+      "type": "object",
+      "required": ["mk", "ols"],
+      "properties": {
+        "mk": {
+          "type": "object",
+          "required": ["p", "z", "tau", "variance_correction", "level"],
+          "properties": {
+            "p": { "type": "number" }, "z": { "type": "number" }, "tau": { "type": "number" },
+            "variance_correction": { "type": "number" },
+            "level": { "$ref": "common.schema.json#/$defs/Level" }
+          },
+          "additionalProperties": false
+        },
+        "ols": {
+          "type": "object",
+          "required": ["p", "slope_per_decade", "n_eff", "r1", "level"],
+          "properties": {
+            "p": { "type": "number" }, "slope_per_decade": { "type": "number" },
+            "n_eff": { "type": "number" }, "r1": { "type": "number" },
+            "level": { "$ref": "common.schema.json#/$defs/Level" }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "verdict": {
+      "type": "object",
+      "required": ["level", "direction", "headline", "sentence", "how_sure", "methods_disagree"],
+      "properties": {
+        "level": { "$ref": "common.schema.json#/$defs/Level" },
+        "direction": { "enum": ["up", "down", "flat"] },
+        "headline": { "type": "string" },
+        "sentence": { "type": "string" },
+        "how_sure": { "type": "string" },
+        "methods_disagree": { "type": "boolean" }
+      },
+      "additionalProperties": false
+    },
+    "years_to_detect": {
+      "oneOf": [
+        { "type": "null" },
+        {
+          "type": "object",
+          "required": ["value", "text"],
+          "properties": { "value": { "type": ["integer", "null"] }, "text": { "type": "string" } },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "emergence": {
+      "type": "object",
+      "required": ["year", "ratio_now", "swing"],
+      "properties": {
+        "year": { "type": ["integer", "null"] },
+        "ratio_now": { "$ref": "common.schema.json#/$defs/NumOrNull" },
+        "swing": { "type": "number" }
+      },
+      "additionalProperties": false
+    },
+    "seasons": { "type": "array", "items": { "$ref": "#/$defs/SeasonTrend" } },
+    "monthly_profile": { "type": "array", "items": { "$ref": "#/$defs/MonthTrend" } },
+    "extremes": {
+      "oneOf": [
+        { "type": "null" },
+        {
+          "type": "object",
+          "required": ["kind", "label", "threshold_text", "years", "counts", "sen_per_decade", "p", "early", "late", "q", "passes_fdr"],
+          "properties": {
+            "kind": { "type": "string" },
+            "label": { "type": "string" },
+            "threshold_text": { "type": "string" },
+            "years": { "type": "array", "items": { "type": "integer" } },
+            "counts": { "type": "array", "items": { "type": "integer" } },
+            "sen_per_decade": { "type": "number" },
+            "p": { "type": "number" },
+            "early": { "$ref": "#/$defs/PeriodMean" },
+            "late": { "$ref": "#/$defs/PeriodMean" },
+            "q": { "type": "number" },
+            "passes_fdr": { "type": "boolean" }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "spatial": {
+      "type": "object",
+      "required": ["share_opposite_significant", "share_same_significant", "warn"],
+      "properties": {
+        "share_opposite_significant": { "type": "number" },
+        "share_same_significant": { "type": "number" },
+        "warn": { "type": "boolean" }
+      },
+      "additionalProperties": false
+    },
+    "neighbour": {
+      "oneOf": [
+        { "type": "null" },
+        {
+          "type": "object",
+          "required": ["region_id", "name", "distance_km", "distance_text", "bearing", "words"],
+          "properties": {
+            "region_id": { "type": "string" }, "name": { "type": "string" },
+            "distance_km": { "type": "integer" }, "distance_text": { "type": "string" },
+            "bearing": { "type": "string" }, "words": { "type": "string" }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "insights": { "type": "array", "items": { "$ref": "#/$defs/Insight" } },
+    "insights_audit": {
+      "type": "object",
+      "required": ["tested", "passed", "shown", "q"],
+      "properties": {
+        "tested": { "type": "integer" }, "passed": { "type": "integer" },
+        "shown": { "type": "integer" }, "q": { "type": "number" }
+      },
+      "additionalProperties": false
+    },
+    "provenance": { "$ref": "common.schema.json#/$defs/Provenance" }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "SeasonTrend": {
+      "type": "object",
+      "required": ["season", "label", "sen_per_decade", "ci95", "p", "display", "q", "passes_fdr"],
+      "properties": {
+        "season": { "enum": ["DJF", "MAM", "JJA", "SON"] },
+        "label": { "type": "string" },
+        "sen_per_decade": { "type": "number" },
+        "ci95": { "$ref": "common.schema.json#/$defs/Range" },
+        "p": { "type": "number" },
+        "display": { "type": "string" },
+        "q": { "type": "number" },
+        "passes_fdr": { "type": "boolean" }
+      },
+      "additionalProperties": false
+    },
+    "MonthTrend": {
+      "type": "object",
+      "required": ["month", "label", "sen_per_decade", "ci95", "p", "q", "passes_fdr"],
+      "properties": {
+        "month": { "type": "integer", "minimum": 1, "maximum": 12 },
+        "label": { "type": "string" },
+        "sen_per_decade": { "type": "number" },
+        "ci95": { "$ref": "common.schema.json#/$defs/Range" },
+        "p": { "type": "number" },
+        "q": { "type": "number" },
+        "passes_fdr": { "type": "boolean" }
+      },
+      "additionalProperties": false
+    },
+    "PeriodMean": {
+      "type": "object",
+      "required": ["label", "mean_per_year"],
+      "properties": { "label": { "type": "string" }, "mean_per_year": { "type": "number" } },
+      "additionalProperties": false
+    },
+    "Insight": {
+      "type": "object",
+      "required": ["kind", "text", "evidence_level", "methods_anchor", "numbers"],
+      "properties": {
+        "kind": { "enum": ["total_change", "signal_noise", "season", "months", "extremes", "neighbour", "heterogeneity", "not_yet", "caveat"] },
+        "text": { "type": "string" },
+        "evidence_level": { "enum": ["strong", "moderate", "weak", "descriptive"] },
+        "methods_anchor": { "type": "string", "description": "Id of the section on the Methods page that explains this insight." },
+        "numbers": { "type": "object" },
+        "q": { "type": "number", "description": "BH-adjusted p across the case's family of checks (M11); present only for tested insights." }
+      },
+      "additionalProperties": false
+    }
+  }
+}

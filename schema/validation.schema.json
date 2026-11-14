@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "validation.schema.json",
+  "title": "Validation",
+  "description": "Monte-Carlo false-alarm and power table from validate_type1.py (Methods page).",
+  "type": "object",
+  "required": ["schema_version", "runs", "alpha", "source", "rows"],
+  "properties": {
+    "schema_version": { "type": "string" },
+    "runs": { "type": "integer" },
+    "alpha": { "type": "number" },
+    "source": { "type": "string" },
+    "rows": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["n_months", "phi", "test", "false_alarm_rate", "power"],
+        "properties": {
+          "n_months": { "type": "integer" },
+          "phi": { "type": "number" },
+          "test": { "type": "string" },
+          "false_alarm_rate": { "type": "number" },
+          "power": { "type": "number" }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

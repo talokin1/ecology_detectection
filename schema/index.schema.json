@@ -1,0 +1,92 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "index.schema.json",
+  "title": "Index",
+  "description": "Entry point of the app: cases, prepared regions (with outlines), variables and a verdict summary per region x variable.",
+  "type": "object",
+  "required": ["schema_version", "synthetic", "generated", "default_case", "cases", "regions", "variables", "verdicts"],
+  "properties": {
+    "schema_version": { "type": "string" },
+    "synthetic": { "type": "boolean" },
+    "generated": { "type": "string" },
+    "default_case": { "type": "string" },
+    "cases": { "type": "array", "items": { "$ref": "#/$defs/Case" } },
+    "regions": { "type": "array", "items": { "$ref": "#/$defs/Region" } },
+    "variables": { "type": "array", "items": { "$ref": "#/$defs/VariableRef" } },
+    "verdicts": {
+      "type": "object",
+      "description": "Key: <region_id>__<variable_id>.",
+      "additionalProperties": { "$ref": "#/$defs/VerdictSummary" }
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "Case": {
+      "type": "object",
+      "required": ["id", "slug", "title", "question", "teaser", "variable_id", "region_id"],
+      "properties": {
+        "id": { "type": "string" },
+        "slug": { "type": "string" },
+        "title": { "type": "string" },
+        "question": { "type": "string" },
+        "teaser": { "type": "string" },
+        "variable_id": { "type": "string" },
+        "region_id": { "type": "string" },
+        "compare_region_id": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "Region": {
+      "type": "object",
+      "required": ["id", "name", "place_type", "bbox", "centroid", "geometry"],
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "place_type": { "type": "string" },
+        "bbox": { "type": "array", "items": { "type": "number" }, "minItems": 4, "maxItems": 4, "description": "[west, south, east, north]" },
+        "centroid": { "type": "array", "items": { "type": "number" }, "minItems": 2, "maxItems": 2, "description": "[lon, lat], a point inside the region" },
+        "geometry": {
+          "type": "object",
+          "required": ["type", "coordinates"],
+          "properties": {
+            "type": { "enum": ["Polygon", "MultiPolygon"] },
+            "coordinates": { "type": "array" }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "VariableRef": {
+      "type": "object",
+      "required": ["id", "catalog_id", "name", "long_name", "units", "rate_units", "palette", "words", "topic", "land_only", "source", "parameter", "period"],
+      "properties": {
+        "id": { "type": "string" },
+        "catalog_id": { "type": "string" },
+        "name": { "type": "string" },
+        "long_name": { "type": "string" },
+        "units": { "type": "string" },
+        "rate_units": { "type": "string" },
+        "palette": { "$ref": "common.schema.json#/$defs/Palette" },
+        "words": { "$ref": "common.schema.json#/$defs/Words" },
+        "topic": { "type": "string" },
+        "land_only": { "type": "boolean" },
+        "source": { "type": "string" },
+        "parameter": { "type": "string" },
+        "period": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "VerdictSummary": {
+      "type": "object",
+      "required": ["level", "direction", "headline", "rate"],
+      "properties": {
+        "level": { "$ref": "common.schema.json#/$defs/Level" },
+        "direction": { "enum": ["up", "down", "flat"] },
+        "headline": { "type": "string" },
+        "rate": { "type": "string" }
+      },
+      "additionalProperties": false
+    }
+  }
+}

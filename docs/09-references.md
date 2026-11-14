@@ -34,6 +34,7 @@ Add every dataset, tool, library, image and font actually used. Mark `used: yes`
 - Weatherhead, E. C., et al. (1998). Factors affecting the detection of trends: Statistical considerations and applications to environmental data. *JGR*, 103, 17149–17161.
 - Benjamini, Y., & Hochberg, Y. (1995). Controlling the false discovery rate. *JRSS B*, 57, 289–300.
 - Wilks, D. S. (2016). "The stippling shows statistically significant grid points." *BAMS*, 97, 2263–2273.
+- Hawkins, E., & Sutton, R. (2012). Time of emergence of climate signals. *GRL*, 39, L01702. (to verify)
 - Gilbert, R. O. (1987). *Statistical Methods for Environmental Pollution Monitoring*. Wiley.
 
 ## Software libraries
@@ -43,4 +44,19 @@ Add every dataset, tool, library, image and font actually used. Mark `used: yes`
 | xarray, netCDF4 | Apache/MIT | Gridded data | |
 | earthaccess, harmony-py | MIT | NASA data access | |
 | FastAPI | MIT | API | |
-| React, Vite, MapLibre GL, Plotly/ECharts | MIT/BSD | Frontend | |
+| React 18, React Router 6 | MIT | Web app UI and routing | yes |
+| Vite, TypeScript | MIT / Apache-2.0 | Build | yes |
+| MapLibre GL JS 6 | BSD-3-Clause | Trend maps | yes |
+| Plotly.js (basic bundle) | MIT | Time-series and Methods charts | yes |
+| Ajv | MIT | JSON contract validation in the browser | yes |
+| shapely, PyYAML, jsonschema | BSD / MIT | Region outlines, catalog, data checks (scripts/) | yes |
+| Vitest, Playwright, ESLint | MIT / Apache-2.0 | Tests | yes |
+
+## Maps, fonts and other assets
+| Name | License | URL | Used for | used |
+|---|---|---|---|---|
+| Natural Earth 1:10m admin-0 countries, Ukraine point of view (`ne_10m_admin_0_countries_ukr`) | Public domain | https://www.naturalearthdata.com/ | Country borders, region outlines | yes |
+| Natural Earth 1:50m land (`ne_50m_land`) | Public domain | https://www.naturalearthdata.com/ | Coastlines, land mask | yes |
+| Inter (via @fontsource/inter) | SIL OFL 1.1 | https://rsms.me/inter/ | The only typeface | yes |
+| ColorBrewer RdBu, BrBG, PuOr | Apache-2.0 | https://colorbrewer2.org/ | Diverging map palettes | yes |
+| Okabe-Ito palette | — (published palette) | https://jfly.uni-koeln.de/color/ | Two-region identity colours | yes |
