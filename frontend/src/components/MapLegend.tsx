@@ -76,7 +76,7 @@ export function MapLegend({ layer, variant = 'panel', caption }: { layer: MapLay
  * The info button expands the full explanation; the cross hides the legend (a "Legend" button in
  * the filter bar brings it back).
  */
-export function LegendChip({ layer, synthetic, onClose, caption }: { layer: MapLayer; synthetic: boolean; onClose: () => void; caption?: string }) {
+export function LegendChip({ layer, onClose, caption }: { layer: MapLayer; onClose: () => void; caption?: string }) {
   const [open, setOpen] = useState(false);
   const sw = swatches(layer.palette as PaletteName);
   const lg = layer.legend;
@@ -108,7 +108,7 @@ export function LegendChip({ layer, synthetic, onClose, caption }: { layer: MapL
             <li>{S.map.keyFaded}.</li>
             <li><i className="legend__swatch legend__swatch--nodata" />{S.map.keyNoData}.</li>
           </ul>
-          <p className="legend__caption">{caption ? `${caption} ` : ''}{synthetic ? `${S.legend.demo} ` : ''}{S.legend.projection} {S.legend.credit}</p>
+          <p className="legend__caption">{caption ? `${caption} ` : ''}{S.legend.projection} {S.legend.credit}</p>
         </div>
       )}
     </div>

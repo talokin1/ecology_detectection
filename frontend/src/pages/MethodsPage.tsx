@@ -146,7 +146,9 @@ export function MethodsPage() {
 
       <section id="two-tests" className="msec">
         <h2>Two independent tests</h2>
-        <p>As a second opinion we fit an ordinary regression line and judge it with an <strong>effective sample size</strong>, n<sub>eff</sub> = n (1 − r<sub>1</sub>) / (1 + r<sub>1</sub>): 528 similar months can carry as little information as 150 independent ones. If the two tests reach different levels, the page shows both p-values and reports the <strong>weaker</strong> verdict.</p>
+        <p>As a second opinion we fit an ordinary regression line and judge it with an <strong>effective sample size</strong>, n<sub>eff</sub> = n (1 − r<sub>1</sub>) / (1 + r<sub>1</sub>): hundreds of similar months can carry the information of far fewer independent ones (for soil wetness, often fewer than 50). If the two tests reach different levels, the page shows both p-values and reports the <strong>weaker</strong> verdict.</p>
+        <p><strong>Is the verdict borderline?</strong> For every region and variable we repeat the verdict rule three more ways, chosen in advance: without the first two years, without the last two years, and on one average per year (fewer, more independent points). The headline verdict never changes, but if any of the three disagrees, the “How sure?” line says “Borderline” and names it.</p>
+        <p><strong>Rounding.</strong> Ranges are rounded outwards (the lower bound down, the upper bound up), so a printed range is never narrower than the computed one. The exact values are in the downloadable files.</p>
       </section>
 
       <section id="false-alarms" className="msec">
@@ -218,6 +220,13 @@ export function MethodsPage() {
         <Audit index={index.data} />
       </section>
 
+      <section id="deeper" className="msec">
+        <h2>Deeper checks</h2>
+        <p>Each investigation also shows results from the team's second statistics pipeline (<code>trend_detective.climate_stats</code>), run on the same NASA POWER record. From daily highs, lows and rain it counts events people notice: summer days above 25 °C, frost nights, the hottest day and coldest night of the year, the growing season, the last spring frost, the wettest day and the longest dry spell. It also computes two drought indices for the summer (June–August and March–August): SPI uses rain only, SPEI uses rain minus the water warm air can draw from the ground (Hargreaves evaporative demand). If SPEI falls while SPI does not, heat rather than missing rain is drying the land.</p>
+        <p>Four checks test the main trend in other ways: a block bootstrap of the rate (whole years resampled 999 times), a comparison of the two halves of the record (split fixed in advance at the calendar midpoint), a comparison of year-to-year swings in the two halves, and the Pettitt test for a single sudden jump.</p>
+        <p>The rows to show were chosen by what each variable is about, before looking at the results, and every row is shown whether or not it changed. A row says “Clear change” only if both of the pipeline's tests (Mann-Kendall with memory correction and regression with effective sample size) pass after the Benjamini-Hochberg correction over every test run for that region (q = 0.05). Daily data are in our frozen copy only for the four European regions, so some rows are not available for the Sahel. The full output of the pipeline for each region can be downloaded as JSON from the investigation page.</p>
+      </section>
+
       <section id="neighbour" className="msec">
         <h2>The neighbour hint</h2>
         <p>For each investigation we look for the nearest prepared region (within 3,000 km) where the same variable has at least “Evidence” of a trend in the other direction.</p>
@@ -237,7 +246,7 @@ export function MethodsPage() {
         <h2>What this cannot tell you</h2>
         <ul className="bullets">
           <li>It describes change; it does not say what caused it. Words like “because of climate change” are attribution, which we do not do.</li>
-          <li>NASA POWER is based on the MERRA-2 reanalysis: a weather model corrected by observations, about 50 km per grid square. It cannot see frost in a valley or a single field. The map is regridded to 1°.</li>
+          <li>NASA POWER is based on the MERRA-2 reanalysis: a weather model corrected by observations, about 50 km per grid square. It cannot see frost in a valley or a single field. The world map averages it into 2° squares (about 220 km).</li>
           <li>The trend is a straight line through the whole record. We never pick a start year that makes a trend look stronger.</li>
           <li>The map uses one value per year per square; regional investigations use monthly data.</li>
           <li>The world map uses Web Mercator, which enlarges areas near the poles.</li>
@@ -247,10 +256,7 @@ export function MethodsPage() {
 
       <section id="data" className="msec">
         <h2>Data</h2>
-        {index.data.synthetic ? (
-          <p className="callout"><strong>The numbers currently on this site are synthetic.</strong> They were generated to look like NASA POWER monthly data so that we could build and test the design. The statistics are computed from them with the real pipeline, but they describe no real place. The real NASA data replace them file by file; each file says in its provenance whether it is synthetic.</p>
-        ) : null}
-        <p>Planned sources: NASA POWER (MERRA-2 meteorology), with satellite records from GES DISC and LP DAAC. Basemap: Natural Earth (public domain), Ukrainian point of view for borders. Statistics: <code>trend_stats.py</code>, open in our repository.</p>
+        <p>All numbers on this site come from NASA POWER, version 10 (MERRA-2 reanalysis): monthly air temperature at 2 m (T2M), precipitation (PRECTOTCORR) and root-zone soil wetness (GWETROOT), and daily highs, lows and precipitation for the deeper checks. We read them from the POWER archive on AWS Open Data on 14–15 November 2026 and keep a frozen copy in our repository; every file has a checksum and a provenance record, and a check refuses any change. Regional values are averages of the land grid squares (about 50 km) whose centre lies inside the region, weighted by cos(latitude). The European regions follow real borders from Natural Earth: Ukraine with Crimea; southern Ukraine as the Odesa, Mykolaiv, Kherson and Zaporizhzhia oblasts, Crimea and Sevastopol; northern Europe as Norway, Sweden, Finland, Denmark and the Baltic states; southern Europe as Portugal, Spain, Italy, Malta, Greece, the western Balkans (Kosovo as part of Serbia in our border file) and Bulgaria. The Sahel is a climate belt, not a country, so it is a box (10–18°N, 15°W–35°E). Every investigation uses whole calendar years, from January 1981 to the last year complete in every file. Basemap: Natural Earth (public domain), Ukrainian point of view for borders. Statistics: <code>trend_stats.py</code> and <code>trend_detective.climate_stats</code>, open in our repository.</p>
       </section>
 
       <section id="glossary" className="msec">

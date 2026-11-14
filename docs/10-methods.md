@@ -37,6 +37,14 @@ inside, on a right or top edge outside, so neighbouring regions never share a ce
 cells only. The ice-sheet regions (Greenland/Iceland, East and West Antarctica) are not built because the
 land mask excludes ice sheets. Rule and list: `docs/decisions/ADR-005-*.md`, amendment 1.
 
+The web app's four European regions are outlines too, but real borders (Natural Earth 1:10m, Ukrainian
+point of view; `data/catalog/regions_countries.yaml`, built by `scripts/make_country_regions.py`): Ukraine
+with Crimea (231 MERRA-2 cell centres inside), southern Ukraine as six admin-1 units (52), northern Europe
+as seven countries (748; Åland is a separate Natural Earth unit and is not included) and southern Europe as
+twelve countries, Kosovo included as part of Serbia in the Ukrainian-POV file (493). Same cell-centre rule, land cells
+only. The Sahel stays a box. The map outline drawn for each region is the same polygon the numbers are
+averaged over. ADR-005 amendment 2.
+
 ## Data-quality checks before any trend (acquisition layer)
 Before a regional series is analysed, `backend/trend_detective/acquire.py::assess` checks whether it
 can be investigated for a trend at all, and tells the user why not in plain language:
@@ -72,6 +80,47 @@ science-lead review.
 Same steps per cell; significance stippling uses Benjamini–Hochberg false-discovery-rate control
 (q = 0.05) across all cells, because thousands of independent tests at α = 0.05 would flag ~5% of cells
 by chance (Wilks, 2016).
+
+In the web app (`scripts/make_app_data.py`) the map uses the 2° monthly grids in `data/cache/grids/`:
+one mean per complete calendar year in each square (a year with any missing month leaves the square
+blank), Sen's slope and Yue–Wang Mann–Kendall on those yearly means, BH across all squares with data.
+Root-zone soil wetness has no value over ocean or the Greenland and Antarctic ice sheets in the
+source grid, so those squares stay blank; a square whose yearly means never vary would also be left
+blank rather than tested (none does in the 2026-11-14 cache).
+
+Per-cell test: Mann–Kendall with the Yue–Wang AR(1) correction on the 45 yearly means (not the plain
+Mann–Kendall), then BH over every square that has data (16,200 squares for T2M and PRECTOTCORR,
+fewer for GWETROOT).
+
+## Robustness ("borderline") check in the web app
+Pre-declared and identical for every region and variable: the verdict rule is repeated (a) without the
+first two years, (b) without the last two years, (c) on yearly means of the anomalies. The headline
+verdict is never changed; if any of (a)–(c) gives a different level, the "How sure?" line says
+"Borderline" and names the check. Added after the independent `stats-validator` review (2026-11-15)
+found that some moderate verdicts depend on the end years and that the AR(1) correction may understate
+persistence for the Sahel.
+
+Displayed ranges are rounded outwards (lower bound down, upper bound up) so a printed range is never
+narrower than the computed one; JSON files keep the unrounded values.
+
+## Analysis period in the web app
+Fixed before any real result was computed: every series starts in January 1981 and ends with the last
+calendar year that is complete in **every** input the app uses (grids, regional series). With the
+cache frozen on 2026-11-14 that is **1981–2025** (540 months). Whole years keep the yearly bars, the
+seasonal tests and the map on the same footing; we never choose the start or end to strengthen a trend.
+
+## Deeper checks (`trend_detective.climate_stats`)
+Each investigation page also shows results of the team's offline JSON pipeline (ADR-007), run on the
+same cached data: one input document per region with monthly T2M and GWETROOT and, where the cache has
+them (the four European regions), daily T2M_MAX, T2M_MIN and PRECTOTCORR; otherwise monthly
+PRECTOTCORR. Only **one** precipitation source enters each document, so drought indices are not tested
+twice. Methods requested (fixed in advance): trend, monthly profile, seasons, emergence, probability
+change, acceleration, variability, block bootstrap (999 replicates, seed 1729), change point, daily
+indices, SPI/SPEI (baseline 1981–2010, end month August). The pipeline applies one Benjamini–Hochberg
+family to all tests in the region document (q = 0.05). The page lists a fixed set of rows per variable
+(chosen by topic, not by result) and labels a row "Clear change" only when the pipeline's conservative
+flag holds (both Mann–Kendall and OLS pass after BH). Every row is shown, clear or not. The full output
+is published as `frontend/public/data/stats/<region>.json`.
 
 ## Why not the classic Mann–Kendall or Hamed–Rao? Our Monte-Carlo check
 Satellite and reanalysis anomalies are autocorrelated (month-to-month persistence). We simulated

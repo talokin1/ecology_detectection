@@ -98,7 +98,10 @@ def test_default_job_list_parses(bd):
     spec = bd.load_jobs(bd.DEFAULT_JOBS)
     assert spec["regions"] == ["south_ukraine", "ukraine", "north_europe", "south_europe"]
     assert set(spec["regions"]) <= set(acquire.list_regions())
-    assert [i["parameter"] for i in spec["inputs"]] == ["T2M_MAX", "T2M_MIN", "PRECTOTCORR"]
+    main_inputs = [i for i in spec["inputs"] if "regions" not in i]
+    assert [i["parameter"] for i in main_inputs] == ["T2M_MAX", "T2M_MIN", "PRECTOTCORR"]
+    country_inputs = [i for i in spec["inputs"] if i.get("regions") == ["set:countries"]]
+    assert [i["parameter"] for i in country_inputs] == ["T2M_MAX", "T2M_MIN", "PRECTOTCORR"]
     assert all(i["store"] == "merra2_daily" for i in spec["inputs"])
 
 
@@ -136,8 +139,14 @@ def test_default_matrix_uses_available_catalog(bd):
     jobs = bd.expand_jobs(bd.load_jobs(bd.DEFAULT_JOBS))
     avail = acquire.list_variables(available_only=True)
     assert {j.name for j in jobs if j.kind == "variable"} == set(avail)
-    main = [j for j in jobs if j.kind == "variable" and not j.region.startswith("ar6_")]
+    countries = set(acquire.region_set("countries"))
+    main = [j for j in jobs
+            if j.kind == "variable" and not j.region.startswith("ar6_") and j.region not in countries]
     assert len(main) == 4 * len(avail)
+    app = [j for j in jobs if j.kind == "variable" and j.region in countries]
+    app_vars = {"air_temperature_power", "precipitation_power", "root_zone_soil_wetness_power"}
+    assert {j.name for j in app} == app_vars
+    assert len(app) == 3 * len(countries)
 
 
 def test_ar6_matrix_from_region_set(bd):

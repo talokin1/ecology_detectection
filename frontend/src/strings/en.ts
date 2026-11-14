@@ -11,14 +11,6 @@ export const S = {
   share: 'Copy link',
   shared: 'Link copied',
   theme: { light: 'Light theme', dark: 'Dark theme', switchTo: (t: string) => `Switch to ${t} theme` },
-  synthetic: {
-    strong: 'Synthetic data.',
-    banner: 'The numbers on this site are synthetic, made to test the design. They are not results yet.',
-    more: 'Why?',
-    tag: 'Synthetic data',
-    tagAria: 'Synthetic data: the numbers are not real measurements yet. Open About this data.',
-    dismiss: 'Dismiss this notice',
-  },
   shell: { menu: 'More options', tour: 'Take the 25-second tour', about: 'About this tool', copied: 'Link copied to the clipboard' },
 
   explore: {
@@ -63,7 +55,6 @@ export const S = {
   legend: {
     expand: 'Explain the colours',
     close: 'Hide legend',
-    demo: 'Demo data, not real measurements.',
     projection: 'This map enlarges areas near the poles.',
     credit: 'Basemap: Natural Earth (public domain).',
   },
@@ -97,6 +88,7 @@ export const S = {
       closer: 'Seasons and months',
       extremes: 'Extreme months',
       data: 'Data and downloads',
+      deeper: 'Deeper checks',
     },
     views: { year: 'Each year', month: 'Each month', raw: 'Actual values' },
     yearHelp: 'Each bar is one year compared with the normal for that time of year. Bars above zero: higher than normal.',
@@ -163,7 +155,7 @@ export const S = {
       { title: 'Pick what to look at', text: 'Each square on the map shows how fast this value changed per decade since 1981.' },
       { title: 'Read the colours', text: 'Strong colour: a clear trend. Greyish: could still be chance. Hatched: not enough data.' },
       { title: 'Click a region for its answer', text: 'You get the rate, its 95% range and how sure we are, right next to the map.' },
-      { title: 'Compare places', text: 'The same variable can move in opposite directions in different places. Here the north gets wetter while the south dries out.' },
+      { title: 'Compare places', text: 'The same variable can move in opposite directions in different places. Pick two regions to see whether their trends really differ.' },
     ],
   },
   about: {
@@ -176,7 +168,6 @@ export const S = {
       'Open the full analysis for the chart, the findings and the tests behind them.',
     ],
     data: 'About this data',
-    syntheticNotice: 'The numbers currently on this site are synthetic. They were generated to look like NASA POWER monthly data so that we could build and test the design. The statistics are computed from them with the real pipeline, but they describe no real place. Real NASA data replace them file by file.',
     sources: 'Data sources',
     sourceList: [
       ['NASA POWER (MERRA-2 meteorology)', 'https://power.larc.nasa.gov/', 'temperature, precipitation, soil wetness (planned real data)'],
@@ -209,7 +200,7 @@ export const S = {
     lead: 'Every number on this site comes from one open-source analysis pipeline. Here is what it does, why, and how we checked that it does not cry wolf.',
     toc: [
       ['pipeline', 'The five steps'], ['trend-test', 'The trend test'], ['false-alarms', 'Why the correction'],
-      ['verdict-levels', 'Verdict levels'], ['fdr', 'Many checks'], ['limitations', 'Limits'], ['data', 'Data'], ['glossary', 'Glossary'],
+      ['verdict-levels', 'Verdict levels'], ['fdr', 'Many checks'], ['deeper', 'Deeper checks'], ['limitations', 'Limits'], ['data', 'Data'], ['glossary', 'Glossary'],
     ] as [string, string][],
     steps: [
       ['Average the region', 'We average every grid square inside the outline. Squares near the poles are smaller, so they count less (cos-latitude weights).'],
@@ -253,6 +244,17 @@ export const S = {
     ] as [string, string][],
   },
   /** Short in-place explanations behind each finding's help button (plan A11, decision D5). */
+  deeper: {
+    events: 'Days and seasons',
+    methods: 'Checks on the main trend',
+    whatIs: 'What is',
+    note: 'Note:',
+    unavailable: 'Not available for this region.',
+    reason: (r: string) => `Not available here: ${r.replace(/_/g, ' ')}.`,
+    none: 'No deeper checks for this region yet.',
+    download: 'Download all numbers (JSON)',
+    summary: (clear: number, available: number) => `${clear} of ${available} extra checks show a clear change`,
+  },
   help: {
     'trend-test': "The rate is Sen's slope of the monthly differences from normal; the 95% range comes from the Mann-Kendall test corrected for month-to-month memory.",
     'signal-noise': 'We compare the total change along the trend with the typical year-to-year swing. The year it stays bigger than that swing is the time of emergence.',

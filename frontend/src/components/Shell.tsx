@@ -1,12 +1,9 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 import { Link, NavLink, Outlet, useNavigate, useRouteError } from 'react-router-dom';
-import { api } from '../data/load';
-import { useData } from '../data/useData';
 import { copyLink } from '../lib/exporters';
 import { setTheme, useTheme } from '../state/theme';
 import { Menu } from './Panel';
 import { Search } from './Search';
-import { CloseIcon } from './Icons';
 import { S } from '../strings/en';
 
 export type Context = { variable?: string; region?: string; period?: string; source?: string } | null;
@@ -33,17 +30,12 @@ export function Logo() {
   );
 }
 
-const BANNER_OFF = 'td-banner-off';
-const readFlag = (k: string) => { try { return localStorage.getItem(k) === '1'; } catch { return false; } };
 
 export function Shell() {
   const [context, setContext] = useState<Context>(null);
-  const [bannerOff, setBannerOff] = useState(() => readFlag(BANNER_OFF));
   const [toast, setToast] = useState<string | null>(null);
-  const index = useData(api.index, 'index');
   const theme = useTheme();
   const navigate = useNavigate();
-  const synthetic = !!index.data?.synthetic;
 
   useEffect(() => {
     const parts = [context?.region && context.region !== 'World' ? context.region : null, context?.variable].filter(Boolean);
@@ -69,11 +61,6 @@ export function Shell() {
         </nav>
         <div className="topbar__spacer" />
         <Search />
-        {synthetic && (
-          <Link to="/about?s=data" className="tag" aria-label={S.synthetic.tagAria}>
-            <span className="tag__long">{S.synthetic.tag}</span><span className="tag__short" aria-hidden="true">Synthetic</span>
-          </Link>
-        )}
         <Menu label={S.shell.menu} items={[
           { label: S.share, onSelect: async () => { if (await copyLink()) say(S.shell.copied); } },
           { label: theme === 'dark' ? S.theme.light : S.theme.dark, onSelect: () => setTheme(theme === 'dark' ? 'light' : 'dark') },
@@ -81,15 +68,6 @@ export function Shell() {
           { label: S.shell.about, onSelect: () => navigate('/about') },
         ]} />
       </header>
-      {synthetic && !bannerOff && (
-        <div className="synthetic" role="note">
-          <span><strong>{S.synthetic.strong}</strong> {S.synthetic.banner} <Link to="/about?s=data">{S.synthetic.more}</Link></span>
-          <button type="button" className="icon-btn icon-btn--sm synthetic__close" aria-label={S.synthetic.dismiss}
-            onClick={() => { setBannerOff(true); try { localStorage.setItem(BANNER_OFF, '1'); } catch { /* ignore */ } }}>
-            <CloseIcon size={14} />
-          </button>
-        </div>
-      )}
       <main className="main">
         <Outlet />
       </main>

@@ -183,7 +183,7 @@ function Explore({ index }: { index: Index }) {
       </div>
 
       <div className="explore__bottom" data-map-overlay>
-        {legendOpen && layer.data && <LegendChip layer={layer.data} synthetic={layer.data.provenance.synthetic} onClose={() => setLegendOpen(false)} />}
+        {legendOpen && layer.data && <LegendChip layer={layer.data} onClose={() => setLegendOpen(false)} />}
         {!hintsOff && hint && tour === null && !panel && (
           <HintChip hint={hint} onTry={() => tryHint(hint)} onNext={() => setHintIdx((i) => i + 1)}
             onDismiss={() => { setHintsOff(true); store.set(HINTS_OFF, '1'); }}

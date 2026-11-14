@@ -6,6 +6,7 @@ import type { AnalysisResult, Case, Index, MapLayer, Region, VariableRef } from 
 import { LegendChip } from '../components/MapLegend';
 import { Readout, VerdictDetails } from '../components/VerdictCard';
 import { InsightList } from '../components/InsightList';
+import { DeeperChecks } from '../components/DeeperChecks';
 import { TrendChart, type ChartBars, type ChartHandle } from '../components/SeriesChart';
 import { ExtremesChart, MonthChart, SeasonChart } from '../components/SmallCharts';
 import { Disclosure, InfoPopover } from '../components/Panel';
@@ -133,7 +134,7 @@ function CaseBody({ index, a, region, variable, theCase, layer }: {
   const question = theCase?.question ?? S.case.question(variable.long_name.toLowerCase(), region.name_in_sentence);
   const fileBase = `trend-detective_${region.id}_${variable.id}`;
   const props = useMemo(() => chartProps(a, variable, view), [a, variable, view]);
-  const footer = `${variable.long_name}, ${region.name}, ${period}. ${a.provenance.dataset}${a.provenance.synthetic ? ' (SYNTHETIC DEMO DATA, not a result)' : ''}. Trend Detective.`;
+  const footer = `${variable.long_name}, ${region.name}, ${period}. ${a.provenance.dataset}. Trend Detective.`;
   const seasonInsight = a.insights.find((i) => i.kind === 'season' || i.kind === 'season_unresolved');
 
   return (
@@ -179,7 +180,7 @@ function CaseBody({ index, a, region, variable, theCase, layer }: {
                 ariaLabel={`Map of ${region.name} showing the trend of ${variable.long_name.toLowerCase()} in each grid square.`} />
             </Suspense>
           </div>
-          {layer && legendOpen && <LegendChip layer={layer} synthetic={layer.provenance.synthetic} caption={S.map.caseMapCaption} onClose={() => setLegendOpen(false)} />}
+          {layer && legendOpen && <LegendChip layer={layer} caption={S.map.caseMapCaption} onClose={() => setLegendOpen(false)} />}
           {layer && !legendOpen && <button type="button" className="btn btn--quiet" onClick={() => setLegendOpen(true)}>{S.explore.legend}</button>}
         </section>
       </div>
@@ -215,6 +216,11 @@ function CaseBody({ index, a, region, variable, theCase, layer }: {
           <Disclosure title={`${S.case.sections.extremes}: ${a.extremes.label.toLowerCase()}`} summary={a.extremes.display.trend_text}>
             <p className="sec__units">{a.extremes.display.subtitle}</p>
             <ExtremesChart a={a} variable={variable} />
+          </Disclosure>
+        )}
+        {a.deeper_checks && (
+          <Disclosure title={S.case.sections.deeper} summary={S.deeper.summary(a.deeper_checks.clear, a.deeper_checks.available)}>
+            <DeeperChecks a={a} />
           </Disclosure>
         )}
         <Disclosure title={S.case.sections.data} summary={`${S.case.source}: ${a.provenance.dataset}`}>

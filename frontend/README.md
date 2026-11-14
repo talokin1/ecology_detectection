@@ -4,9 +4,9 @@ Static site (React + TypeScript + MapLibre GL + Plotly). It reads precomputed JS
 `public/data/` and **computes no statistics**: every number, verdict and sentence comes from the
 stats pipeline. Plan: [`docs/planning/2026-11-14-webapp-plan.md`](../docs/planning/2026-11-14-webapp-plan.md).
 
-> The data currently in `public/data/` are **synthetic** (`provenance.synthetic = true`), generated
-> by `scripts/make_synthetic_data.py`. The app shows a banner while any synthetic file is loaded.
-> Real files from the stats pipeline replace them one by one, in the same format.
+> The data in `public/data/` are **real NASA POWER (MERRA-2) data** from the frozen cache in
+> `data/cache/`, built by `scripts/make_app_data.py` (`provenance.synthetic = false`). The app still
+> shows a banner if any file is ever flagged `synthetic: true`.
 
 ## Run it (Windows PowerShell)
 
@@ -59,6 +59,6 @@ the opener. The noise budget of the Explore view is a test in `tests/smoke.spec.
 
 ```powershell
 python scripts/make_geo.py                 # basemap + data/regions/regions.geojson
-python scripts/make_synthetic_data.py      # synthetic demo data (until real data exist)
+python scripts/make_app_data.py           # real data from data/cache/ (needs requirements.txt)
 python scripts/check_data.py               # validate public/data against schema/
 ```

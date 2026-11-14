@@ -76,7 +76,7 @@ function CompareBody({ index, ra, rb, variable, A, B, cmp, layer, theCase }: {
   };
   const go = (x: string, y: string, v: string) => navigate(`/compare/${x}/${y}?var=${v}`);
   const period = variable.period;
-  const footer = `${variable.long_name}, ${ra.name} and ${rb.name}, ${period}. ${A.provenance.dataset}${A.provenance.synthetic ? ' (SYNTHETIC DEMO DATA)' : ''}. Trend Detective.`;
+  const footer = `${variable.long_name}, ${ra.name} and ${rb.name}, ${period}. ${A.provenance.dataset}. Trend Detective.`;
   const rows = [{ r: ra, d: A, c: REGION_COLORS[0], k: 'A' }, { r: rb, d: B, c: REGION_COLORS[1], k: 'B' }];
 
   return (
@@ -146,7 +146,7 @@ function CompareBody({ index, ra, rb, variable, A, B, cmp, layer, theCase }: {
                 ariaLabel={`Map of the trend of ${variable.long_name.toLowerCase()} with ${ra.name} (A) and ${rb.name} (B) outlined.`} />
             </Suspense>
           </div>
-          {layer && legendOpen && <LegendChip layer={layer} synthetic={layer.provenance.synthetic} onClose={() => setLegendOpen(false)} />}
+          {layer && legendOpen && <LegendChip layer={layer} onClose={() => setLegendOpen(false)} />}
           {layer && !legendOpen && <button type="button" className="btn btn--quiet" onClick={() => setLegendOpen(true)}>{S.explore.legend}</button>}
           <div className="answer">
             <p className="answer__sentence">{cmp.sentence}</p>

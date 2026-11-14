@@ -30,4 +30,4 @@ jobs:
       - name: Offline tests (no network, no token)
         run: python -m pytest -q -m "not network"
       - name: Lint data-layer code
-        run: ruff check backend scripts --select E,F,I,UP --exclude scripts/make_synthetic_data.py
+        run: ruff check backend scripts --select E,F,I,UP --exclude scripts/make_app_data.py --per-file-ignores "backend/trend_detective/climate_stats/*.py:E501"

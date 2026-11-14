@@ -5,7 +5,7 @@ export function seriesCsv(a: AnalysisResult, variableName: string, regionName: s
   const p = a.provenance;
   const head = [
     `# ${variableName}, ${regionName}, ${a.period.start} to ${a.period.end}`,
-    `# source: ${p.dataset}${p.synthetic ? ' (SYNTHETIC DEMO DATA, not a result)' : ''}; version: ${p.version ?? 'n/a'}; DOI: ${p.doi ?? 'n/a'}; accessed: ${p.accessed}`,
+    `# source: ${p.dataset}; version: ${p.version ?? 'n/a'}; DOI: ${p.doi ?? 'n/a'}; accessed: ${p.accessed}`,
     `# units: value in ${variable?.units ?? 'source units'}; anomaly in ${a.series.anomaly_units}`,
     `# anomaly: ${a.series.baseline}`,
     `# trend: ${a.trend.display.annotation} (95% confidence interval); verdict: ${a.verdict.headline}`,

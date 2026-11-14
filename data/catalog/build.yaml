@@ -21,6 +21,9 @@ extra_matrices:
   - regions: ["set:ar6"]
     variables: all
     exclude_variables: [sea_ice_fraction_power, ndvi_modis, no2_tropospheric_omi]
+  # Web-app regions as real borders (scripts/make_country_regions.py): only the app's variables.
+  - regions: ["set:countries"]
+    variables: [air_temperature_power, precipitation_power, root_zone_soil_wetness_power]
 
 # Method inputs that are not catalog variables (daily data for extreme indices, plan v2 S2).
 # `how` is only used to aggregate the daily series to months for the data-quality check
@@ -29,3 +32,7 @@ inputs:
   - {parameter: T2M_MAX, store: merra2_daily, how: mean}
   - {parameter: T2M_MIN, store: merra2_daily, how: mean}
   - {parameter: PRECTOTCORR, store: merra2_daily, how: sum}
+  # daily inputs for the app's deeper checks, on the real-border regions
+  - {parameter: T2M_MAX, store: merra2_daily, how: mean, regions: ["set:countries"]}
+  - {parameter: T2M_MIN, store: merra2_daily, how: mean, regions: ["set:countries"]}
+  - {parameter: PRECTOTCORR, store: merra2_daily, how: sum, regions: ["set:countries"]}

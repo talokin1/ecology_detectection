@@ -267,6 +267,17 @@ export interface AnalysisResult {
     text: string;
   };
   provenance: Provenance;
+  deeper_checks: null | {
+    rows: DeeperCheck[];
+    shown: number;
+    available: number;
+    clear: number;
+    family_tests: number;
+    q: number;
+    source_file: string;
+    pipeline_version?: string | null;
+    text: string;
+  };
 }
 
 export interface Period {
@@ -353,6 +364,35 @@ export interface Provenance {
    * One plain sentence on the limits of the data, shown under the verdict.
    */
   caveat: string;
+}
+/**
+ * One result of the team's climate_stats pipeline, ready to display.
+ */
+
+export interface DeeperCheck {
+  id: string;
+  group: 'events' | 'method';
+  label: string;
+  /**
+   * One plain-language sentence.
+   */
+  explain: string;
+  unit: string;
+  /**
+   * JSON pointer into stats/<region>.json
+   */
+  path: string;
+  status: 'clear' | 'not_clear' | 'unavailable';
+  status_text: string;
+  reason?: string | null;
+  rate?: number | null;
+  ci95?: null | [number, number];
+  value_text?: string | null;
+  range_text?: string | null;
+  detail?: string | null;
+  q?: number | null;
+  methods_disagree?: boolean;
+  warnings?: string[];
 }
 
 /**
