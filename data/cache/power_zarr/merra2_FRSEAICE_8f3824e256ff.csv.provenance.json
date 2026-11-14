@@ -1,0 +1,40 @@
+{
+  "source": "NASA POWER Zarr archive (AWS Open Data)",
+  "source_url": "https://nasa-power.s3.us-west-2.amazonaws.com/merra2/temporal/power_merra2_monthly_temporal_utc.zarr",
+  "short_name": "power_merra2_monthly_temporal_utc.zarr",
+  "version": "POWER Version 10.0.0",
+  "doi": null,
+  "landing_page": "https://power.larc.nasa.gov/",
+  "registry_page": "https://registry.opendata.aws/nasa-power/",
+  "variable": {
+    "variable": "FRSEAICE",
+    "source": "merra2",
+    "long_name": "Ice Covered Fraction",
+    "units": "1",
+    "definition": "The fraction of ocean covered by sea ice."
+  },
+  "region_name": "Arctic cap",
+  "bbox": {
+    "lat_min": 70,
+    "lat_max": 90,
+    "lon_min": -180,
+    "lon_max": 180
+  },
+  "frequency": "monthly",
+  "n_months": 549,
+  "time_range": {
+    "start": "1981-01",
+    "end": "2026-09"
+  },
+  "accessed": "2026-11-14T14:16:45Z",
+  "land_only": false,
+  "processing": [
+    "selected grid cells whose centres fall inside the bbox",
+    "masked fill value -999.0",
+    "area mean with cos(latitude) weights, ignoring missing cells",
+    "dropped time steps with no data (the store pre-allocates future dates)",
+    "kept source units"
+  ],
+  "script": "backend/trend_detective/power_zarr.py",
+  "git_commit": "b47dff5"
+}

@@ -1,0 +1,100 @@
+{
+  "source": "NASA LP DAAC, MODIS Terra MOD13C2 v061 via Earthdata OPeNDAP (Earthdata Login)",
+  "source_url": "https://opendap.earthdata.nasa.gov/collections/C2565788914-LPCLOUD/granules/<granule>.dap.nc4",
+  "short_name": "MOD13C2",
+  "version": "061",
+  "doi": "10.5067/MODIS/MOD13C2.061",
+  "landing_page": "https://lpdaac.usgs.gov/products/mod13c2v061/",
+  "variable": {
+    "variable": "NDVI",
+    "source": "mod13c2",
+    "long_name": "Vegetation greenness (NDVI, MODIS Terra)",
+    "units": "1",
+    "definition": "A satellite index of how green and leafy plants are, from -1 to 1; dense forest is near 0.8, bare soil near 0.1."
+  },
+  "region_name": "Ukraine",
+  "bbox": {
+    "lat_min": 44.0,
+    "lat_max": 52.5,
+    "lon_min": 22.0,
+    "lon_max": 40.5
+  },
+  "grid_rows": [
+    750,
+    919
+  ],
+  "grid_cols": [
+    4040,
+    4409
+  ],
+  "time_range": {
+    "start": "2000-03",
+    "end": "2026-10"
+  },
+  "n_months": 275,
+  "n_granules": 321,
+  "months_dropped_low_coverage": [
+    "2000-02",
+    "2001-01",
+    "2001-12",
+    "2002-01",
+    "2003-01",
+    "2003-02",
+    "2003-03",
+    "2004-01",
+    "2004-02",
+    "2005-02",
+    "2006-01",
+    "2006-02",
+    "2006-03",
+    "2007-12",
+    "2008-01",
+    "2009-01",
+    "2009-02",
+    "2009-12",
+    "2010-01",
+    "2010-02",
+    "2011-01",
+    "2011-02",
+    "2012-01",
+    "2012-02",
+    "2013-01",
+    "2013-02",
+    "2013-03",
+    "2014-01",
+    "2015-01",
+    "2015-02",
+    "2016-01",
+    "2016-12",
+    "2017-01",
+    "2017-02",
+    "2018-02",
+    "2018-03",
+    "2018-12",
+    "2019-01",
+    "2019-02",
+    "2021-01",
+    "2021-02",
+    "2022-01",
+    "2022-12",
+    "2024-01",
+    "2026-01",
+    "2026-02"
+  ],
+  "min_valid_fraction": 0.8,
+  "accessed": "2026-11-14T14:24:18Z",
+  "processing": [
+    "OPeNDAP subset of 0.05\u00b0 cells whose centres fall inside the bbox",
+    "raw int16 NDVI: masked _FillValue -3000 and values outside -2000..10000",
+    "divided by 10000 (HDF4 scale_factor convention)",
+    "kept pixel_reliability 0 (good) and 1 (marginal); dropped snow/ice, cloudy, estimated",
+    "area mean with cos(latitude) weights over quality-passed land cells",
+    "month set to NaN if quality-passed land area < 80% of land area"
+  ],
+  "caveats": [
+    "MODIS Terra only (from 2000-02); sensor ageing is corrected in Collection 6.1.",
+    "Snowy or cloudy months are dropped, so winter months may be missing in cold regions."
+  ],
+  "script": "backend/trend_detective/modis_ndvi.py",
+  "git_commit": "b47dff5"
+}
