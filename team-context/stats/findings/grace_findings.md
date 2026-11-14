@@ -1,5 +1,7 @@
 # Findings: GRACE / GRACE-FO terrestrial water storage
 
+> **SUPERSEDED (2026-11-14)**: pre-pipeline findings using HAC + Hamed–Rao wording. The official test is repo MK Yue–Wang with the OLS n_eff cross-check and the conservative verdict (.claude/skills/trend-stats/SKILL.md:26-28). Current numbers: data/pipeline/outputs/v1.4/. Never send numbers from this file to the UI or slides (MC-4).
+
 Date: 14 November 2026 (Europe/Kiev)  
 Product: JPL RL06.3Mv04 CRI mascons (`TELLUS_GRAC-GRFO_MASCON_CRI_GRID_RL06.3_V4`, DOI [10.5067/TEMSC-3JC634](https://doi.org/10.5067/TEMSC-3JC634)), unscaled `lwe_thickness` (cm equivalent water thickness), anomalies relative to 2004–2009.  
 Methods: `$UKRAINE_SAMPLES/_staging/trend_methods.py` (OLS, AR(1), Newey–West HAC, time-aware Theil–Sen, Mann–Kendall, Hamed–Rao lag=3, TFPW). Yue–Wang is computed in the CSV but is not used for wording.  

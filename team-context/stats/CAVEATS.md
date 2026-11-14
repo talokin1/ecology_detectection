@@ -27,7 +27,7 @@ Do not splice 2.0 and 2.1. `Qs_acc` in the pipeline is ×8×days (mm/month). The
 LST is clear-sky. VI QC removes snowy winter pixels. Use JJA and Apr–Sep, and do not headline a seasonal VI row that fails Bonferroni. Annual VI includes low-coverage winter months.
 
 ## Soil moisture
-CCI COMBINED v09.2 is break-adjusted and scaled to GLDAS-Noah. No robust drying signal. Not an independent level check.
+CCI COMBINED v09.2 is break-adjusted and scaled to GLDAS-Noah. Not an independent level check. **Restated 2026-11-14 (A2-05, conservative-verdict rule):** warm-season (Apr–Oct 7/7) soil moisture 1991–2024 shows **moderate drying**: Sen slope −0.0025 m³ m⁻³/decade (95% CI −0.0051 to −0.0004), repo MK Yue–Wang p = 0.01505, OLS n_eff cross-check p = 0.01695 (the two methods agree). Caveat: the result depends on the start year: from 2002 or 2003 it is not significant, and from 2007 (ASCAT) the sign flips (n.s.). Quote it as "moderate drying since 1991, sensitive to start year", never as a detection from 2002 on.
 
 ## OMI, SWOT, urban heat, ERA5
 OMI and SWOT are bbox-only. OMI trends: `omi_bbox_trends.md`. Ozone ends in 2018-12. SWOT is about three years and is not a climate trend; the Kherson step is not a confirmed dam-break signal. The Kyiv 1 km urban-heat task was still processing, so there is no urban-minus-rural series. ERA5 was not downloaded (`CDSAPI_KEY` was unset).

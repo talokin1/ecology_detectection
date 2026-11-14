@@ -12,8 +12,11 @@ flagged, and a strongly negative residual r (r < -0.3) is not allowed to satisfy
 the “robust” rule. Hamed–Rao also assumes equally spaced observations, which
 GSOM’s 2020–2024 hole and SWOT months missing after ice/dark filters violate.
 
-Yue–Wang MK is computed but not used for wording: it can return implausibly
-small p-values on these series (see team-context/team/reviews/ukraine_methods_review.md).
+SUPERSEDED for wording (2026-11-14): the primary test is the repo MK Yue–Wang in
+.claude/skills/trend-stats/scripts/trend_stats.py (ADR-002/ADR-003), cross-checked with OLS n_eff.
+HAC / Hamed–Rao here are sensitivity only. This module's own pymannkendall Yue–Wang (`mk_yw_p`) is
+not the repo implementation and is reported as `sens_pymk_yw_p_do_not_use`.
+Archive-only: never import this module from backend/.
 
 For monthly series the “robust” rule uses HAC lag-3, not only lag-1.
 """

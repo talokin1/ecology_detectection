@@ -1,3 +1,5 @@
+> **HISTORICAL (2026-11-14).** Kept as a record. Its method wording (HAC/Hamed–Rao "robust", "Yue–Wang not used for wording") is superseded by ADR-003 and the conservative-verdict rule (`.claude/skills/trend-stats/SKILL.md:26-28`).
+
 # Stats archive plan — critique (14 Nov 2026, Europe/Kiev)
 
 **Later decision (team lead, 15:17).** Section B1 below asked to stop treating repository Yue–Wang as the primary test. That recommendation was not adopted. ADR-003 keeps `trend_stats.py` Yue–Wang as the official test, keeps HAC and Hamed–Rao lag-3 as sensitivity, and leaves `docs/10-methods.md` and ADR-002 in place. The v1.4 rerun is `yw_v14_review.md`. The text under this note is the review as written.

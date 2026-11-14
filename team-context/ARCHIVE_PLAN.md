@@ -1,3 +1,5 @@
+> **HISTORICAL (2026-11-14).** Kept as a record. Its method wording (HAC/Hamed–Rao "robust", "Yue–Wang not used for wording") is superseded by ADR-003 and the conservative-verdict rule (`.claude/skills/trend-stats/SKILL.md:26-28`).
+
 # team-context archive plan v2 (team lead 15:00) — nothing committed or pushed
 
 Branch: `stats-archive` (local, from origin/stats). All team material goes under one top-level folder `team-context/`.
