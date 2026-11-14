@@ -1,7 +1,24 @@
-numpy>=2.0
+numpy>=2.0,<2.2
 scipy>=1.11
+pandas>=2.2,<3
 pytest>=8.0
-pandas>=2.0
+# Web-app data scripts (scripts/make_geo.py, check_data.py, make_synthetic_data.py).
 shapely>=2.0
-PyYAML>=6.0
 jsonschema>=4.18
+# Reading the public NASA POWER Zarr archive (backend/trend_detective/power_zarr.py).
+# These three pins work together; newer xarray with zarr 2 fails with
+# "open_group() got an unexpected keyword argument 'zarr_format'" (seen 2026-11-14).
+xarray==2024.9.0
+zarr==2.18.3
+numcodecs<0.14
+fsspec
+aiohttp
+requests
+dask
+# Earthdata Login downloads (GES DISC, LP DAAC, PO.DAAC) for offline precompute scripts only.
+# Reads EARTHDATA_TOKEN from the environment; never used by the deployed app.
+earthaccess==0.19.0
+# Reading OPeNDAP NetCDF4 subsets (MODIS) and the GRACE mascon file.
+netCDF4==1.7.5.1.post1
+# Catalog and region presets (backend/trend_detective/acquire.py, scripts/make_synthetic_data.py).
+PyYAML>=6.0

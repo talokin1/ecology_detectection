@@ -1,0 +1,81 @@
+{
+  "source": "NASA POWER Zarr archive (AWS Open Data)",
+  "source_url": "https://nasa-power.s3.us-west-2.amazonaws.com/imerg/temporal/power_imerg_monthly_temporal_utc.zarr",
+  "short_name": "power_imerg_monthly_temporal_utc.zarr",
+  "version": "POWER Version 10.0.0",
+  "doi": null,
+  "landing_page": "https://power.larc.nasa.gov/",
+  "registry_page": "https://registry.opendata.aws/nasa-power/",
+  "variable": {
+    "variable": "IMERG_PRECTOT",
+    "source": "imerg",
+    "long_name": "Total Precipitation",
+    "units": "mm/day",
+    "definition": "The average IMERG total precipitation at the surface of the earth."
+  },
+  "region_name": "North-western North America (IPCC AR6 NWN)",
+  "bbox": {
+    "lat_min": 50.0,
+    "lat_max": 81.0,
+    "lon_min": -168.0,
+    "lon_max": -105.0
+  },
+  "frequency": "monthly",
+  "n_months": 346,
+  "time_range": {
+    "start": "1998-01",
+    "end": "2026-10"
+  },
+  "accessed": "2026-11-14T18:02:09Z",
+  "land_only": true,
+  "outline": {
+    "source": "IPCC AR6 WGI land reference regions (v4)",
+    "digest": "da915adcfffa",
+    "rings": [
+      [
+        [
+          -105.0,
+          50.0
+        ],
+        [
+          -130.0,
+          50.0
+        ],
+        [
+          -143.0,
+          58.0
+        ],
+        [
+          -168.0,
+          52.5
+        ],
+        [
+          -168.0,
+          72.6
+        ],
+        [
+          -129.0,
+          72.6
+        ],
+        [
+          -125.0,
+          77.6
+        ],
+        [
+          -105.0,
+          81.0
+        ]
+      ]
+    ]
+  },
+  "processing": [
+    "selected grid cells whose centres fall inside the region outline (straight edges in lon/lat; cells on a left/bottom edge in, right/top edge out)",
+    "kept land cells only (MERRA-2 cells with root-zone soil wetness; nearest MERRA-2 cell for other grids); ocean, lakes and ice sheets excluded",
+    "masked fill value -999.0",
+    "area mean with cos(latitude) weights, ignoring missing cells",
+    "dropped time steps with no data (the store pre-allocates future dates)",
+    "kept source units"
+  ],
+  "script": "backend/trend_detective/power_zarr.py",
+  "git_commit": "3e94115"
+}

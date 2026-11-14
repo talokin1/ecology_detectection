@@ -1,0 +1,16 @@
+# Tool configuration only (dependencies are in requirements.txt).
+[tool.pytest.ini_options]
+pythonpath = ["backend", ".claude/skills/trend-stats/scripts"]
+# Bare `pytest` runs these only. team-context/data/pipeline/smoke_test.py needs the analysis venv
+# (requirements-analysis.txt) and the tidy inputs, so it is run by hand, not collected here.
+testpaths = [
+    "backend/tests",
+    ".claude/skills/trend-stats/scripts",
+    "scripts",
+    "team-context/data/pipeline/tests",
+]
+markers = ["network: reads live NASA services (deselect with -m \"not network\")"]
+
+[tool.ruff]
+line-length = 110
+target-version = "py311"

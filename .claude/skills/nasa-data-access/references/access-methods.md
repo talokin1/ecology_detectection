@@ -21,7 +21,7 @@ Checked 2026-11-14 unless noted. Re-verify anything marked (unverified) before r
   services via `harmony-py` (see GES DISC tutorials repo `nasa/gesdisc-tutorials`).
 - Large regions × long daily ranges can time out — use monthly products.
 
-## GES DISC Hydrology Data Rods
+## GES DISC Hydrology Data Rods (DISCONTINUED, GES DISC alert 2025-10-01; do not use)
 - Point time series for GLDAS/NLDAS variables; REST keywords: variable, location, startDate, endDate, type.
 - Landing: https://disc.gsfc.nasa.gov/information/tools?title=Hydrology%20Data%20Rods
 

@@ -1,0 +1,97 @@
+{
+  "source": "NASA POWER Zarr archive (AWS Open Data)",
+  "source_url": "https://nasa-power.s3.us-west-2.amazonaws.com/syn1deg/temporal/power_syn1deg_monthly_temporal_utc.zarr",
+  "short_name": "power_syn1deg_monthly_temporal_utc.zarr",
+  "version": "POWER Version 10.0.0",
+  "doi": null,
+  "landing_page": "https://power.larc.nasa.gov/",
+  "registry_page": "https://registry.opendata.aws/nasa-power/",
+  "variable": {
+    "variable": "AOD_55_ADJ",
+    "source": "syn1deg",
+    "long_name": "Adjusted Aerosol Optical Depth 55",
+    "units": "dimensionless",
+    "definition": "The adjusted optical thickness at 0.55 um measured vertically; the component of the atmosphere to quantify the removal of radiant energy from an incident beam."
+  },
+  "region_name": "South Asia (IPCC AR6 SAS)",
+  "bbox": {
+    "lat_min": 7.0,
+    "lat_max": 30.0,
+    "lon_min": 60.0,
+    "lon_max": 100.0
+  },
+  "frequency": "monthly",
+  "n_months": 308,
+  "time_range": {
+    "start": "2001-01",
+    "end": "2026-08"
+  },
+  "accessed": "2026-11-14T18:04:36Z",
+  "land_only": true,
+  "outline": {
+    "source": "IPCC AR6 WGI land reference regions (v4)",
+    "digest": "c1cc42e07eff",
+    "rings": [
+      [
+        [
+          60.0,
+          23.5
+        ],
+        [
+          60.0,
+          30.0
+        ],
+        [
+          75.0,
+          30.0
+        ],
+        [
+          88.0,
+          26.0
+        ],
+        [
+          100.0,
+          30.0
+        ],
+        [
+          100.0,
+          19.5
+        ],
+        [
+          95.0,
+          19.5
+        ],
+        [
+          87.0,
+          19.5
+        ],
+        [
+          79.0,
+          7.0
+        ],
+        [
+          76.0,
+          7.0
+        ],
+        [
+          70.0,
+          19.5
+        ],
+        [
+          66.5,
+          23.5
+        ]
+      ]
+    ]
+  },
+  "processing": [
+    "selected grid cells whose centres fall inside the region outline (straight edges in lon/lat; cells on a left/bottom edge in, right/top edge out)",
+    "kept land cells only (MERRA-2 cells with root-zone soil wetness; nearest MERRA-2 cell for other grids); ocean, lakes and ice sheets excluded",
+    "masked fill value -999.0",
+    "area mean with cos(latitude) weights, ignoring missing cells",
+    "dropped time steps with no data (the store pre-allocates future dates)",
+    "kept source units"
+  ],
+  "script": "backend/trend_detective/power_zarr.py",
+  "git_commit": "3e94115"
+}

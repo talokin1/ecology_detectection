@@ -1,0 +1,40 @@
+{
+  "source": "NASA POWER Zarr archive (AWS Open Data)",
+  "source_url": "https://nasa-power.s3.us-west-2.amazonaws.com/imerg/temporal/power_imerg_monthly_temporal_utc.zarr",
+  "short_name": "power_imerg_monthly_temporal_utc.zarr",
+  "version": "POWER Version 10.0.0",
+  "doi": null,
+  "landing_page": "https://power.larc.nasa.gov/",
+  "registry_page": "https://registry.opendata.aws/nasa-power/",
+  "variable": {
+    "variable": "IMERG_PRECTOT",
+    "source": "imerg",
+    "long_name": "Total Precipitation",
+    "units": "mm/day",
+    "definition": "The average IMERG total precipitation at the surface of the earth."
+  },
+  "region_name": "Sahel (West and Central Africa)",
+  "bbox": {
+    "lat_min": 10.0,
+    "lat_max": 18.0,
+    "lon_min": -15.0,
+    "lon_max": 35.0
+  },
+  "frequency": "monthly",
+  "n_months": 346,
+  "time_range": {
+    "start": "1998-01",
+    "end": "2026-10"
+  },
+  "accessed": "2026-11-14T14:15:50Z",
+  "land_only": false,
+  "processing": [
+    "selected grid cells whose centres fall inside the bbox",
+    "masked fill value -999.0",
+    "area mean with cos(latitude) weights, ignoring missing cells",
+    "dropped time steps with no data (the store pre-allocates future dates)",
+    "kept source units"
+  ],
+  "script": "backend/trend_detective/power_zarr.py",
+  "git_commit": "b47dff5"
+}

@@ -2,6 +2,9 @@
 # dataset_verified: collection short name/version/period confirmed in NASA CMR on 2026-11-14.
 # variable_verified: in-file variable name/units/scale confirmed by opening a granule (set true when done).
 # Definitions are plain-language for students; keep ≤ 2 sentences. English only.
+# how_measured: one plain sentence on where the number comes from (satellite vs model), required by
+#   the stats methods pitfall list. topic: viz filter id (temperature, water, snow_ice, air, vegetation, sunlight, other; matches frontend catalog.json). Both drafted with SI on
+#   2026-11-14 and pending team review.
 
 version: 0.1
 sources:
@@ -32,8 +35,11 @@ variables:
   - id: air_temperature_power
     name: Air temperature near the surface
     definition: How warm the air is about 2 m above the ground, like a weather-station thermometer.
+    how_measured: Computed by NASA's MERRA-2 reanalysis, which blends many observations with a weather model; it is a model estimate, not a direct measurement.
+    topic: temperature
     why_it_trends: Greenhouse-gas warming raises it almost everywhere, faster over land and the Arctic.
     source: power
+    access: {reader: power_zarr, store: merra2, variable: T2M}
     parameter: T2M
     units: degC
     display_units: degC
@@ -48,8 +54,11 @@ variables:
   - id: precipitation_power
     name: Precipitation (corrected)
     definition: The amount of rain and snow that falls, as water depth per day.
+    how_measured: Computed by NASA's MERRA-2 reanalysis, which blends many observations with a weather model; it is a model estimate, not a direct measurement.
+    topic: water
     why_it_trends: Warming changes storm tracks and moisture, so some regions get wetter and others drier.
     source: power
+    access: {reader: power_zarr, store: merra2, variable: PRECTOTCORR}
     parameter: PRECTOTCORR
     units: mm/day
     temporal: [daily, monthly]
@@ -61,9 +70,12 @@ variables:
 
   - id: root_zone_soil_wetness_power
     name: Root-zone soil wetness
-    definition: How full the soil near plant roots is with water, shown in percent of saturation (0% = bone dry, 100% = soaked).
+    definition: How full the soil near plant roots is with water, from 0 (bone dry) to 1 (soaked); the app shows it as percent of saturation.
+    how_measured: Computed by NASA's MERRA-2 reanalysis, which blends many observations with a weather model; it is a model estimate, not a direct measurement.
+    topic: water
     why_it_trends: Shifts in rainfall and higher evaporation from warming can dry or wet soils over decades.
     source: power
+    access: {reader: power_zarr, store: merra2, variable: GWETROOT}
     parameter: GWETROOT
     units: "1"
     temporal: [daily, monthly]
@@ -75,13 +87,18 @@ variables:
 
   - id: solar_radiation_power
     name: Sunlight reaching the ground
-    definition: Energy from the Sun arriving at the surface per day, after clouds and haze.
+    definition: How much sunlight reaches the ground after clouds and haze, as average power over the day and night (shown as energy per day).
+    how_measured: Derived from NASA CERES and other satellite measurements combined with a radiation model.
+    topic: sunlight
     why_it_trends: Cleaner air ("brightening") or more clouds/aerosols ("dimming") change it.
     source: power
+    access: {reader: power_zarr, store: syn1deg, variable: ALLSKY_SFC_SW_DWN}
     parameter: ALLSKY_SFC_SW_DWN
-    units: MJ/m^2/day
+    units: W/m^2  # POWER Zarr SYN1deg store (cache keeps source units); the REST API reports MJ/m^2/day
+    display_units: MJ/m^2/day
+    convert: "x * 0.0864"  # Q1: 1 W/m^2 = 86,400 J/day = 0.0864 MJ/m^2/day; applied once, by the JSON builder
     temporal: [daily, monthly]
-    period: 1984-present (CERES/GEWEX)
+    period: 2001-present (CERES SYN1deg; GEWEX SRB 1984-2000 is a different product, never joined)
     percent_change_meaningful: true
     biomes: [any, city]
     dataset_verified: true
@@ -90,8 +107,11 @@ variables:
   - id: snow_depth_power
     name: Snow depth
     definition: How deep the snow layer on the ground is.
+    how_measured: Computed by NASA's MERRA-2 reanalysis, which blends many observations with a weather model; it is a model estimate, not a direct measurement.
+    topic: snow_ice
     why_it_trends: Warmer winters shorten the snow season and reduce snowpack in many mid-latitude regions.
     source: power
+    access: {reader: power_zarr, store: merra2, variable: SNODP}
     parameter: SNODP
     units: cm
     temporal: [daily, monthly]
@@ -101,11 +121,150 @@ variables:
     dataset_verified: true
     variable_verified: true
 
+  # ---- POWER Zarr variables added 2026-11-14 (live, no login). Units, periods and fill behaviour
+  # ---- checked on real series; plain-language text drafted with SI and pending team review (R-10).
+  - id: evaporation_land_power
+    name: Evaporation from land
+    definition: How much water rises from the ground and plants into the air each day, as a depth of water.
+    how_measured: Computed by NASA's MERRA-2 reanalysis, which blends many observations with a weather model; it is a model estimate, not a direct measurement.
+    topic: water
+    why_it_trends: Warmer air pulls more water from moist land, but where soils dry out there is less left to evaporate.
+    source: power
+    access: {reader: power_zarr, store: merra2, variable: EVLAND}
+    parameter: EVLAND
+    units: mm/day
+    temporal: [monthly]
+    period: 1981-present
+    resolution: ~0.5 deg
+    percent_change_meaningful: true
+    biomes: [agriculture, steppe, rainforest, desert]
+    caveats: Model estimate (MERRA-2 reanalysis), not a direct measurement; land only (ocean cells have no value).
+    dataset_verified: true
+    variable_verified: true  # 2026-11-14: mm/day, NaN over ocean, Ukraine 0.12-4.5 mm/day
+
+  - id: sea_ice_fraction_power
+    name: Sea-ice cover
+    definition: The share of the region covered by floating sea ice, from 0 (none) to 1 (all).
+    how_measured: Computed by NASA's MERRA-2 reanalysis, which blends many observations with a weather model; it is a model estimate, not a direct measurement.
+    topic: snow_ice
+    why_it_trends: Warmer air and ocean water shrink Arctic sea ice, most of all at the end of summer in September.
+    source: power
+    access: {reader: power_zarr, store: merra2, variable: FRSEAICE}
+    parameter: FRSEAICE
+    units: "1"
+    temporal: [monthly]
+    period: 1981-present
+    resolution: ~0.5 deg
+    percent_change_meaningful: true
+    biomes: [arctic, ocean]
+    caveats: Land counts as 0, so the value is the share of the whole box, not of its ocean part; use boxes that are mostly ocean.
+    surface: ocean  # acquire refuses it for land_only regions (land cells are 0, coastal 'land' cells carry ice)
+    dataset_verified: true
+    variable_verified: true  # 2026-11-14: land cells are 0 (not missing), central Arctic Mar 2020 = 0.99
+
+  - id: snow_cover_fraction_power
+    name: Snow cover
+    definition: The share of the land covered by snow, from 0 (no snow) to 1 (all snow-covered).
+    how_measured: Computed by NASA's MERRA-2 reanalysis, which blends many observations with a weather model; it is a model estimate, not a direct measurement.
+    topic: snow_ice
+    why_it_trends: Warmer winters make snow arrive later and melt earlier, shortening the snow season.
+    source: power
+    access: {reader: power_zarr, store: merra2, variable: FRSNO}
+    parameter: FRSNO
+    units: "1"
+    temporal: [monthly]
+    period: 1981-present
+    resolution: ~0.5 deg
+    percent_change_meaningful: false
+    biomes: [mountain, boreal, arctic, steppe]
+    caveats: Summer months are zero in most places, which can pull the median-based slope toward zero (the app shows a warning).
+    dataset_verified: true
+    variable_verified: true  # 2026-11-14: land only (NaN over ocean), Ukraine 0-0.82
+
+  - id: total_ozone_power
+    name: Ozone layer (total ozone)
+    definition: How much ozone is in the air above a place, from the ground to space, in Dobson units; most of it sits in the ozone layer 15-35 km up.
+    how_measured: Computed by NASA's MERRA-2 reanalysis, which blends many observations with a weather model; it is a model estimate, not a direct measurement.
+    topic: air
+    why_it_trends: Man-made chemicals thinned the ozone layer from the 1980s; since the Montreal Protocol banned them it has started to recover slowly.
+    source: power
+    access: {reader: power_zarr, store: merra2, variable: TO3}
+    parameter: TO3
+    units: DU  # the store writes "Dobsons"
+    temporal: [monthly]
+    period: 1981-present
+    resolution: ~0.5 deg
+    percent_change_meaningful: true
+    biomes: [any, arctic]
+    caveats: MERRA-2 reanalysis, which assimilates satellite ozone observations; not the same product as OMI total ozone.
+    dataset_verified: true
+    variable_verified: true  # 2026-11-14: Ukraine 273-427 DU
+
+  - id: water_vapour_power
+    name: Water vapour in the air
+    definition: The total invisible water vapour in the air above a place, as the depth of water it would make if it all fell as rain (1 kg/m^2 = 1 mm).
+    how_measured: Computed by NASA's MERRA-2 reanalysis, which blends many observations with a weather model; it is a model estimate, not a direct measurement.
+    topic: water
+    why_it_trends: Warmer air can hold about 7% more water vapour per degree Celsius, so it tends to rise as the climate warms.
+    source: power
+    access: {reader: power_zarr, store: merra2, variable: TQV}
+    parameter: TQV
+    units: kg/m^2
+    temporal: [monthly]
+    period: 1981-present
+    resolution: ~0.5 deg
+    percent_change_meaningful: true
+    biomes: [any, rainforest, desert, ocean, monsoon]
+    caveats: Model estimate (MERRA-2 reanalysis).
+    dataset_verified: true
+    variable_verified: true  # 2026-11-14: Sahel 7.8-52.8 kg/m^2
+
+  - id: cloud_amount_power
+    name: Cloud cover
+    definition: The average share of the sky covered by clouds, in percent.
+    how_measured: Derived from NASA CERES and other satellite measurements combined with a radiation model.
+    topic: sunlight
+    why_it_trends: Shifts in weather patterns, air pollution and warming make some regions cloudier and others clearer.
+    source: power
+    access: {reader: power_zarr, store: syn1deg, variable: CLOUD_AMT}
+    parameter: CLOUD_AMT
+    units: "%"
+    temporal: [monthly]
+    period: 2001-present (CERES SYN1deg)
+    resolution: 1 deg
+    percent_change_meaningful: true
+    biomes: [any, city, rainforest, ocean]
+    caveats: Satellite record starts in 2001.
+    dataset_verified: true
+    variable_verified: true  # 2026-11-14: Ukraine 33-91 %
+
+  - id: aerosol_optical_depth_power
+    name: Haze (aerosol optical depth)
+    definition: How much sunlight is blocked by tiny particles in the air such as dust, smoke and pollution; 0 is perfectly clear and values above 1 are very hazy.
+    how_measured: Derived from NASA CERES and other satellite measurements combined with a radiation model.
+    topic: air
+    why_it_trends: Growing industry and traffic raised haze over South Asia, while clean-air laws lowered it over Europe and North America.
+    source: power
+    access: {reader: power_zarr, store: syn1deg, variable: AOD_55_ADJ}
+    parameter: AOD_55_ADJ
+    units: "1"
+    temporal: [monthly]
+    period: 2001-present (CERES SYN1deg)
+    resolution: 1 deg
+    percent_change_meaningful: true
+    biomes: [city, desert, agriculture]
+    caveats: Aerosol input of the CERES SYN1deg radiation product at 0.55 um, from 2001; not the same as the MERRA-2 aerosol product.
+    dataset_verified: true
+    variable_verified: true  # 2026-11-14: NW India 0.25-1.16
+
   - id: air_temperature_merra2
     name: Air temperature at 2 m (MERRA-2 grid)
     definition: Near-surface air temperature from NASA's MERRA-2 reanalysis, which blends observations into a weather model.
+    how_measured: Computed by NASA's MERRA-2 reanalysis, which blends many observations with a weather model; it is a model estimate, not a direct measurement.
+    topic: temperature
     why_it_trends: See air temperature; gridded field enables trend maps.
     source: ges_disc
+    access: {reader: none}  # no reader yet: not offered in the app
     dataset: {short_name: M2TMNXSLV, version: 5.12.4, variable: T2M}
     units: K
     display_units: degC
@@ -121,8 +280,11 @@ variables:
   - id: aerosol_optical_depth_merra2
     name: Haze / aerosol optical depth
     definition: How much tiny airborne particles (dust, smoke, pollution) dim sunlight passing through the atmosphere.
+    how_measured: Computed by NASA's MERRA-2 reanalysis, which blends many observations with a weather model; it is a model estimate, not a direct measurement.
+    topic: air
     why_it_trends: Air-quality laws reduce it in some regions while industrial growth or wildfires raise it elsewhere.
     source: ges_disc
+    access: {reader: none}  # no reader yet: not offered in the app
     dataset: {short_name: M2TMNXAER, version: 5.12.4, variable: TOTEXTTAU}
     units: "1"
     temporal: [monthly]
@@ -135,14 +297,17 @@ variables:
   - id: precipitation_imerg
     name: Precipitation (GPM IMERG satellite)
     definition: Rain and snowfall estimated from a constellation of satellites led by NASA's GPM mission.
+    how_measured: Estimated from microwave and infrared measurements by a constellation of satellites led by NASA's GPM mission, adjusted with rain-gauge data.
+    topic: water
     why_it_trends: Same as precipitation; satellite view covers oceans and remote land.
-    source: ges_disc
-    dataset: {short_name: GPM_3IMERGM, version: "07", variable: precipitation}
-    units: mm/hr
+    source: power  # B2-06: the series is read from the POWER IMERG Zarr store, not from GES DISC
+    access: {reader: power_zarr, store: imerg, variable: IMERG_PRECTOT}
+    dataset: {short_name: power_imerg_monthly_temporal_utc.zarr, version: POWER Version 10.0.0, variable: IMERG_PRECTOT}
+    upstream: {short_name: GPM_3IMERGM, version: "07", variable: precipitation, units: mm/hr}  # GES DISC product POWER resamples; not read directly
+    units: mm/day  # POWER IMERG store is already mm/day: no convert (the GES DISC file's "x * 24" does not apply)
     display_units: mm/day
-    convert: "x * 24"
     temporal: [monthly]
-    period: 1998-01 to 2025-09 (per CMR)
+    period: 1998-01-present (POWER IMERG store; GES DISC GPM_3IMERGM ends 2025-09 per CMR)
     resolution: 0.1 deg
     percent_change_meaningful: true
     biomes: [any, rainforest, monsoon, ocean]
@@ -152,24 +317,33 @@ variables:
   - id: no2_tropospheric_omi
     name: Nitrogen dioxide pollution (OMI)
     definition: The amount of NO2 gas, mostly from cars, power plants and industry, in the lower atmosphere above an area.
+    how_measured: Measured by the OMI instrument on NASA's Aura satellite.
+    topic: air
     why_it_trends: Emission controls lower it in many US/European/Chinese cities while growth raises it elsewhere — a classic opposite-trend example.
     source: ges_disc
+    access: {reader: omi_no2, version: "004", login: earthdata}
     dataset: {short_name: OMNO2d, version: "004", variable: ColumnAmountNO2TropCloudScreened, alt_version: "003"}
     units: molecules/cm^2
     temporal: [daily]   # aggregate to monthly
     period: 2004-10-present
     resolution: 0.25 deg
     percent_change_meaningful: true
-    caveats: OMI row anomaly since 2007 reduces coverage; check for instrument drift.
+    caveats: Clear-sky days only (cloud fraction < 30%), one overpass about 13:30 local time; the OMI row anomaly since 2007 reduces coverage, so Nov-Dec months are often missing. Over Kyiv the winter months come out as low as summer, probably a snow/low-sun retrieval artefact (under review, 2026-11-14), so do not read winter values as clean winter air. Column amount, not surface concentration.
+    status: under review (seasonal cycle check failed for Kyiv; science lead to review before use in a case)
     biomes: [city, industrial]
+    doi: 10.5067/AURA/OMI/DATA3407
+    reader: backend/trend_detective/omi_no2.py
     dataset_verified: true
-    variable_verified: false
+    variable_verified: true  # 2026-11-14: DMR of v004 granule: /HDFEOS/GRIDS/ColumnAmountNO2/Data_Fields/ColumnAmountNO2TropCloudScreened, float32, fill -1.2676506e30, molec/cm2, lat ascending
 
   - id: total_ozone_omi
     name: Total ozone column (OMI)
     definition: All the ozone in a column of air above a point, in Dobson units; most of it is in the stratospheric ozone layer.
+    how_measured: Measured by the OMI instrument on NASA's Aura satellite.
+    topic: air
     why_it_trends: Recovery after the Montreal Protocol vs. climate-driven circulation changes.
     source: ges_disc
+    access: {reader: none}  # no reader yet: not offered in the app
     dataset: {short_name: OMTO3e, version: "003", variable: ColumnAmountO3}
     units: DU
     temporal: [daily]
@@ -182,8 +356,11 @@ variables:
   - id: surface_air_temperature_airs
     name: Surface air temperature (AIRS satellite)
     definition: Near-surface air temperature measured from space by the AIRS infrared sounder.
+    how_measured: Measured by the AIRS instrument on NASA's Aqua satellite.
+    topic: temperature
     why_it_trends: Independent satellite cross-check of reanalysis warming.
     source: ges_disc
+    access: {reader: none}  # no reader yet: not offered in the app
     dataset: {short_name: AIRS3STM, version: "7.0", variable: SurfAirTemp_A}
     units: K
     display_units: degC
@@ -199,8 +376,11 @@ variables:
   - id: water_vapor_airs
     name: Total water vapour (AIRS)
     definition: All the water vapour in a column of air, as if condensed into a layer of water.
+    how_measured: Measured by the AIRS instrument on NASA's Aqua satellite.
+    topic: water
     why_it_trends: Warmer air holds about 7% more moisture per °C.
     source: ges_disc
+    access: {reader: none}  # no reader yet: not offered in the app
     dataset: {short_name: AIRS3STM, version: "7.0", variable: TotH2OVap_A}
     units: kg/m^2
     temporal: [monthly]
@@ -214,8 +394,11 @@ variables:
   - id: soil_moisture_gldas
     name: Topsoil moisture (GLDAS)
     definition: Water stored in the top 10 cm of soil, from NASA's land-surface model driven by observations.
+    how_measured: Computed by NASA's GLDAS land model, driven by satellite and ground observations; it is a model estimate, not a direct measurement.
+    topic: water
     why_it_trends: Drought-prone regions can dry as evaporation outpaces rainfall.
     source: ges_disc
+    access: {reader: none}  # no reader yet: not offered in the app
     dataset: {short_name: GLDAS_NOAH025_M, version: "2.1", variable: SoilMoi0_10cm_inst, alt: GLDAS_NOAH10_M}
     units: kg/m^2
     temporal: [monthly]
@@ -230,8 +413,11 @@ variables:
   - id: evapotranspiration_gldas
     name: Evapotranspiration (GLDAS)
     definition: Water leaving the land into the air through evaporation and plant "breathing" (transpiration).
+    how_measured: Computed by NASA's GLDAS land model, driven by satellite and ground observations; it is a model estimate, not a direct measurement.
+    topic: water
     why_it_trends: Warming and greening increase it where water is available.
     source: ges_disc
+    access: {reader: none}  # no reader yet: not offered in the app
     dataset: {short_name: GLDAS_NOAH025_M, version: "2.1", variable: Evap_tavg}
     units: kg/m^2/s
     display_units: mm/day
@@ -246,8 +432,11 @@ variables:
   - id: surface_runoff_gldas
     name: Surface runoff (GLDAS)
     definition: Rain or snowmelt water that flows over the ground into streams instead of soaking in — a proxy for streamflow.
+    how_measured: Computed by NASA's GLDAS land model, driven by satellite and ground observations; it is a model estimate, not a direct measurement.
+    topic: water
     why_it_trends: Changes in heavy rain, snowmelt timing and land use.
     source: ges_disc
+    access: {reader: none}  # no reader yet: not offered in the app
     dataset: {short_name: GLDAS_NOAH025_M, version: "2.1", variable: Qs_acc}
     units: kg/m^2 (per 3-h, monthly mean)
     temporal: [monthly]
@@ -261,8 +450,11 @@ variables:
   - id: snow_water_equivalent_gldas
     name: Snow water equivalent (GLDAS)
     definition: How much water the snowpack would make if melted.
+    how_measured: Computed by NASA's GLDAS land model, driven by satellite and ground observations; it is a model estimate, not a direct measurement.
+    topic: snow_ice
     why_it_trends: Warming reduces snowpack and shifts melt earlier.
     source: ges_disc
+    access: {reader: none}  # no reader yet: not offered in the app
     dataset: {short_name: GLDAS_NOAH025_M, version: "2.1", variable: SWE_inst}
     units: kg/m^2
     temporal: [monthly]
@@ -275,9 +467,12 @@ variables:
   - id: terrestrial_water_storage_grace
     name: Total water storage (GRACE/GRACE-FO)
     definition: All water on and under the land — snow, soil, lakes and groundwater — measured from tiny changes in Earth's gravity.
+    how_measured: Measured by the twin GRACE and GRACE-FO satellites, which track tiny changes in Earth's gravity.
+    topic: water
     why_it_trends: Groundwater pumping and ice loss lower it in some regions while others gain water — strong opposite-sign trends.
     source: podaac
-    dataset: {short_name: TELLUS_GRAC-GRFO_MASCON_CRI_GRID_RL06.3_V4, version: RL06.3Mv04, variable: lwe_thickness}
+    access: {reader: grace, login: earthdata}
+    dataset: {short_name: TELLUS_GRAC-GRFO_MASCON_CRI_GRID_RL06.3_V4, version: RL06.3Mv04, variable: lwe_thickness, doi: 10.5067/TEMSC-3JC634}
     units: cm (equivalent water height)
     temporal: [monthly]
     period: 2002-04-present (gap 2017-07 to 2018-05 between missions)
@@ -285,14 +480,17 @@ variables:
     caveats: Mission gap; values are anomalies relative to a baseline; coarse effective resolution (~300 km).
     biomes: [aquifer, agriculture, glacier]
     dataset_verified: true
-    variable_verified: false
+    variable_verified: true  # 2026-11-14: opened GRCTellus.JPL.200204_202609 file; lwe_thickness cm, baseline 2004.000-2009.999, land_mask 0/1, lon 0..360
 
   - id: ndvi_modis
     name: Vegetation greenness (NDVI, MODIS)
     definition: A satellite index of how green and leafy plants are, from -1 to 1; dense forest is near 0.8.
+    how_measured: Measured by the MODIS instrument on NASA's Terra satellite.
+    topic: vegetation
     why_it_trends: Longer growing seasons and CO2 fertilisation "green" some regions; drought and deforestation "brown" others.
     source: lp_daac
-    dataset: {short_name: MOD13C2, version: "061", variable: "CMG 0.05 Deg Monthly NDVI"}
+    access: {reader: modis_ndvi, login: earthdata}
+    dataset: {short_name: MOD13C2, version: "061", variable: "CMG 0.05 Deg Monthly NDVI", doi: 10.5067/MODIS/MOD13C2.061}
     units: "1"
     scale_factor: 0.0001
     temporal: [monthly]
@@ -300,14 +498,18 @@ variables:
     resolution: 0.05 deg
     percent_change_meaningful: true
     biomes: [rainforest, steppe, agriculture, arctic, city]
+    caveats: Snowy or cloudy months are dropped (pixel_reliability filter), so cold regions lose winter months.
     dataset_verified: true
-    variable_verified: false
+    variable_verified: true  # 2026-11-14: int16, _FillValue -3000, HDF4 scale_factor=10000 means divide (do not CF-decode); pixel_reliability 0..4
 
   - id: land_surface_temperature_modis
     name: Land surface temperature (MODIS, daytime)
     definition: How hot the ground itself is (not the air), seen by satellite during the day.
+    how_measured: Measured by the MODIS instrument on NASA's Terra satellite.
+    topic: temperature
     why_it_trends: Urban growth (heat islands), deforestation and drying soils heat the surface.
     source: lp_daac
+    access: {reader: none}  # no reader yet: not offered in the app
     dataset: {short_name: MOD11C3, version: "061", variable: LST_Day_CMG, alt: MYD11C3}
     units: K
     scale_factor: 0.02
@@ -324,8 +526,11 @@ variables:
   - id: snow_cover_modis
     name: Snow cover (MODIS)
     definition: The percentage of the ground covered by snow in a month.
+    how_measured: Measured by the MODIS instrument on NASA's Terra satellite.
+    topic: snow_ice
     why_it_trends: Warming shortens the snow season, especially in spring.
     source: nsidc
+    access: {reader: none}  # no reader yet: not offered in the app
     dataset: {short_name: MOD10CM, version: "61", variable: Snow_Cover_Monthly_CMG}
     units: "%"
     temporal: [monthly]
@@ -340,8 +545,11 @@ variables:
   - id: sea_surface_temperature_modis
     name: Sea surface temperature (MODIS Aqua)
     definition: Temperature of the top layer of the ocean seen from space.
+    how_measured: Measured by the MODIS instrument on NASA's Aqua satellite.
+    topic: other
     why_it_trends: Oceans absorb most of the extra heat from global warming; currents create regional differences.
     source: podaac
+    access: {reader: none}  # no reader yet: not offered in the app
     dataset: {short_name: MODIS_AQUA_L3_SST_THERMAL_MONTHLY_4KM_DAYTIME_V2019.0, version: "2019.0", variable: sst}
     units: degC
     temporal: [monthly]
@@ -351,3 +559,50 @@ variables:
     biomes: [ocean, estuary, coast]
     dataset_verified: true
     variable_verified: false
+
+# ---------------------------------------------------------------- internal method inputs (Q3, B1-05, B1-09)
+# Not shown to users and not part of the variables list above: daily POWER parameters used as inputs
+# to methods (extreme indices, DTR, monthly totals). Read with acquire.get_input_series() /
+# acquire.get_monthly_from_daily(); listed by acquire.list_inputs(). Semantics decided 2026-11-14 (Q3).
+internal_inputs:
+  - id: T2M_MAX
+    internal: true
+    name: Daily maximum air temperature at 2 m
+    parameter: T2M_MAX
+    source: power
+    access: {reader: power_zarr, store: merra2_daily, variable: T2M_MAX}
+    units: degC
+    monthly: {how: mean, meaning: "Tmax = mean of the daily maxima in the month"}
+    semantics: >-
+      "Tmax" always means the mean daily maximum (acquire.get_monthly_from_daily("T2M_MAX", region, "mean")).
+      The POWER *monthly* store's T2M_MAX is the single hottest hour of the month (5-7 degC higher); it may only
+      be shown labelled "hottest hour of the month".
+    temporal: [daily]
+    period: 1981-present
+  - id: T2M_MIN
+    internal: true
+    name: Daily minimum air temperature at 2 m
+    parameter: T2M_MIN
+    source: power
+    access: {reader: power_zarr, store: merra2_daily, variable: T2M_MIN}
+    units: degC
+    monthly: {how: mean, meaning: "Tmin = mean of the daily minima in the month"}
+    semantics: >-
+      "Tmin" is the mean daily minimum; the monthly store's T2M_MIN is the coldest hour of the month.
+      DTR = mean(Tmax) - mean(Tmin) from these daily inputs, never from the monthly-store extremes
+      (which overstate it by up to 10.6 degC).
+    temporal: [daily]
+    period: 1981-present
+  - id: PRECTOTCORR_SUM
+    internal: true
+    name: Monthly precipitation total (sum of daily PRECTOTCORR)
+    parameter: PRECTOTCORR
+    source: power
+    access: {reader: power_zarr, store: merra2_daily, variable: PRECTOTCORR}
+    units: mm/month
+    monthly: {how: sum, meaning: "sum of the daily totals (mm/day x 1 day) over the month"}
+    semantics: >-
+      Monthly total in mm/month from the daily store (cache files merra2_PRECTOTCORR_SUM_*). The catalog
+      variable precipitation_power stays mm/day (monthly mean of daily rates).
+    temporal: [monthly]
+    period: 1981-present

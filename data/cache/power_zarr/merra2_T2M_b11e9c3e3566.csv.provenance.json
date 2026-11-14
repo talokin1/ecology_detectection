@@ -1,0 +1,65 @@
+{
+  "source": "NASA POWER Zarr archive (AWS Open Data)",
+  "source_url": "https://nasa-power.s3.us-west-2.amazonaws.com/merra2/temporal/power_merra2_monthly_temporal_utc.zarr",
+  "short_name": "power_merra2_monthly_temporal_utc.zarr",
+  "version": "POWER Version 10.0.0",
+  "doi": null,
+  "landing_page": "https://power.larc.nasa.gov/",
+  "registry_page": "https://registry.opendata.aws/nasa-power/",
+  "variable": {
+    "variable": "T2M",
+    "source": "merra2",
+    "long_name": "Temperature at 2 Meters",
+    "units": "C",
+    "definition": "The average air (dry bulb) temperature at 2 meters above the surface of the earth."
+  },
+  "region_name": "South-eastern South America (IPCC AR6 SES)",
+  "bbox": {
+    "lat_min": -40.0,
+    "lat_max": -20.0,
+    "lon_min": -70.2,
+    "lon_max": -34.0
+  },
+  "frequency": "monthly",
+  "n_months": 549,
+  "time_range": {
+    "start": "1981-01",
+    "end": "2026-09"
+  },
+  "accessed": "2026-11-14T18:02:52Z",
+  "land_only": true,
+  "outline": {
+    "source": "IPCC AR6 WGI land reference regions (v4)",
+    "digest": "f3b311f7b542",
+    "rings": [
+      [
+        [
+          -34.0,
+          -20.0
+        ],
+        [
+          -56.0,
+          -40.0
+        ],
+        [
+          -70.2,
+          -40.0
+        ],
+        [
+          -66.4,
+          -20.0
+        ]
+      ]
+    ]
+  },
+  "processing": [
+    "selected grid cells whose centres fall inside the region outline (straight edges in lon/lat; cells on a left/bottom edge in, right/top edge out)",
+    "kept land cells only (MERRA-2 cells with root-zone soil wetness; nearest MERRA-2 cell for other grids); ocean, lakes and ice sheets excluded",
+    "masked fill value -999.0",
+    "area mean with cos(latitude) weights, ignoring missing cells",
+    "dropped time steps with no data (the store pre-allocates future dates)",
+    "kept source units"
+  ],
+  "script": "backend/trend_detective/power_zarr.py",
+  "git_commit": "3e94115"
+}

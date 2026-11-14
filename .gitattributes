@@ -1,0 +1,5 @@
+# Frozen data is checked against sha256 in data/cache/MANIFEST.json: never convert line endings,
+# or Windows checkouts with core.autocrlf=true get different bytes (and different hashes).
+data/cache/** -text
+data/catalog/sources/** -text
+*.nc binary

@@ -1,0 +1,65 @@
+{
+  "source": "NASA POWER Zarr archive (AWS Open Data)",
+  "source_url": "https://nasa-power.s3.us-west-2.amazonaws.com/syn1deg/temporal/power_syn1deg_monthly_temporal_utc.zarr",
+  "short_name": "power_syn1deg_monthly_temporal_utc.zarr",
+  "version": "POWER Version 10.0.0",
+  "doi": null,
+  "landing_page": "https://power.larc.nasa.gov/",
+  "registry_page": "https://registry.opendata.aws/nasa-power/",
+  "variable": {
+    "variable": "CLOUD_AMT",
+    "source": "syn1deg",
+    "long_name": "Cloud Amount",
+    "units": "%",
+    "definition": "The average percent of cloud amount during the temporal period."
+  },
+  "region_name": "Western North America (IPCC AR6 WNA)",
+  "bbox": {
+    "lat_min": 33.8,
+    "lat_max": 50.0,
+    "lon_min": -130.0,
+    "lon_max": -105.0
+  },
+  "frequency": "monthly",
+  "n_months": 308,
+  "time_range": {
+    "start": "2001-01",
+    "end": "2026-08"
+  },
+  "accessed": "2026-11-14T18:02:03Z",
+  "land_only": true,
+  "outline": {
+    "source": "IPCC AR6 WGI land reference regions (v4)",
+    "digest": "21801fa49736",
+    "rings": [
+      [
+        [
+          -130.0,
+          50.0
+        ],
+        [
+          -122.5,
+          33.8
+        ],
+        [
+          -105.0,
+          33.8
+        ],
+        [
+          -105.0,
+          50.0
+        ]
+      ]
+    ]
+  },
+  "processing": [
+    "selected grid cells whose centres fall inside the region outline (straight edges in lon/lat; cells on a left/bottom edge in, right/top edge out)",
+    "kept land cells only (MERRA-2 cells with root-zone soil wetness; nearest MERRA-2 cell for other grids); ocean, lakes and ice sheets excluded",
+    "masked fill value -999.0",
+    "area mean with cos(latitude) weights, ignoring missing cells",
+    "dropped time steps with no data (the store pre-allocates future dates)",
+    "kept source units"
+  ],
+  "script": "backend/trend_detective/power_zarr.py",
+  "git_commit": "3e94115"
+}

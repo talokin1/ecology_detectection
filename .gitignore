@@ -22,6 +22,7 @@ dist/
 .next/
 frontend/test-results/
 *.tsbuildinfo
+build/
 frontend/playwright-report/
 
 # Data (large raw files are rebuilt by scripts/; small curated outputs may be committed)
@@ -30,7 +31,27 @@ data/cache/**/*.nc
 data/cache/**/*.zarr/
 data/cache/**/*.hdf
 data/cache/**/*.h5
+data/cache/**/*.nc4
+*.nc4
+.cdsapirc
+cookies.txt
 !data/cache/**/*.provenance.json
+# World-map grids committed on purpose (ADR-006, data plan D2: only grids the map uses; rebuild others
+# with scripts/fetch_grid.py). List each file explicitly so local test grids never slip in.
+!data/cache/grids/grace_lwe_thickness_2deg_land.nc
+!data/cache/grids/imerg_IMERG_PRECTOT_2deg.nc
+!data/cache/grids/merra2_EVLAND_2deg.nc
+!data/cache/grids/merra2_FRSEAICE_2deg.nc
+!data/cache/grids/merra2_FRSNO_2deg.nc
+!data/cache/grids/merra2_GWETROOT_2deg.nc
+!data/cache/grids/merra2_PRECTOTCORR_2deg.nc
+!data/cache/grids/merra2_SNODP_2deg.nc
+!data/cache/grids/merra2_T2M_2deg.nc
+!data/cache/grids/merra2_TO3_2deg.nc
+!data/cache/grids/merra2_TQV_2deg.nc
+!data/cache/grids/syn1deg_ALLSKY_SFC_SW_DWN_2deg.nc
+!data/cache/grids/syn1deg_AOD_55_ADJ_2deg.nc
+!data/cache/grids/syn1deg_CLOUD_AMT_2deg.nc
 
 # OS / editors
 .DS_Store

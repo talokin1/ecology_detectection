@@ -132,27 +132,29 @@ CASES = [
 ]
 NAME_IN_SENTENCE = {"sahel": "the Sahel", "great_plains": "the Great Plains (USA)"}
 
-TOPICS = {
-    "temperature": ["air_temperature_power", "air_temperature_merra2", "surface_air_temperature_airs",
-                    "land_surface_temperature_modis"],
-    "water": ["precipitation_power", "root_zone_soil_wetness_power", "precipitation_imerg",
-              "water_vapor_airs", "soil_moisture_gldas", "evapotranspiration_gldas",
-              "surface_runoff_gldas", "terrestrial_water_storage_grace"],
-    "snow_ice": ["snow_depth_power", "snow_water_equivalent_gldas", "snow_cover_modis"],
-    "air": ["aerosol_optical_depth_merra2", "no2_tropospheric_omi", "total_ozone_omi"],
-    "vegetation": ["ndvi_modis"],
-    "sunlight": ["solar_radiation_power"],
-}
+# Topic ids are the viz filter ids; the topic of each variable is read from
+# data/catalog/variables.yaml (merge plan v2, M2). The catalog may still carry the data branch's
+# older labels, so they are mapped here; anything unknown falls into `other`.
 TOPIC_LABELS = {"temperature": "Temperature", "water": "Water", "snow_ice": "Snow and ice",
-                "air": "Air quality", "vegetation": "Vegetation", "sunlight": "Sunlight"}
+                "air": "Air quality", "vegetation": "Vegetation", "sunlight": "Sunlight",
+                "other": "Ocean"}
+TOPIC_ALIASES = {"snow and ice": "snow_ice", "sunlight and clouds": "sunlight", "ocean": "other"}
+
+
+def viz_topic(label) -> str:
+    t = str(label or "").strip().lower()
+    t = TOPIC_ALIASES.get(t, t)
+    return t if t in TOPIC_LABELS else "other"
+
+
 PLACE_TYPES = {
-    "farmland": ("Farmland and steppe", {"agriculture", "steppe"}),
+    "farmland": ("Farmland and steppe", {"agriculture", "steppe", "aquifer"}),
     "city": ("Cities", {"city", "industrial"}),
     "desert": ("Deserts", {"desert"}),
     "forest": ("Forests", {"forest", "rainforest", "boreal"}),
     "cold": ("Cold places", {"arctic", "polar", "glacier"}),
     "mountain": ("Mountains", {"mountain"}),
-    "coast": ("Coasts and ocean", {"ocean", "estuary", "coast"}),
+    "coast": ("Coasts and ocean", {"ocean", "estuary", "coast", "river_basin", "mediterranean"}),
     "tropics": ("Tropics", {"tropics", "monsoon", "rainforest"}),
 }
 
@@ -1029,7 +1031,6 @@ SOURCE_SHORT = {"power": "NASA POWER", "ges_disc": "NASA GES DISC", "lp_daac": "
 def catalog(variables_ready: dict) -> dict:
     cat = yaml.safe_load((ROOT / "data/catalog/variables.yaml").read_text(encoding="utf-8"))
     src = cat["sources"]
-    topic_of = {vid: t for t, ids in TOPICS.items() for vid in ids}
     ready = {v["catalog_id"]: k for k, v in variables_ready.items()}
     out = []
     for v in cat["variables"]:
@@ -1040,7 +1041,7 @@ def catalog(variables_ready: dict) -> dict:
                     "source": src.get(v.get("source"), {}).get("name", v.get("source")),
                     "source_short": SOURCE_SHORT.get(v.get("source"), v.get("source")),
                     "period": str(v.get("period", "")), "resolution": str(v.get("resolution", "")),
-                    "topic": topic_of.get(v["id"], "other"),
+                    "topic": viz_topic(v.get("topic")),
                     "place_types": places, "anywhere": "any" in biomes,
                     "app_variable_id": ready.get(v["id"]),
                     "status": "ready" if v["id"] in ready else "planned"})
