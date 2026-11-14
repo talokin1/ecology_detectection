@@ -12,8 +12,12 @@
   | `data` | `scripts/` fetchers, `data/cache/` + provenance sidecars, catalog verification |
   | `stats` | `backend/` analysis engine (`trend_stats.py`, unchanged), case-file results, `notebooks/` checks |
   | `viz` | `frontend/` web app: variable picker, region, charts, verdict card, case files |
-  | `story` | Submission text, demo video script / slides, `09-references.md`, `08-si-usage-log.md` |
+  | `story` | Drafts of the submission page, demo video script and slides (merged to `main` when ready) |
 
+- **Shared team context goes straight to `main`**, not to a work branch, so every branch and every
+  Claude session sees it: planning notes in `docs/planning/`, decisions in `docs/decisions/`,
+  status in `docs/02-requirements-traceability.md`, SI log, references. Direct commits to `main`
+  are fine for these docs (`docs: ...`); code changes still go through a PR.
 - Before starting work: `git switch <branch>` then `git merge main` to pick up the latest shared changes.
 - Commits: Conventional Commits with requirement IDs — `feat(stats): add years-to-detect to verdict (R-14)`.
 - SI-assisted commits keep the `Co-Authored-By:` trailer of the SI tool (disclosure metadata).

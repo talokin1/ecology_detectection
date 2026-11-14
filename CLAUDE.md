@@ -22,6 +22,7 @@ Relevance (NASA data as the core), Presentation**. When in doubt, optimise for
 | Git / code / PR rules | `docs/06-conventions.md` |
 | Statistical methods (judge-facing) | `docs/10-methods.md` |
 | Decisions | `docs/decisions/` |
+| Planning notes, meeting outcomes | `docs/planning/` |
 | Variables we may use | `data/catalog/variables.yaml` |
 
 ## Skills and agents (use them)
