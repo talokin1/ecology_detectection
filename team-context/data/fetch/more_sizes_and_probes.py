@@ -14,10 +14,10 @@ import urllib.request
 import urllib.error
 from pathlib import Path
 
-from locate import FETCH_DIR, UKRAINE_SAMPLES
+from locate import FETCH_DIR, SCRATCH, UKRAINE_SAMPLES
 
 OUT = FETCH_DIR / "size_measurements_extra.json"
-PROBE_DIR = Path("/tmp/slim_probes")
+PROBE_DIR = SCRATCH / "slim_probes"
 PROBE_DIR.mkdir(parents=True, exist_ok=True)
 UA = "SpaceAppsTrendDetective/1.0"
 CTX = ssl.create_default_context()

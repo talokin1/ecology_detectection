@@ -8,7 +8,7 @@ from pathlib import Path
 
 UA = "SpaceAppsTrendDetective/1.0"
 CTX = ssl.create_default_context()
-from locate import FETCH_DIR
+from locate import FETCH_DIR, SCRATCH
 
 OUT = FETCH_DIR / "extra_var_probes.json"
 
@@ -102,11 +102,11 @@ def main():
              concept_id="C1233767569-GES_DISC",
              gran="GLDAS_NOAH025_M.2.0:GLDAS_NOAH025_M.A194801.020.nc4"),
     ]
-    Path("/tmp/dmr_probes").mkdir(exist_ok=True)
+    (SCRATCH / "dmr_probes").mkdir(parents=True, exist_ok=True)
     results["dmr"] = {}
     for p in probes:
         url = dmr_url(p["concept_id"], p["gran"])
-        dest = f"/tmp/dmr_probes/{p['key']}.xml"
+        dest = str(SCRATCH / "dmr_probes" / f"{p['key']}.xml")
         log(f"DMR {p['key']} ...")
         rec = get(url, dest=dest)
         rec["url_no_query"] = f"opendap ... {p['key']}"

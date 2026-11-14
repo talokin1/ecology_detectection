@@ -79,12 +79,31 @@ def run(region_name: str, sources: list[str], do_trends: bool = True):
         tr.to_csv(outdir / "trends.csv", index=False)
     meta = dict(region=region_name, region_cfg=region.cfg if region.is_bbox else {k: v for k, v in region.cfg.items()},
                 bounds=region.bounds, sources=notes, n_series=int(tidy.groupby(["source", "variable"]).ngroups),
-                seconds=round(time.time() - t0, 1))
+                seconds=round(time.time() - t0, 1), provenance=_provenance())
     raw = json.dumps(meta, indent=1, default=str)
     raw = raw.replace(str(GLOBAL), "$GLOBAL_DATA").replace(str(SAMPLES), "$UKRAINE_SAMPLES")
     (outdir / "run_meta.json").write_text(raw)
     print(f"[{region_name}] done in {meta['seconds']}s -> {outdir}")
     return meta
+
+
+def _provenance() -> dict:
+    """run_meta provenance (MC-4): git commit, trend_stats.py md5, run time (Europe/Kiev box clock)."""
+    import hashlib
+    import subprocess
+    from ukpipe.paths import trend_stats_py
+    try:
+        sha = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=Path(__file__).parent, text=True).strip()
+        dirty = bool(subprocess.check_output(["git", "status", "--porcelain"], cwd=Path(__file__).parent, text=True).strip())
+    except (OSError, subprocess.CalledProcessError):
+        sha, dirty = None, None
+    try:
+        md5 = hashlib.md5(trend_stats_py().read_bytes()).hexdigest()
+    except OSError:
+        md5 = None
+    return dict(git_sha=sha, git_dirty=dirty, trend_stats_md5=md5,
+                run_at=time.strftime("%Y-%m-%dT%H:%M:%S%z"),
+                note="source access dates are in each loader's sources[*] entry where available")
 
 
 def main():
