@@ -1,0 +1,73 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Offline climate statistics output envelope",
+  "type": "object", "additionalProperties": false,
+  "required": ["schema_version", "pipeline_version", "status", "config", "metadata", "provenance",
+               "assumptions", "series", "derived", "insights_audit"],
+  "properties": {
+    "schema_version": {"const": "1.0"},
+    "pipeline_version": {"type": "string"},
+    "status": {"const": "ok"},
+    "config": {"type": "object"},
+    "metadata": {"type": "object"},
+    "provenance": {
+      "type": "object",
+      "required": ["input_sha256", "catalog_sha256", "reference_engine_sha256", "libraries", "random_seed"],
+      "properties": {
+        "input_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "catalog_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "reference_engine_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "libraries": {"type": "object"}, "random_seed": {"type": "integer"}
+      }
+    },
+    "assumptions": {"type": "array", "items": {"type": "string"}},
+    "series": {
+      "type": "object", "minProperties": 1,
+      "additionalProperties": {
+        "type": "object",
+        "required": ["variable_id", "region_id", "name", "input_frequency", "analysis_frequency", "units",
+                     "quality", "descriptive", "analysis_descriptive", "climatology", "annual"],
+        "properties": {
+          "variable_id": {"type": "string"}, "region_id": {"type": "string"}, "name": {"type": "string"},
+          "input_frequency": {"enum": ["daily", "monthly", "annual"]},
+          "analysis_frequency": {"enum": ["monthly", "annual"]}, "units": {"type": "string"},
+          "quality": {"type": "object", "required": ["valid", "missing", "coverage", "warnings"]},
+          "descriptive": {"type": "object"}, "analysis_descriptive": {"type": "object"},
+          "climatology": {"type": "object"}, "annual": {"type": "object"},
+          "analysis_series": {"$ref": "#/$defs/records"}
+        }
+      }
+    },
+    "derived": {"type": "object"},
+    "relationships": {"type": "array", "items": {"type": "object"}},
+    "region_contrasts": {"type": "array", "items": {"type": "object"}},
+    "drivers": {"type": ["object", "array"]},
+    "insights_audit": {
+      "type": "object", "required": ["method", "family", "q_threshold", "tested", "significant", "tests"],
+      "properties": {
+        "method": {"const": "Benjamini-Hochberg"}, "family": {"type": "string"},
+        "q_threshold": {"type": "number", "exclusiveMinimum": 0, "exclusiveMaximum": 1},
+        "tested": {"type": "integer", "minimum": 0}, "significant": {"type": "integer", "minimum": 0},
+        "tests": {
+          "type": "array", "items": {
+            "type": "object", "required": ["path", "p_value", "q_value", "significant_fdr"],
+            "properties": {
+              "path": {"type": "string"}, "test": {"type": ["string", "null"]},
+              "p_value": {"type": "number", "minimum": 0, "maximum": 1},
+              "q_value": {"type": "number", "minimum": 0, "maximum": 1},
+              "significant_fdr": {"type": "boolean"}
+            }
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "records": {
+      "type": "array", "items": {
+        "type": "object", "additionalProperties": false, "required": ["date", "value"],
+        "properties": {"date": {"type": "string"}, "value": {"type": ["number", "null"]}}
+      }
+    }
+  }
+}
