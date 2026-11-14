@@ -7,11 +7,11 @@
   "landing_page": "https://power.larc.nasa.gov/",
   "registry_page": "https://registry.opendata.aws/nasa-power/",
   "variable": {
-    "variable": "T2M_MIN",
+    "variable": "T2M_MAX",
     "source": "merra2_daily",
-    "long_name": "Temperature at 2 Meters Minimum",
+    "long_name": "Temperature at 2 Meters Maximum",
     "units": "C",
-    "definition": "The minimum hourly air (dry bulb) temperature at 2 meters above the surface of the earth in the period of interest."
+    "definition": "The maximum hourly air (dry bulb) temperature at 2 meters above the surface of the earth in the period of interest."
   },
   "region_name": "Ukraine",
   "bbox": {
@@ -26,15 +26,16 @@
     "start": "1980-12-31",
     "end": "2026-10-01"
   },
-  "accessed": "2026-11-14T14:19:12Z",
-  "land_only": false,
+  "accessed": "2026-11-14T16:05:34Z",
+  "land_only": true,
   "processing": [
     "selected grid cells whose centres fall inside the bbox",
+    "kept land cells only (MERRA-2 cells with root-zone soil wetness; nearest MERRA-2 cell for other grids); ocean, lakes and ice sheets excluded",
     "masked fill value -999.0",
     "area mean with cos(latitude) weights, ignoring missing cells",
     "dropped time steps with no data (the store pre-allocates future dates)",
     "kept source units"
   ],
   "script": "backend/trend_detective/power_zarr.py",
-  "git_commit": "b47dff5"
+  "git_commit": "257ce4b"
 }

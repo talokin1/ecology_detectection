@@ -1,17 +1,17 @@
 {
   "source": "NASA POWER Zarr archive (AWS Open Data)",
-  "source_url": "https://nasa-power.s3.us-west-2.amazonaws.com/syn1deg/temporal/power_syn1deg_monthly_temporal_utc.zarr",
-  "short_name": "power_syn1deg_monthly_temporal_utc.zarr",
+  "source_url": "https://nasa-power.s3.us-west-2.amazonaws.com/merra2/temporal/power_merra2_monthly_temporal_utc.zarr",
+  "short_name": "power_merra2_monthly_temporal_utc.zarr",
   "version": "POWER Version 10.0.0",
   "doi": null,
   "landing_page": "https://power.larc.nasa.gov/",
   "registry_page": "https://registry.opendata.aws/nasa-power/",
   "variable": {
-    "variable": "ALLSKY_SFC_SW_DWN",
-    "source": "syn1deg",
-    "long_name": "All Sky Surface Shortwave Downward Irradiance",
-    "units": "W m-2",
-    "definition": "The total solar irradiance incident (direct plus diffuse) on a horizontal plane at the surface of the earth under all sky conditions. An alternative term for the total solar irradiance is the \"Global Horizontal Irradiance\" or GHI."
+    "variable": "TO3",
+    "source": "merra2",
+    "long_name": "Total Column Ozone",
+    "units": "Dobsons",
+    "definition": "The total amount of ozone in a column extending vertically from the earth's surface to the top of the atmosphere."
   },
   "region_name": "Ukraine",
   "bbox": {
@@ -21,20 +21,21 @@
     "lon_max": 40.5
   },
   "frequency": "monthly",
-  "n_months": 308,
+  "n_months": 549,
   "time_range": {
-    "start": "2001-01",
-    "end": "2026-08"
+    "start": "1981-01",
+    "end": "2026-09"
   },
-  "accessed": "2026-11-14T14:19:16Z",
-  "land_only": false,
+  "accessed": "2026-11-14T16:05:31Z",
+  "land_only": true,
   "processing": [
     "selected grid cells whose centres fall inside the bbox",
+    "kept land cells only (MERRA-2 cells with root-zone soil wetness; nearest MERRA-2 cell for other grids); ocean, lakes and ice sheets excluded",
     "masked fill value -999.0",
     "area mean with cos(latitude) weights, ignoring missing cells",
     "dropped time steps with no data (the store pre-allocates future dates)",
     "kept source units"
   ],
   "script": "backend/trend_detective/power_zarr.py",
-  "git_commit": "b47dff5"
+  "git_commit": "257ce4b"
 }

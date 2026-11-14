@@ -1,17 +1,17 @@
 {
   "source": "NASA POWER Zarr archive (AWS Open Data)",
-  "source_url": "https://nasa-power.s3.us-west-2.amazonaws.com/merra2/temporal/power_merra2_monthly_temporal_utc.zarr",
-  "short_name": "power_merra2_monthly_temporal_utc.zarr",
+  "source_url": "https://nasa-power.s3.us-west-2.amazonaws.com/merra2/temporal/power_merra2_daily_temporal_utc.zarr",
+  "short_name": "power_merra2_daily_temporal_utc.zarr",
   "version": "POWER Version 10.0.0",
   "doi": null,
   "landing_page": "https://power.larc.nasa.gov/",
   "registry_page": "https://registry.opendata.aws/nasa-power/",
   "variable": {
-    "variable": "T2M",
-    "source": "merra2",
-    "long_name": "Temperature at 2 Meters",
-    "units": "C",
-    "definition": "The average air (dry bulb) temperature at 2 meters above the surface of the earth."
+    "variable": "PRECTOTCORR",
+    "source": "merra2_daily",
+    "long_name": "Precipitation Corrected",
+    "units": "mm/day",
+    "definition": "The average MERRA-2 bias corrected total precipitation at the surface of the earth."
   },
   "region_name": "Ukraine",
   "bbox": {
@@ -20,21 +20,22 @@
     "lon_min": 22.0,
     "lon_max": 40.5
   },
-  "frequency": "monthly",
-  "n_months": 549,
+  "frequency": "daily",
+  "n_days": 16711,
   "time_range": {
-    "start": "1981-01",
-    "end": "2026-09"
+    "start": "1980-12-31",
+    "end": "2026-10-01"
   },
-  "accessed": "2026-11-14T14:17:22Z",
-  "land_only": false,
+  "accessed": "2026-11-14T16:05:36Z",
+  "land_only": true,
   "processing": [
     "selected grid cells whose centres fall inside the bbox",
+    "kept land cells only (MERRA-2 cells with root-zone soil wetness; nearest MERRA-2 cell for other grids); ocean, lakes and ice sheets excluded",
     "masked fill value -999.0",
     "area mean with cos(latitude) weights, ignoring missing cells",
     "dropped time steps with no data (the store pre-allocates future dates)",
     "kept source units"
   ],
   "script": "backend/trend_detective/power_zarr.py",
-  "git_commit": "b47dff5"
+  "git_commit": "257ce4b"
 }

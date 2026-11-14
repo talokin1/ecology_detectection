@@ -7,11 +7,11 @@
   "landing_page": "https://power.larc.nasa.gov/",
   "registry_page": "https://registry.opendata.aws/nasa-power/",
   "variable": {
-    "variable": "AOD_55_ADJ",
+    "variable": "ALLSKY_SFC_SW_DWN",
     "source": "syn1deg",
-    "long_name": "Adjusted Aerosol Optical Depth 55",
-    "units": "dimensionless",
-    "definition": "The adjusted optical thickness at 0.55 um measured vertically; the component of the atmosphere to quantify the removal of radiant energy from an incident beam."
+    "long_name": "All Sky Surface Shortwave Downward Irradiance",
+    "units": "W m-2",
+    "definition": "The total solar irradiance incident (direct plus diffuse) on a horizontal plane at the surface of the earth under all sky conditions. An alternative term for the total solar irradiance is the \"Global Horizontal Irradiance\" or GHI."
   },
   "region_name": "Ukraine",
   "bbox": {
@@ -26,15 +26,16 @@
     "start": "2001-01",
     "end": "2026-08"
   },
-  "accessed": "2026-11-14T14:19:17Z",
-  "land_only": false,
+  "accessed": "2026-11-14T16:05:30Z",
+  "land_only": true,
   "processing": [
     "selected grid cells whose centres fall inside the bbox",
+    "kept land cells only (MERRA-2 cells with root-zone soil wetness; nearest MERRA-2 cell for other grids); ocean, lakes and ice sheets excluded",
     "masked fill value -999.0",
     "area mean with cos(latitude) weights, ignoring missing cells",
     "dropped time steps with no data (the store pre-allocates future dates)",
     "kept source units"
   ],
   "script": "backend/trend_detective/power_zarr.py",
-  "git_commit": "b47dff5"
+  "git_commit": "257ce4b"
 }
