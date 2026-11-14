@@ -3,10 +3,11 @@ r"""24/7 supervisor for the field-team data pipeline (see scripts/PIPELINE.md).
 Runs forever. On start, and whenever a watched branch gets a new commit (polled every
 ``SPACEAPPS_POLL_SECONDS``, default 300) or the team touches the trigger file, it:
 
-  1. channel  - checks the Cloudflare tunnel (best effort: logged, never blocks the data steps);
-  2. ukraine  - ``scripts/pipeline_load.py --stage ukraine`` from the deploy checkout;
-  3. world    - ``scripts/pipeline_load.py --stage world``;
-  4. ukraine_slow - ``scripts/pipeline_load.py --stage ukraine_slow`` (slow Earthdata series).
+  1. channel  - checks the tunnel (best effort: logged, never blocks the data steps);
+  2. one fast stage per country in the loader's COUNTRIES list (Ukraine only for now);
+  3. one slow stage per country (Earthdata series such as OMI NO2).
+
+The worldwide grid stage is no longer run. Existing files under ``<data>/world/`` are left alone.
 
 The loader always runs from a dedicated *deploy checkout* (never the team's working copy), which
 is only ever fast-forwarded (``git merge --ff-only``) and never touched if it has uncommitted
@@ -17,7 +18,7 @@ Status for humans and scripts: ``<state>/status.json``. Logs: ``<logs>/``.
 
 Configuration (environment variables; defaults in brackets):
     SPACEAPPS_HOME          [/srv/spaceapps]  root of data/, logs/, state/, deploy/
-    SPACEAPPS_DATA_DIR      [$HOME/data]      loader output (ukraine/, world/)
+    SPACEAPPS_DATA_DIR      [$HOME/data]      loader output (one folder per country)
     SPACEAPPS_LOG_DIR       [$HOME/logs]
     SPACEAPPS_STATE_DIR     [$HOME/state]     status.json, locks, trigger file "rerun"
     SPACEAPPS_DEPLOY_DIR    [$HOME/deploy]    deploy checkout (cloned on first start)
@@ -56,7 +57,6 @@ from pathlib import Path
 from file_lock import lock  # fcntl on Linux/macOS, msvcrt on Windows
 
 DEFAULT_SOURCES = "github=https://github.com/talokin1/ecology_detectection.git#experimental"
-STAGES = ("ukraine", "world", "ukraine_slow")
 _CRED_RE = re.compile(r"(https?://)[^/@\s]+@")
 
 log = logging.getLogger("pipeline_daemon")
@@ -100,6 +100,13 @@ def parse_sources(spec: str) -> list[tuple[str, str, str]]:
             raise ValueError(f"bad SPACEAPPS_SOURCES entry {scrub(item)!r}; want name=url#branch")
         out.append((name, url, branch))
     return out
+
+
+def data_stages() -> tuple[str, ...]:
+    """Loader stages from the current COUNTRIES list (no world)."""
+    import pipeline_load as pl
+
+    return pl.stage_names()
 
 
 # --- status file ---------------------------------------------------------------------------------
@@ -284,12 +291,25 @@ def run_stage(cfg: Config, stage: str) -> int:
 
 
 def stage_summary(cfg: Config, stage: str) -> dict:
-    p = cfg.data / ("world" if stage == "world" else "ukraine") / "STAGE_STATUS.json"
-    try:
-        d = json.loads(p.read_text(encoding="utf-8"))
-        return {"counts": d.get("counts"), "loader_state": d.get("state")}
-    except (OSError, ValueError):
-        return {}
+    country, _slow = stage, False
+    if stage.endswith("_slow"):
+        country = stage[: -len("_slow")]
+    candidates = [
+        cfg.data / country / f"STAGE_STATUS.{stage}.json",
+        cfg.data / country / "STAGE_STATUS.json",
+    ]
+    for p in candidates:
+        try:
+            d = json.loads(p.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            continue
+        if d.get("stage") == stage:
+            return {"counts": d.get("counts"), "loader_state": d.get("state")}
+        stages = d.get("stages") or {}
+        if stage in stages:
+            s = stages[stage]
+            return {"counts": s.get("counts"), "loader_state": s.get("state")}
+    return {}
 
 
 # --- main loop -----------------------------------------------------------------------------------
@@ -323,14 +343,19 @@ def sleep_until(cfg: Config, seconds: float) -> None:
 def run_pipeline(cfg: Config, status: Status) -> str:
     """One full run. Returns "done", "failed" or "restart" (a newer commit arrived)."""
     status.set(last_run_started=_now(), run_state="running")
-    for s in ("channel", *STAGES):
+    stages = data_stages()
+    known = {"channel", *stages}
+    for name in list(status.data.get("steps", {})):
+        if name not in known:
+            status.data["steps"].pop(name, None)  # drop leftover keys (e.g. a removed world step)
+    for s in ("channel", *stages):
         status.step(s, "pending")
     status.step("channel", "running")
     state, msg = channel_step(cfg)
     log.info("channel: %s (%s)", state, msg)
     status.step("channel", state, message=msg)  # best effort: continue whatever the result
     failed = False
-    for stage in STAGES:
+    for stage in stages:
         if _stop:
             return "failed"
         status.step(stage, "running")

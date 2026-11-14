@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import subprocess
 import sys
 from pathlib import Path
@@ -15,14 +16,17 @@ import pipeline_load as pl
 
 
 def test_ukraine_jobs_order_and_scope():
-    jobs = pl.ukraine_jobs("all", [], slow=False)
+    jobs = pl.country_jobs("ukraine", slow=False)
     assert {j.region for j in jobs} == {"ukraine"}
     names = [j.name for j in jobs]
     assert "air_temperature_power" in names and "no2_tropospheric_omi" not in names
+    assert "ndvi_modis" in names  # regional-only; fetched per country in the fast stage
     first_login = next(i for i, j in enumerate(jobs) if j.needs_login)
     assert all(j.needs_login for j in jobs[first_login:])  # POWER and inputs before login data
     assert {"T2M_MAX", "T2M_MIN", "PRECTOTCORR"} <= {j.name for j in jobs if j.kind == "input"}
-    assert [j.name for j in pl.ukraine_jobs("all", [], slow=True)] == pl.UKRAINE_SLOW
+    slow = pl.country_jobs("ukraine", slow=True)
+    assert [j.name for j in slow] == pl.COUNTRY_SLOW
+    assert "no2_tropospheric_omi" in {j.name for j in slow}
 
 
 def test_ukraine_preset_is_canonical_box_with_crimea():
@@ -32,14 +36,88 @@ def test_ukraine_preset_is_canonical_box_with_crimea():
     assert e["bbox"] == [22.0, 44.0, 40.5, 52.5] and e["land_only"] is True
 
 
-def test_world_variables_are_monthly_power():
-    pairs = pl.world_variables()
-    assert ("merra2", "T2M") in pairs and ("syn1deg", "ALLSKY_SFC_SW_DWN") in pairs
-    assert all(src in ("merra2", "syn1deg", "imerg") for src, _ in pairs)
-    assert pl.world_variables(["TQV", "imerg:IMERG_PRECTOT"]) == [
-        ("merra2", "TQV"),
-        ("imerg", "IMERG_PRECTOT"),
-    ]
+def test_countries_list_and_stages():
+    assert pl.COUNTRIES == [pl.UKRAINE_REGION]
+    assert pl.stage_names() == ("ukraine", "ukraine_slow")
+    assert "world" not in pl.stage_names()
+    assert pl.parse_stage("ukraine") == ("ukraine", False)
+    assert pl.parse_stage("ukraine_slow") == ("ukraine", True)
+    assert pd_.data_stages() == pl.stage_names()
+
+
+def test_regional_only_datasets_are_included():
+    from trend_detective import acquire
+
+    catalog = acquire.list_variables(available_only=True)
+    ids = pl.regional_only_ids(catalog)
+    assert "ndvi_modis" in ids and "no2_tropospheric_omi" in ids
+    # Even if COUNTRY_VARIABLES is a narrow list, regional-only ids are still planned.
+    orig = pl.COUNTRY_VARIABLES
+    try:
+        pl.COUNTRY_VARIABLES = ["air_temperature_power"]
+        jobs_fast, _ = pl.country_plan("ukraine", slow=False)
+        jobs_slow, _ = pl.country_plan("ukraine", slow=True)
+        assert "ndvi_modis" in {j.name for j in jobs_fast}
+        assert "no2_tropospheric_omi" in {j.name for j in jobs_slow}
+        assert "air_temperature_power" in {j.name for j in jobs_fast}
+    finally:
+        pl.COUNTRY_VARIABLES = orig
+
+
+def test_unsupported_and_skipped_appear():
+    _, planned = pl.country_plan("ukraine", slow=False)
+    unsupported = {r["id"]: r for r in planned if r["status"] == "unsupported"}
+    assert "air_temperature_merra2" in unsupported  # catalog stub, no reader
+    orig = list(pl.COUNTRY_EXCLUDE)
+    try:
+        pl.COUNTRY_EXCLUDE = ["ndvi_modis"]
+        _, planned = pl.country_plan("ukraine", slow=False)
+        skipped = {r["id"]: r for r in planned if r["status"] == "skipped"}
+        assert skipped["ndvi_modis"]["message"] == "listed in COUNTRY_EXCLUDE"
+        jobs, _ = pl.country_plan("ukraine", slow=False)
+        assert "ndvi_modis" not in {j.name for j in jobs}
+    finally:
+        pl.COUNTRY_EXCLUDE = orig
+
+
+def test_unknown_country_fails_in_status(tmp_path):
+    results = pl.run_country(tmp_path, "not_a_real_country", dry_run=True)
+    assert results[0]["status"] == "error" and "list_regions" in results[0]["message"]
+    results = pl.run_country(tmp_path, "not_a_real_country")
+    status_path = tmp_path / "not_a_real_country" / "STAGE_STATUS.not_a_real_country.json"
+    assert status_path.exists()
+    d = json.loads(status_path.read_text())
+    assert d["state"] == "failed" and d["items"][0]["status"] == "error"
+
+
+def test_stage_status_files_do_not_overwrite(tmp_path):
+    stage_dir = tmp_path / "ukraine"
+    pl.write_stage_status(
+        stage_dir,
+        "ukraine",
+        "done",
+        [{"id": "air_temperature_power", "status": "ok"}],
+        "2026-11-14T00:00:00Z",
+    )
+    pl.write_stage_status(
+        stage_dir,
+        "ukraine_slow",
+        "running",
+        [{"id": "no2_tropospheric_omi", "status": "ok"}],
+        "2026-11-14T00:01:00Z",
+    )
+    fast = json.loads((stage_dir / "STAGE_STATUS.ukraine.json").read_text())
+    slow = json.loads((stage_dir / "STAGE_STATUS.ukraine_slow.json").read_text())
+    combined = json.loads((stage_dir / "STAGE_STATUS.json").read_text())
+    assert fast["state"] == "done" and {i["id"] for i in fast["items"]} == {"air_temperature_power"}
+    assert slow["state"] == "running" and {i["id"] for i in slow["items"]} == {"no2_tropospheric_omi"}
+    assert "ukraine" in combined["stages"] and "ukraine_slow" in combined["stages"]
+    assert {i["id"] for i in combined["stages"]["ukraine"]["items"]} == {"air_temperature_power"}
+    assert combined["state"] == "running"  # slow still running
+    # daemon summary reads the per-stage file, not a clobbered combined file
+    cfg = pd_.Config({"SPACEAPPS_HOME": str(tmp_path), "SPACEAPPS_DATA_DIR": str(tmp_path)})
+    assert pd_.stage_summary(cfg, "ukraine")["loader_state"] == "done"
+    assert pd_.stage_summary(cfg, "ukraine_slow")["loader_state"] == "running"
 
 
 def test_remove_orphans_and_retries(tmp_path, monkeypatch):
@@ -136,5 +214,5 @@ def test_status_file(tmp_path):
     st = pd_.Status(tmp_path / "status.json")
     st.step("ukraine", "running")
     st.step("ukraine", "done", exit_code=0)
-    d = __import__("json").loads((tmp_path / "status.json").read_text())
+    d = json.loads((tmp_path / "status.json").read_text())
     assert d["steps"]["ukraine"]["state"] == "done" and "finished" in d["steps"]["ukraine"]
