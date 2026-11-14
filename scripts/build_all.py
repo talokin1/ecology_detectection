@@ -93,6 +93,9 @@ def build(out_dir: Path, only: set[str] | None = None, dry_run: bool = False) ->
     manifest = json.loads((CACHE / "MANIFEST.json").read_text())
     by_key: dict[tuple[str, str], list[dict]] = {}
     for f in manifest["files"]:
+        # Regional CSV series only; map grids (kind "grid", .nc, ADR-006) are not app series.
+        if f.get("kind", "series") != "series" or not f["path"].endswith(".csv"):
+            continue
         by_key.setdefault((f["source"], f["variable"]), []).append(f)
     built = []
     for var in load_catalog():
