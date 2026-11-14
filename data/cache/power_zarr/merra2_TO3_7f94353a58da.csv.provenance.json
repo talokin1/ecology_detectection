@@ -1,0 +1,77 @@
+{
+  "source": "NASA POWER Zarr archive (AWS Open Data)",
+  "source_url": "https://nasa-power.s3.us-west-2.amazonaws.com/merra2/temporal/power_merra2_monthly_temporal_utc.zarr",
+  "short_name": "power_merra2_monthly_temporal_utc.zarr",
+  "version": "POWER Version 10.0.0",
+  "doi": null,
+  "landing_page": "https://power.larc.nasa.gov/",
+  "registry_page": "https://registry.opendata.aws/nasa-power/",
+  "variable": {
+    "variable": "TO3",
+    "source": "merra2",
+    "long_name": "Total Column Ozone",
+    "units": "Dobsons",
+    "definition": "The total amount of ozone in a column extending vertically from the earth's surface to the top of the atmosphere."
+  },
+  "region_name": "North-eastern Africa (IPCC AR6 NEAF)",
+  "bbox": {
+    "lat_min": 2.3,
+    "lat_max": 15.0,
+    "lon_min": 27.0,
+    "lon_max": 53.0
+  },
+  "frequency": "monthly",
+  "n_months": 549,
+  "time_range": {
+    "start": "1981-01",
+    "end": "2026-09"
+  },
+  "accessed": "2026-11-14T18:03:27Z",
+  "land_only": true,
+  "outline": {
+    "source": "IPCC AR6 WGI land reference regions (v4)",
+    "digest": "befd5091a624",
+    "rings": [
+      [
+        [
+          27.0,
+          2.3
+        ],
+        [
+          27.0,
+          14.7
+        ],
+        [
+          42.1,
+          14.7
+        ],
+        [
+          43.7,
+          12.0
+        ],
+        [
+          53.0,
+          15.0
+        ],
+        [
+          53.0,
+          7.0
+        ],
+        [
+          46.5,
+          2.3
+        ]
+      ]
+    ]
+  },
+  "processing": [
+    "selected grid cells whose centres fall inside the region outline (straight edges in lon/lat; cells on a left/bottom edge in, right/top edge out)",
+    "kept land cells only (MERRA-2 cells with root-zone soil wetness; nearest MERRA-2 cell for other grids); ocean, lakes and ice sheets excluded",
+    "masked fill value -999.0",
+    "area mean with cos(latitude) weights, ignoring missing cells",
+    "dropped time steps with no data (the store pre-allocates future dates)",
+    "kept source units"
+  ],
+  "script": "backend/trend_detective/power_zarr.py",
+  "git_commit": "3e94115"
+}

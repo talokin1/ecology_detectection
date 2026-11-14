@@ -1,0 +1,313 @@
+{
+  "region": "south_ukraine",
+  "period": [
+    2001,
+    2024
+  ],
+  "accessed": "2026-11-14",
+  "rest_url": "https://power.larc.nasa.gov/api/temporal/monthly/regional",
+  "min_r": 0.999,
+  "max_mad_of_sd": 0.02,
+  "results": [
+    {
+      "variable_id": "air_temperature_power",
+      "parameter": "T2M",
+      "store": "merra2",
+      "status": "pass",
+      "rest_units": "C",
+      "rest_to_zarr_factor": 1.0,
+      "cells": {
+        "n_cells_rest": 135,
+        "n_cells_matched": 135,
+        "n_values": 38880,
+        "max_abs_diff": 0.08001708984375,
+        "mean_abs_diff": 0.014207982757945124,
+        "share_within_rounding": 0.2006687242798354
+      },
+      "area_mean": {
+        "land_only": true,
+        "n_months": 288,
+        "r": 0.9999983915918103,
+        "mean_abs_diff": 0.0136074469084025,
+        "max_abs_diff": 0.04705097685742565,
+        "sd": 9.252880361332736,
+        "mad_over_sd": 0.0014706174052857368
+      },
+      "passed": true
+    },
+    {
+      "variable_id": "precipitation_power",
+      "parameter": "PRECTOTCORR",
+      "store": "merra2",
+      "status": "pass",
+      "rest_units": "mm/day",
+      "rest_to_zarr_factor": 1.0,
+      "cells": {
+        "n_cells_rest": 135,
+        "n_cells_matched": 135,
+        "n_values": 38880,
+        "max_abs_diff": 0.7100146484375003,
+        "mean_abs_diff": 0.00718577789181055,
+        "share_within_rounding": 0.7271090534979424
+      },
+      "area_mean": {
+        "land_only": true,
+        "n_months": 288,
+        "r": 0.9998473392829009,
+        "mean_abs_diff": 0.005897823761488326,
+        "max_abs_diff": 0.06514721935820722,
+        "sd": 0.6898453559723975,
+        "mad_over_sd": 0.008549486795014844
+      },
+      "passed": true
+    },
+    {
+      "variable_id": "root_zone_soil_wetness_power",
+      "parameter": "GWETROOT",
+      "store": "merra2",
+      "status": "pass",
+      "rest_units": "1",
+      "rest_to_zarr_factor": 1.0,
+      "cells": {
+        "n_cells_rest": 135,
+        "n_cells_matched": 135,
+        "n_values": 36288,
+        "max_abs_diff": 0.010029296874999982,
+        "mean_abs_diff": 0.0004658717537262617,
+        "share_within_rounding": 0.9548611111111112
+      },
+      "area_mean": {
+        "land_only": true,
+        "n_months": 288,
+        "r": 0.9999838682821652,
+        "mean_abs_diff": 0.00037494961973916257,
+        "max_abs_diff": 0.0016739448561836623,
+        "sd": 0.07505422988163064,
+        "mad_over_sd": 0.004995716035332083
+      },
+      "passed": true
+    },
+    {
+      "variable_id": "solar_radiation_power",
+      "parameter": "ALLSKY_SFC_SW_DWN",
+      "store": "syn1deg",
+      "status": "pass",
+      "rest_units": "MJ/m^2/day",
+      "rest_to_zarr_factor": 11.574074074074073,
+      "cells": {
+        "n_cells_rest": 50,
+        "n_cells_matched": 50,
+        "n_values": 14400,
+        "max_abs_diff": 0.057807074652828305,
+        "mean_abs_diff": 0.02924103144264977,
+        "share_within_rounding": 1.0
+      },
+      "area_mean": {
+        "land_only": true,
+        "n_months": 288,
+        "r": 0.9999999973562068,
+        "mean_abs_diff": 0.0052616908535231145,
+        "max_abs_diff": 0.02057145464124943,
+        "sd": 88.50288954495656,
+        "mad_over_sd": 5.9452192810612676e-05
+      },
+      "passed": true
+    },
+    {
+      "variable_id": "snow_depth_power",
+      "parameter": "SNODP",
+      "store": "merra2",
+      "status": "pass",
+      "rest_units": "cm",
+      "rest_to_zarr_factor": 1.0,
+      "cells": {
+        "n_cells_rest": 135,
+        "n_cells_matched": 135,
+        "n_values": 36288,
+        "max_abs_diff": 0.12000488281249844,
+        "mean_abs_diff": 0.009372290421205067,
+        "share_within_rounding": 0.7351466049382716
+      },
+      "area_mean": {
+        "land_only": true,
+        "n_months": 288,
+        "r": 0.9999967477114603,
+        "mean_abs_diff": 0.008421456741038506,
+        "max_abs_diff": 0.050209762016132586,
+        "sd": 5.853104397740498,
+        "mad_over_sd": 0.0014388017313153479
+      },
+      "passed": true
+    },
+    {
+      "variable_id": "evaporation_land_power",
+      "parameter": "EVLAND",
+      "store": "merra2",
+      "status": "pass",
+      "rest_units": "mm/day",
+      "rest_to_zarr_factor": 1.0,
+      "cells": {
+        "n_cells_rest": 135,
+        "n_cells_matched": 135,
+        "n_values": 36288,
+        "max_abs_diff": 0.01002929687500001,
+        "mean_abs_diff": 0.0007895544681179173,
+        "share_within_rounding": 0.9224537037037037
+      },
+      "area_mean": {
+        "land_only": true,
+        "n_months": 288,
+        "r": 0.9999998854428773,
+        "mean_abs_diff": 0.00036656582096259257,
+        "max_abs_diff": 0.0016721775586281407,
+        "sd": 1.027859247772567,
+        "mad_over_sd": 0.0003566303671995585
+      },
+      "passed": true
+    },
+    {
+      "variable_id": "sea_ice_fraction_power",
+      "parameter": "FRSEAICE",
+      "store": "merra2",
+      "status": "n/a",
+      "reason": "ocean variable; the region is land-only (refused by design)"
+    },
+    {
+      "variable_id": "snow_cover_fraction_power",
+      "parameter": "FRSNO",
+      "store": "merra2",
+      "status": "pass",
+      "rest_units": "1",
+      "rest_to_zarr_factor": 1.0,
+      "cells": {
+        "n_cells_rest": 135,
+        "n_cells_matched": 135,
+        "n_values": 36288,
+        "max_abs_diff": 0.01002929687500001,
+        "mean_abs_diff": 0.0002890916854616193,
+        "share_within_rounding": 0.9715332892416225
+      },
+      "area_mean": {
+        "land_only": true,
+        "n_months": 288,
+        "r": 0.9999906922396389,
+        "mean_abs_diff": 0.0002115200914044621,
+        "max_abs_diff": 0.0032973105445023854,
+        "sd": 0.10276551346734313,
+        "mad_over_sd": 0.002058278932958176
+      },
+      "passed": true
+    },
+    {
+      "variable_id": "total_ozone_power",
+      "parameter": "TO3",
+      "store": "merra2",
+      "status": "pass",
+      "rest_units": "Dobsons",
+      "rest_to_zarr_factor": 1.0,
+      "cells": {
+        "n_cells_rest": 135,
+        "n_cells_matched": 135,
+        "n_values": 38880,
+        "max_abs_diff": 0.480007324218775,
+        "mean_abs_diff": 0.08294897724669702,
+        "share_within_rounding": 0.04104938271604938
+      },
+      "area_mean": {
+        "land_only": true,
+        "n_months": 288,
+        "r": 0.9999949959756189,
+        "mean_abs_diff": 0.07768867103862694,
+        "max_abs_diff": 0.36482872399017197,
+        "sd": 31.87965967900802,
+        "mad_over_sd": 0.0024369353945701945
+      },
+      "passed": true
+    },
+    {
+      "variable_id": "water_vapour_power",
+      "parameter": "TQV",
+      "store": "merra2",
+      "status": "pass",
+      "rest_units": "kg m-2",
+      "rest_to_zarr_factor": 1.0,
+      "cells": {
+        "n_cells_rest": 135,
+        "n_cells_matched": 135,
+        "n_values": 38880,
+        "max_abs_diff": 0.10000244140625014,
+        "mean_abs_diff": 0.019356103402596924,
+        "share_within_rounding": 0.1603395061728395
+      },
+      "area_mean": {
+        "land_only": true,
+        "n_months": 288,
+        "r": 0.9999955739463084,
+        "mean_abs_diff": 0.016881632592791,
+        "max_abs_diff": 0.06918263518939227,
+        "sd": 7.051661176498944,
+        "mad_over_sd": 0.0023939937229333114
+      },
+      "passed": true
+    },
+    {
+      "variable_id": "cloud_amount_power",
+      "parameter": "CLOUD_AMT",
+      "store": "syn1deg",
+      "status": "pass",
+      "rest_units": "%",
+      "rest_to_zarr_factor": 1.0,
+      "cells": {
+        "n_cells_rest": 50,
+        "n_cells_matched": 50,
+        "n_values": 14400,
+        "max_abs_diff": 0.29001708984374375,
+        "mean_abs_diff": 0.09909817572699656,
+        "share_within_rounding": 0.09513888888888888
+      },
+      "area_mean": {
+        "land_only": true,
+        "n_months": 288,
+        "r": 0.9999832499662916,
+        "mean_abs_diff": 0.07312037462111362,
+        "max_abs_diff": 0.2352877590802933,
+        "sd": 16.0108200096385,
+        "mad_over_sd": 0.004566935021260324
+      },
+      "passed": true
+    },
+    {
+      "variable_id": "aerosol_optical_depth_power",
+      "parameter": "AOD_55_ADJ",
+      "store": "syn1deg",
+      "status": "pass",
+      "rest_units": "dimensionless",
+      "rest_to_zarr_factor": 1.0,
+      "cells": {
+        "n_cells_rest": 50,
+        "n_cells_matched": 50,
+        "n_values": 14400,
+        "max_abs_diff": 0.01002929687500001,
+        "mean_abs_diff": 0.0008332043117946973,
+        "share_within_rounding": 0.9180555555555555
+      },
+      "area_mean": {
+        "land_only": true,
+        "n_months": 288,
+        "r": 0.9999337833043214,
+        "mean_abs_diff": 0.0005901907248229717,
+        "max_abs_diff": 0.003029009823525275,
+        "sd": 0.07008533088884696,
+        "mad_over_sd": 0.008421030725516513
+      },
+      "passed": true
+    },
+    {
+      "variable_id": "precipitation_imerg",
+      "parameter": "IMERG_PRECTOT",
+      "store": "imerg",
+      "status": "n/a",
+      "reason": "the REST API returns only fill values for this parameter (monthly regional requests)"
+    }
+  ]
+}

@@ -8,6 +8,7 @@ Examples (PowerShell or bash):
     python scripts/fetch_grid.py --variable T2M --source merra2 --resolution 1.0
     python scripts/fetch_grid.py --variable PRECTOTCORR --resolution 2.0 --land-only
     python scripts/fetch_grid.py --variable T2M --resolution 1.0 --method overlap --refresh
+    python scripts/fetch_grid.py --source grace --resolution 2.0   # GRACE water storage (raw file or token)
 
 SI-assisted (Claude, Anthropic); pending team review (see docs/08-si-usage-log.md).
 """
@@ -22,14 +23,14 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "backend"))
 
-from trend_detective import grids, power_zarr
+from trend_detective import grace, grids, power_zarr
 
 
 def main(argv: list[str] | None = None) -> int:
     monthly = sorted(k for k, v in power_zarr.SOURCES.items() if v.get("freq", "M") == "M")
     p = argparse.ArgumentParser(description=__doc__.split("\n")[0])
-    p.add_argument("--variable", required=True, help="POWER parameter name, e.g. T2M")
-    p.add_argument("--source", default="merra2", choices=monthly)
+    p.add_argument("--variable", help="POWER parameter name, e.g. T2M (not used for --source grace)")
+    p.add_argument("--source", default="merra2", choices=[*monthly, "grace"])
     p.add_argument("--resolution", type=float, default=1.0, help="cell size in degrees; must divide 180")
     p.add_argument(
         "--method",
@@ -42,6 +43,15 @@ def main(argv: list[str] | None = None) -> int:
     args = p.parse_args(argv)
 
     t0 = time.perf_counter()
+    if args.source == "grace":  # one mascon file; land cells only by construction
+        ds = grace.build_grid(args.resolution, refresh=args.refresh)
+        path = grids.grid_path(grids.default_cache_dir(), "lwe_thickness", "grace", args.resolution, True)
+        state = "from cache" if ds.attrs.get("from_cache") else "built"
+        print(f"GRACE {args.resolution:g} deg grid ({state} in {time.perf_counter() - t0:.1f} s)")
+        print(json.dumps(grids.grid_summary(path), indent=2))
+        return 0
+    if not args.variable:
+        p.error("--variable is required for POWER sources")
     ds = grids.build_grid(
         args.variable,
         args.source,

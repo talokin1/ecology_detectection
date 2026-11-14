@@ -226,6 +226,8 @@ def region_series(
     Without ``refresh``, a cached monthly series (or cached daily means) is used without any
     network access. ``offline``: only return a cached series; raise ``NotCachedError`` otherwise.
     """
+    if region.polygons:  # the cache key and the subset are box-only; never average the whole box silently
+        raise ValueError(f"region {region.name!r} has a polygon outline; this reader supports boxes only")
     if version not in DOIS:
         raise ValueError(f"unknown OMNO2d version {version!r}; choose from {sorted(DOIS)}")
     rows, cols = grid_index(region)

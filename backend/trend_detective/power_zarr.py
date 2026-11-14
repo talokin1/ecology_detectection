@@ -67,11 +67,18 @@ def default_cache_dir() -> Path:
     return root / "power_zarr"
 
 
+Ring = tuple[tuple[float, float], ...]  # polygon vertices as (lon, lat), straight edges in lon/lat
+
+
 @dataclass(frozen=True)
 class Region:
-    """A latitude/longitude box. Longitudes are in -180..180.
+    """A latitude/longitude box, optionally clipped to a polygon outline. Longitudes in -180..180.
 
     A box that crosses the antimeridian has ``lon_min > lon_max`` (e.g. 170 to -170).
+    ``polygons``: outline rings (e.g. IPCC AR6 reference regions); a region made of several parts
+    (one that crosses the antimeridian is split at ±180) has one ring per part. Build one with
+    ``Region.from_polygons``; the box is then the outline's bounds. ``outline_source`` says where
+    the outline comes from (recorded in provenance).
     """
 
     name: str
@@ -79,6 +86,8 @@ class Region:
     lat_max: float
     lon_min: float
     lon_max: float
+    polygons: tuple[Ring, ...] | None = None
+    outline_source: str | None = None
 
     def __post_init__(self) -> None:
         if not (-90 <= self.lat_min < self.lat_max <= 90):
@@ -97,6 +106,63 @@ class Region:
     def bbox_key(self) -> list[float]:
         """Bounds as floats, for cache keys (so 44 and 44.0 hit the same cache file)."""
         return [float(v) for v in (self.lat_min, self.lat_max, self.lon_min, self.lon_max)]
+
+    @property
+    def outline_digest(self) -> str | None:
+        """Short hash of the polygon vertices (``None`` for a plain box)."""
+        if not self.polygons:
+            return None
+        rings = [[[float(x), float(y)] for x, y in ring] for ring in self.polygons]
+        return hashlib.sha1(json.dumps(rings).encode()).hexdigest()[:12]
+
+    @property
+    def cache_key(self) -> list:
+        """Bounds plus the outline hash for polygon regions: the part of every reader's cache key
+        that identifies the region."""
+        return self.bbox_key + ([self.outline_digest] if self.polygons else [])
+
+    @classmethod
+    def from_polygons(cls, name: str, polygons, outline_source: str | None = None) -> Region:
+        """Region from outline rings of (lon, lat) vertices; the box is the outline's bounds.
+
+        Parts touching both +180 and -180 are treated as one region crossing the antimeridian.
+        """
+        rings = tuple(tuple((float(x), float(y)) for x, y in ring) for ring in polygons)
+        if not rings or any(len(r) < 3 for r in rings):
+            raise ValueError("each polygon ring needs at least 3 vertices")
+        lats = [y for r in rings for _, y in r]
+        east_parts = [r for r in rings if max(x for x, _ in r) == 180.0]
+        west_parts = [r for r in rings if min(x for x, _ in r) == -180.0]
+        if east_parts and west_parts and len(rings) > 1:
+            lon_min = min(x for r in east_parts for x, _ in r)
+            lon_max = max(x for r in west_parts for x, _ in r)
+        else:
+            lons = [x for r in rings for x, _ in r]
+            lon_min, lon_max = min(lons), max(lons)
+        return cls(name, min(lats), max(lats), lon_min, lon_max, rings, outline_source)
+
+    def outline_mask(self, lat, lon) -> np.ndarray:
+        """Boolean (lat, lon) array: True where the cell centre is inside the outline.
+
+        Even-odd ray casting with straight edges in lon/lat. Points on a left or bottom edge count
+        as inside and points on a right or top edge as outside, so neighbouring regions that share
+        an edge never both claim a cell. A plain box returns all True.
+        """
+        lat = np.asarray(lat, dtype=float)
+        lon = np.asarray(lon, dtype=float)
+        if not self.polygons:
+            return np.ones((lat.size, lon.size), dtype=bool)
+        y, x = np.meshgrid(lat, lon, indexing="ij")
+        inside = np.zeros(y.shape, dtype=bool)
+        for ring in self.polygons:
+            pts = np.asarray(ring, dtype=float)
+            for (x1, y1), (x2, y2) in zip(pts, np.roll(pts, -1, axis=0), strict=True):
+                if y1 == y2:
+                    continue
+                crosses = (y1 > y) != (y2 > y)
+                x_at = x1 + (y - y1) * (x2 - x1) / (y2 - y1)
+                inside ^= crosses & (x < x_at)
+        return inside
 
 
 @cache
@@ -157,6 +223,11 @@ def _select_box(da: xr.DataArray, region: Region) -> xr.DataArray:
         raise ValueError(
             f"region {region.name!r} is smaller than one grid cell of this source; make the box larger"
         )
+    if region.polygons:
+        inside = region.outline_mask(box.lat.values, box.lon.values)
+        if not inside.any():
+            raise ValueError(f"no grid cell centre of this source is inside the outline of {region.name!r}")
+        box = box.where(xr.DataArray(inside, coords={"lat": box.lat, "lon": box.lon}, dims=("lat", "lon")))
     return box
 
 
@@ -235,7 +306,7 @@ def _apply_land_mask(box: xr.DataArray) -> xr.DataArray:
 
 
 def _cache_path(cache_dir: Path, variable: str, region: Region, source: str, land_only: bool = False) -> Path:
-    key = json.dumps([source, variable, *region.bbox_key] + (["land_only"] if land_only else []))
+    key = json.dumps([source, variable, *region.cache_key] + (["land_only"] if land_only else []))
     digest = hashlib.sha1(key.encode()).hexdigest()[:12]
     return cache_dir / f"{source}_{variable}_{digest}.csv"
 
@@ -273,6 +344,29 @@ def _time_fields(s: pd.Series, freq: str) -> dict:
     }
 
 
+def outline_provenance(region: Region) -> dict:
+    """Sidecar fields for a polygon region (empty for a plain box), shared by all readers."""
+    if not region.polygons:
+        return {}
+    return {
+        "outline": {
+            "source": region.outline_source,
+            "digest": region.outline_digest,
+            "rings": [[list(v) for v in ring] for ring in region.polygons],
+        }
+    }
+
+
+def selection_step(region: Region) -> str:
+    """The processing step that says which grid cells were used."""
+    if region.polygons:
+        return (
+            "selected grid cells whose centres fall inside the region outline (straight edges in lon/lat; "
+            "cells on a left/bottom edge in, right/top edge out)"
+        )
+    return "selected grid cells whose centres fall inside the bbox"
+
+
 def _provenance(
     ds: xr.Dataset, info: dict[str, str], region: Region, source: str, s: pd.Series, land_only: bool = False
 ) -> dict:
@@ -296,8 +390,9 @@ def _provenance(
         **_time_fields(s, SOURCES[source].get("freq", "M")),
         "accessed": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "land_only": land_only,
+        **outline_provenance(region),
         "processing": [
-            "selected grid cells whose centres fall inside the bbox",
+            selection_step(region),
             *(
                 [
                     (

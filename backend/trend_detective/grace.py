@@ -26,7 +26,7 @@ import pandas as pd
 import xarray as xr
 
 from . import earthdata
-from .power_zarr import REPO_ROOT, Region, _git_commit, _select_box
+from .power_zarr import REPO_ROOT, Region, _git_commit, _select_box, outline_provenance, selection_step
 
 SHORT_NAME = "TELLUS_GRAC-GRFO_MASCON_CRI_GRID_RL06.3_V4"
 VERSION = "RL06.3Mv04"
@@ -129,7 +129,7 @@ def _cache_path(cache_dir: Path, region: Region, apply_scale_factor: bool) -> Pa
     The source file name is recorded in the provenance; ``refresh=True`` rebuilds from the
     newest file.
     """
-    key = json.dumps([SHORT_NAME, VERSION, *region.bbox_key, apply_scale_factor])
+    key = json.dumps([SHORT_NAME, VERSION, *region.cache_key, apply_scale_factor])
     return cache_dir / f"grace_lwe_{hashlib.sha1(key.encode()).hexdigest()[:12]}.csv"
 
 
@@ -204,6 +204,7 @@ def region_series(
             "lon_min": region.lon_min,
             "lon_max": region.lon_max,
         },
+        **outline_provenance(region),
         "land_only": True,  # JPL land_mask cells only (B1-07)
         "time_range": {"start": s.index[0].strftime("%Y-%m"), "end": s.index[-1].strftime("%Y-%m")},
         "n_months": len(s),
@@ -214,7 +215,7 @@ def region_series(
         "accessed": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "processing": [
             "converted longitudes 0..360 to -180..180",
-            "selected 0.5° cells whose centres fall inside the bbox",
+            selection_step(region).replace("grid cells", "0.5° cells"),
             "kept land cells only (product land_mask == 1)",
             (
                 "multiplied by the product's CLM scale_factor"
@@ -237,3 +238,125 @@ def region_series(
     s.rename("value").to_csv(out, lineterminator="\n")
     sidecar.write_text(json.dumps(prov, indent=2) + "\n", encoding="utf-8")
     return s
+
+
+def build_grid(
+    resolution_deg: float = 2.0,
+    *,
+    path: Path | str | None = None,
+    cache_dir: Path | str | None = None,
+    refresh: bool = False,
+    offline: bool = False,
+) -> xr.Dataset:
+    """Global monthly land water-storage grid for the world trend map (ADR-006), cached as NetCDF.
+
+    Same layout and coarsening as ``grids.build_grid`` (area-conserving ``overlap`` method, cos(lat)
+    weights, NaN-aware): ``lwe_thickness`` and ``valid_fraction`` (time, lat, lon), ``n_valid_months``.
+    Only cells with ``land_mask == 1`` count; no gain factors. The time axis is every calendar month
+    from the first to the last solution; months without a solution (the 2017-07..2018-05 mission gap
+    and single missing months) are kept as all-NaN and listed in the provenance.
+    """
+    from . import grids  # local import: grids is only needed for map grids
+
+    grids._check_resolution(resolution_deg)
+    cache_dir = Path(cache_dir) if cache_dir is not None else grids.default_cache_dir()
+    out_path = grids.grid_path(cache_dir, "lwe_thickness", "grace", resolution_deg, land_only=True)
+    if out_path.exists() and not refresh:
+        ds = xr.load_dataset(out_path)
+        ds.attrs["from_cache"] = 1
+        return ds
+    if path is None:
+        local = sorted(raw_dir().glob("GRCTellus.JPL.*.GLO.RL06.3M.MSCNv04CRI.nc"))
+        if offline and not local:
+            raise earthdata.NotCachedError("GRACE mascon file not downloaded; run with an Earthdata token")
+        path = local[-1] if offline else fetch_file()
+    path = Path(path)
+    with _open(path) as ds:
+        months = assign_months(ds["time_bounds"].to_numpy())
+        lwe = ds["lwe_thickness"].where(ds["land_mask"] == 1)
+        lwe = lwe.assign_coords(time=months.to_timestamp().astype("datetime64[ns]")).load()
+        attrs = dict(ds.attrs)
+    full = pd.period_range(months[0], months[-1], freq="M").to_timestamp().astype("datetime64[ns]")
+    lwe = lwe.reindex(time=full)
+    out = grids.coarsen(lwe, resolution_deg, "overlap")
+    has_data = np.asarray(np.isfinite(out["value"]).any(("lat", "lon")))
+    empty = [t.strftime("%Y-%m") for t, ok in zip(full, has_data, strict=True) if not ok]
+
+    out = out.rename({"value": "lwe_thickness"})
+    out["lwe_thickness"].attrs.update(
+        {k: VARIABLE_INFO[k] for k in ("long_name", "units", "definition")}
+    )
+    out["valid_fraction"].attrs.update(
+        {"long_name": "share of the cell's area with GRACE land data in this month", "units": "1"}
+    )
+    out["n_valid_months"] = np.isfinite(out["lwe_thickness"]).sum("time").astype(np.int16)
+    out["n_valid_months"].attrs.update({"long_name": "number of months with a value", "units": "1"})
+    out["lat"].attrs.update({"units": "degrees_north", "long_name": "latitude of cell centre"})
+    out["lon"].attrs.update({"units": "degrees_east", "long_name": "longitude of cell centre"})
+    accessed = datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
+    prov = {
+        "source": "NASA PO.DAAC, JPL GRACE/GRACE-FO mascon grid (Earthdata Login)",
+        "source_url": "https://archive.podaac.earthdata.nasa.gov/podaac-ops-cumulus-protected/"
+        f"{SHORT_NAME}/{path.name}",
+        "short_name": SHORT_NAME,
+        "version": VERSION,
+        "file": path.name,
+        "file_date_created": attrs.get("date_created"),
+        "doi": DOI,
+        "landing_page": LANDING_PAGE,
+        "variable": VARIABLE_INFO,
+        "grid": grids._grid_attrs(resolution_deg),
+        "method": "overlap",
+        "frequency": "monthly",
+        "n_months": len(full),
+        "time_range": {"start": full[0].strftime("%Y-%m"), "end": full[-1].strftime("%Y-%m")},
+        "months_without_data_kept_as_nan": empty,
+        "land_only": True,
+        "baseline": attrs.get("time_mean_removed"),
+        "accessed": accessed,
+        "processing": [
+            "converted longitudes 0..360 to -180..180",
+            "kept land cells only (product land_mask == 1)",
+            "no gain (scale) factors applied",
+            "each solution assigned to its window-midpoint month (next free month if taken); calendar "
+            "months without a solution kept as NaN",
+            f"coarsened the 0.5 deg grid to {resolution_deg:g} deg cells (edges at multiples of "
+            f"{resolution_deg:g} from -90 / -180), each native cell split by footprint overlap",
+            "cell value = mean of native land cells weighted by cos(latitude) x overlap fraction",
+            "kept source units (cm liquid water equivalent); float32 with zlib compression",
+        ],
+        "caveats": [
+            "Values are anomalies relative to the 2004-2009 mean, not absolute water amounts.",
+            f"Effective resolution is ~{MASCON_SIZE_DEG:.0f} deg (~300 km): neighbouring "
+            f"{resolution_deg:g} deg cells are not independent; per-cell significance overstates detail.",
+            "Glaciers and ice sheets (Greenland, Antarctica, Alaska) count as land in the product mask: "
+            "their large negative values are ice loss, not groundwater.",
+        ],
+        "script": "backend/trend_detective/grace.py",
+        "git_commit": _git_commit(),
+    }
+    out.attrs.update(
+        {
+            **grids._grid_attrs(resolution_deg),
+            "variable": "lwe_thickness",
+            "source": "grace",
+            "method": "overlap",
+            "land_only": 1,
+            "title": f"{VARIABLE_INFO['long_name']} ({resolution_deg:g} deg monthly grid)",
+            "source_url": prov["source_url"],
+            "source_version": VERSION,
+            "history": f"{accessed} built by backend/trend_detective/grace.py",
+        }
+    )
+    cache_dir.mkdir(parents=True, exist_ok=True)
+    enc = {name: {"zlib": True, "complevel": 4, "shuffle": True} for name in out.data_vars}
+    for name in ("lwe_thickness", "valid_fraction"):
+        enc[name].update({"dtype": "float32", "_FillValue": np.float32(np.nan)})
+    tmp = out_path.with_name(out_path.name + ".tmp")
+    out.to_netcdf(tmp, encoding=enc, engine="netcdf4")
+    tmp.replace(out_path)
+    out_path.with_name(out_path.name + ".provenance.json").write_text(
+        json.dumps(prov, indent=2) + "\n", encoding="utf-8"
+    )
+    out.attrs["from_cache"] = 0
+    return out

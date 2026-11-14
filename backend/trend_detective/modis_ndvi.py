@@ -176,6 +176,8 @@ def region_series(
     Without ``refresh``, a complete cached series is returned without any network access.
     ``offline``: only return a cached series; raise ``NotCachedError`` instead of downloading.
     """
+    if region.polygons:  # the cache key and the subset are box-only; never average the whole box silently
+        raise ValueError(f"region {region.name!r} has a polygon outline; this reader supports boxes only")
     rows, cols = grid_index(region)
     cache_dir = Path(cache_dir) if cache_dir is not None else default_cache_dir()
     out = _cache_path(cache_dir, region, min_valid_fraction)

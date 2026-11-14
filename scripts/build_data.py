@@ -47,7 +47,7 @@ MANIFEST_NAME = "MANIFEST.json"
 MANIFEST_DIRS = ("power_zarr", "earthdata", "grids")  # data/cache/raw is deliberately not frozen
 GRID_SUFFIXES = (".nc",)  # committed map grids (ADR-006); listed with their sidecar time range
 ASSESSMENT_STATUSES = ("ok", "caution", "too_short", "no_variation")
-NOT_ERRORS = (*ASSESSMENT_STATUSES, "no data", "not cached", "skipped")
+NOT_ERRORS = (*ASSESSMENT_STATUSES, "no data", "not cached", "skipped", "unsupported")
 
 
 @dataclass(frozen=True)
@@ -88,10 +88,12 @@ def load_jobs(path: Path) -> dict:
     regions = spec.get("regions")
     if not regions or not isinstance(regions, list):
         raise ValueError(f"{path}: 'regions' must be a non-empty list of preset ids")
-    matrix = spec.get("matrix") or {}
-    variables = matrix.get("variables", "all")
-    if variables != "all" and not isinstance(variables, list):
-        raise ValueError(f"{path}: matrix.variables must be 'all' or a list of catalog ids")
+    for i, matrix in enumerate([spec.get("matrix") or {}, *(spec.get("extra_matrices") or [])]):
+        variables = matrix.get("variables", "all")
+        if variables != "all" and not isinstance(variables, list):
+            raise ValueError(f"{path}: matrix #{i} variables must be 'all' or a list of catalog ids")
+        if i and not matrix.get("regions"):
+            raise ValueError(f"{path}: extra_matrices[{i - 1}] needs 'regions'")
     for i, item in enumerate(spec.get("inputs") or []):
         if "parameter" not in item or "store" not in item:
             raise ValueError(f"{path}: inputs[{i}] needs 'parameter' and 'store'")
@@ -109,32 +111,59 @@ def expand_jobs(
     the run to these region ids (they need not be in the job list, but must be presets).
     """
     catalog = acquire.list_variables(available_only=True) if catalog is None else catalog
-    regions = list(spec["regions"])
-    matrix = spec.get("matrix") or {}
-    wanted = matrix.get("variables", "all")
-    excluded = set(matrix.get("exclude_variables") or [])
-    if wanted == "all":
-        ids = list(catalog)
-    else:
-        unknown = [v for v in wanted if v not in catalog]
-        if unknown:
-            raise KeyError(f"matrix variables not available in the catalog: {unknown}")
-        ids = list(wanted)
-
+    regions = expand_regions(spec["regions"])
     jobs: list[Job] = []
-    matrix_regions = list(only) if only else list(matrix.get("regions") or regions)
-    for region in matrix_regions:
-        for vid in ids:
-            jobs.append(
-                Job("variable", region, vid, needs_login=catalog[vid].needs_login, excluded=vid in excluded)
-            )
+    seen: set[tuple[str, str]] = set()
+    for i, matrix in enumerate([spec.get("matrix") or {}, *(spec.get("extra_matrices") or [])]):
+        wanted = matrix.get("variables", "all")
+        excluded = set(matrix.get("exclude_variables") or [])
+        if wanted == "all":
+            ids = list(catalog)
+        else:
+            unknown = [v for v in wanted if v not in catalog]
+            if unknown:
+                raise KeyError(f"matrix variables not available in the catalog: {unknown}")
+            ids = list(wanted)
+        matrix_regions = expand_regions(matrix.get("regions") or regions)
+        if only:
+            # --only restricts each matrix to its own regions; a preset that no matrix lists falls to
+            # the first matrix (so any preset can still be built by hand)
+            own = [r for r in only if r in matrix_regions]
+            if i == 0:
+                own += [r for r in only if r not in own and not _in_extra_matrix(spec, r)]
+            matrix_regions = own
+        for region in matrix_regions:
+            for vid in ids:
+                if (region, vid) in seen:
+                    continue
+                seen.add((region, vid))
+                needs_login = catalog[vid].needs_login
+                jobs.append(Job("variable", region, vid, needs_login=needs_login, excluded=vid in excluded))
     for item in spec.get("inputs") or []:
-        item_regions = list(only) if only else list(item.get("regions") or regions)
+        item_regions = expand_regions(item.get("regions") or regions)
+        if only:
+            item_regions = [r for r in only if r in item_regions]
         for region in item_regions:
             jobs.append(
                 Job("input", region, item["parameter"], store=item["store"], how=item.get("how", "mean"))
             )
     return jobs
+
+
+def expand_regions(items: Sequence[str]) -> list[str]:
+    """Region ids, with ``set:<id>`` expanded to every buildable preset of that set (e.g. ``set:ar6``)."""
+    out: list[str] = []
+    for item in items:
+        ids = acquire.region_set(item[4:]) if item.startswith("set:") else [item]
+        out += [r for r in ids if r not in out]
+    return out
+
+
+def _in_extra_matrix(spec: dict, region: str) -> bool:
+    """True if ``region`` belongs to an extra matrix and not to the main region list."""
+    main = set(expand_regions((spec.get("matrix") or {}).get("regions") or spec["regions"]))
+    extra = {r for m in spec.get("extra_matrices") or [] for r in expand_regions(m["regions"])}
+    return region in extra and region not in main
 
 
 # --- running ----------------------------------------------------------------------------------
@@ -177,7 +206,10 @@ def run_job(job: Job, *, refresh: bool = False, with_earthdata: bool = False) ->
         msg = str(exc) if with_earthdata else "needs --with-earthdata (Earthdata login)"
         return Result(job, status, seconds=time.perf_counter() - t0, message=msg)
     except ValueError as exc:
-        status = "no data" if "no data" in str(exc).lower() else "error"
+        text = str(exc).lower()
+        status = "no data" if "no data" in text else "error"
+        if text.startswith("unsupported"):
+            status = "unsupported"
         return Result(job, status, seconds=time.perf_counter() - t0, message=str(exc))
     except Exception as exc:  # noqa: BLE001 - one failing series must not stop the run
         return Result(job, "error", seconds=time.perf_counter() - t0, message=f"{type(exc).__name__}: {exc}")
@@ -217,14 +249,31 @@ def _power_cache_path(job: Job) -> Path:
 
 
 def run_jobs(
-    jobs: Iterable[Job], *, refresh: bool = False, with_earthdata: bool = False, echo=print
+    jobs: Iterable[Job], *, refresh: bool = False, with_earthdata: bool = False, echo=print, workers: int = 1
 ) -> list[Result]:
-    results = []
-    for job in jobs:
-        r = run_job(job, refresh=refresh, with_earthdata=with_earthdata)
-        echo(format_result(r))
-        results.append(r)
-    return results
+    """Run every job; results come back in job order. ``workers > 1`` fetches in threads (the
+    POWER Zarr reads are I/O bound); each line is printed when its series finishes."""
+    jobs = list(jobs)
+    if workers <= 1:
+        results = []
+        for job in jobs:
+            r = run_job(job, refresh=refresh, with_earthdata=with_earthdata)
+            echo(format_result(r))
+            results.append(r)
+        return results
+    from concurrent.futures import ThreadPoolExecutor, as_completed
+
+    by_index: dict[int, Result] = {}
+    with ThreadPoolExecutor(max_workers=workers) as pool:
+        futures = {
+            pool.submit(run_job, job, refresh=refresh, with_earthdata=with_earthdata): i
+            for i, job in enumerate(jobs)
+        }
+        for fut in as_completed(futures):
+            r = fut.result()
+            echo(format_result(r))
+            by_index[futures[fut]] = r
+    return [by_index[i] for i in range(len(jobs))]
 
 
 def summarise(results: Sequence[Result], echo=print) -> int:
@@ -271,13 +320,15 @@ def _csv_summary(path: Path) -> tuple[int, str | None, str | None]:
     return rows, first, last
 
 
-def _region_id(bbox: dict | None) -> str | None:
-    """Preset id whose bbox equals the sidecar bbox (B1-03), else ``None`` (custom box or grid)."""
+def _region_id(bbox: dict | None, outline: dict | None = None) -> str | None:
+    """Preset id whose bbox (and outline, for polygon presets) equals the sidecar's (B1-03), else
+    ``None`` (custom box or grid)."""
     if not bbox:
         return None
     key = (bbox.get("lon_min"), bbox.get("lat_min"), bbox.get("lon_max"), bbox.get("lat_max"))
+    digest = (outline or {}).get("digest")
     for pid, e in acquire.list_regions().items():
-        if tuple(float(v) for v in e["bbox"]) == key:
+        if tuple(float(v) for v in e["bbox"]) == key and e["region"].outline_digest == digest:
             return pid
     return None
 
@@ -293,7 +344,9 @@ def manifest_entry(path: Path, cache_root: Path) -> dict:
     var = prov.get("variable")
     return {
         "kind": "grid" if path.suffix in GRID_SUFFIXES else "series",
-        "region_id": _region_id(prov.get("bbox")) if path.suffix not in GRID_SUFFIXES else None,
+        "region_id": None
+        if path.suffix in GRID_SUFFIXES
+        else _region_id(prov.get("bbox"), prov.get("outline")),
         "path": path.relative_to(cache_root).as_posix(),
         "bytes": path.stat().st_size,
         "sha256": _sha256(path),
@@ -354,8 +407,12 @@ def main(argv: list[str] | None = None) -> int:
         help="allow fetching login-only variables (needs EARTHDATA_TOKEN)",
     )
     p.add_argument(
-        "--only", action="append", metavar="REGION_ID", help="build only this region preset (repeatable)"
+        "--only",
+        action="append",
+        metavar="REGION_ID",
+        help="build only this region preset, or set:<id> for a region set (repeatable)",
     )
+    p.add_argument("--workers", type=int, default=1, help="series fetched in parallel (POWER reads)")
     p.add_argument("--dry-run", action="store_true", help="list what would be built and exit")
     p.add_argument("--manifest-only", action="store_true", help="only rewrite MANIFEST.json")
     args = p.parse_args(argv)
@@ -368,6 +425,7 @@ def main(argv: list[str] | None = None) -> int:
 
     spec = load_jobs(args.jobs)
     if args.only:
+        args.only = expand_regions(args.only)  # "set:ar6" picks every buildable AR6 region
         unknown = sorted(set(args.only) - set(acquire.list_regions()))
         if unknown:
             p.error(f"unknown region preset(s) {unknown}; choose from {sorted(acquire.list_regions())}")
@@ -379,7 +437,7 @@ def main(argv: list[str] | None = None) -> int:
         print(f"\n{len(jobs)} series would be built (dry run: nothing fetched, manifest not written)")
         return 0
 
-    results = run_jobs(jobs, refresh=args.refresh, with_earthdata=args.with_earthdata)
+    results = run_jobs(jobs, refresh=args.refresh, with_earthdata=args.with_earthdata, workers=args.workers)
     code = summarise(results)
     m = write_manifest(cache_root)
     print(f"wrote {cache_root / MANIFEST_NAME}: {m['n_files']} files, {m['total_bytes']} bytes")

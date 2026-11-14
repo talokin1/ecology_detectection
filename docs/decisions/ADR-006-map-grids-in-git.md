@@ -29,6 +29,11 @@ Each committed grid has a provenance sidecar and an entry in `data/cache/MANIFES
 ## Consequences
 - The map builds offline from a clone; ~26 MB per added variable, so each new grid is a deliberate
   `.gitignore` line plus a MANIFEST refresh by the data engineer.
+- 2026-11-14: second grid added, `!data/cache/grids/grace_lwe_thickness_2deg_land.nc` (GRACE/GRACE-FO total
+  water storage, 2002-04 → 2026-09, land cells only, 5.8 MB; `python scripts/fetch_grid.py --source grace`).
+  Its time axis keeps months without a solution as all-NaN (33 months, including the 2017-07 → 2018-05 gap).
+  Neighbouring 2° cells are not independent (mascons are ~3°), and glaciers/ice sheets count as land in the
+  product mask, so their large negative values are ice loss; both are caveats in the sidecar.
 - Other resolutions/variables are rebuilt with `python scripts/fetch_grid.py --variable <VAR> --resolution 2`.
 - CLAUDE.md:66 should read: `data/cache   Pre-fetched NetCDF/Zarr/CSV (git-ignored if large, except map
   grids listed in .gitignore (ADR-006); document how to rebuild)` (lead edits CLAUDE.md).

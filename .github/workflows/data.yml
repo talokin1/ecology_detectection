@@ -1,0 +1,33 @@
+name: data
+
+# Data-freeze gate: the committed cache matches its MANIFEST, every file has provenance, no
+# credentials leak, and the offline tests pass, on Linux and on Windows (the team's main OS).
+on:
+  pull_request:
+    paths: ["data/**", "backend/**", "scripts/**", "requirements.txt", "pyproject.toml", ".github/workflows/data.yml"]
+  push:
+    branches: [main, data, experimental]
+    paths: ["data/**", "backend/**", "scripts/**", "requirements.txt", "pyproject.toml", ".github/workflows/data.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.12', cache: pip }
+      - run: pip install -r requirements.txt ruff
+      - name: Cache integrity (manifest, provenance, secrets, build jobs, AR6 outlines)
+        run: python scripts/check_cache.py
+      - name: Offline tests (no network, no token)
+        run: python -m pytest -q -m "not network"
+      - name: Lint data-layer code
+        run: ruff check backend scripts --select E,F,I,UP --exclude scripts/make_synthetic_data.py

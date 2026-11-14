@@ -15,6 +15,12 @@ Every file has a `<file>.provenance.json` sidecar: source, store or short name, 
 bbox, land_only, period, processing steps, caveats, access date, script and git commit. The `<hash>` is
 derived from the variable, store, bounding box and options, so the same request always maps to the same file.
 
+IPCC AR6 regions (`ar6_*` presets, ADR-005 amendment 1) are polygon outlines: their sidecars carry an
+`outline` block (source, digest, vertex rings) and the hash also includes the outline digest. MANIFEST
+`region_id` matches a preset by bbox and outline digest. Rebuild them with
+`python scripts/build_data.py --only set:ar6 --workers 6 --with-earthdata` (GRACE needs the raw mascon file
+or a token; POWER needs no login).
+
 ## Known quirks (B1-08, B1-11, B1-15)
 - Daily series (`merra2_daily_*`) start at `1980-12-31` and end at the first day of the latest month
   (e.g. `2026-10-01`): the store's day boundary is UTC, so these stub days are kept as delivered.

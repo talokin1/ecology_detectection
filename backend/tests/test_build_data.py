@@ -136,7 +136,29 @@ def test_default_matrix_uses_available_catalog(bd):
     jobs = bd.expand_jobs(bd.load_jobs(bd.DEFAULT_JOBS))
     avail = acquire.list_variables(available_only=True)
     assert {j.name for j in jobs if j.kind == "variable"} == set(avail)
-    assert len([j for j in jobs if j.kind == "variable"]) == 4 * len(avail)
+    main = [j for j in jobs if j.kind == "variable" and not j.region.startswith("ar6_")]
+    assert len(main) == 4 * len(avail)
+
+
+def test_ar6_matrix_from_region_set(bd):
+    spec = bd.load_jobs(bd.DEFAULT_JOBS)
+    jobs = bd.expand_jobs(spec)
+    ar6 = [j for j in jobs if j.region.startswith("ar6_")]
+    assert {j.region for j in ar6} == set(acquire.region_set("ar6"))
+    assert all(j.kind == "variable" for j in ar6)  # no daily inputs for AR6 regions
+    skipped = {j.name for j in ar6 if j.excluded}
+    assert skipped == {"sea_ice_fraction_power", "ndvi_modis", "no2_tropospheric_omi"}
+
+
+def test_only_respects_each_matrix(bd):
+    spec = bd.load_jobs(bd.DEFAULT_JOBS)
+    neu = bd.expand_jobs(spec, only=["ar6_neu"])
+    assert {j.region for j in neu} == {"ar6_neu"} and not any(j.kind == "input" for j in neu)
+    assert any(j.excluded for j in neu)  # the AR6 matrix's exclusions apply
+    ukr = bd.expand_jobs(spec, only=["south_ukraine"])
+    assert any(j.kind == "input" for j in ukr) and not any(j.excluded for j in ukr)
+    sahel = bd.expand_jobs(spec, only=["sahel"])  # a preset in no list still builds via the main matrix
+    assert sahel and {j.region for j in sahel} == {"sahel"}
 
 
 # --- running: earthdata skipping, failures, exit code -----------------------------------------

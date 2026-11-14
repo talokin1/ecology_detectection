@@ -1,0 +1,65 @@
+{
+  "source": "NASA POWER Zarr archive (AWS Open Data)",
+  "source_url": "https://nasa-power.s3.us-west-2.amazonaws.com/merra2/temporal/power_merra2_monthly_temporal_utc.zarr",
+  "short_name": "power_merra2_monthly_temporal_utc.zarr",
+  "version": "POWER Version 10.0.0",
+  "doi": null,
+  "landing_page": "https://power.larc.nasa.gov/",
+  "registry_page": "https://registry.opendata.aws/nasa-power/",
+  "variable": {
+    "variable": "T2M",
+    "source": "merra2",
+    "long_name": "Temperature at 2 Meters",
+    "units": "C",
+    "definition": "The average air (dry bulb) temperature at 2 meters above the surface of the earth."
+  },
+  "region_name": "Sahara (IPCC AR6 SAH)",
+  "bbox": {
+    "lat_min": 14.7,
+    "lat_max": 30.0,
+    "lon_min": -20.0,
+    "lon_max": 42.1
+  },
+  "frequency": "monthly",
+  "n_months": 549,
+  "time_range": {
+    "start": "1981-01",
+    "end": "2026-09"
+  },
+  "accessed": "2026-11-14T18:03:14Z",
+  "land_only": true,
+  "outline": {
+    "source": "IPCC AR6 WGI land reference regions (v4)",
+    "digest": "ac707a6eb0f2",
+    "rings": [
+      [
+        [
+          -20.0,
+          14.7
+        ],
+        [
+          -20.0,
+          30.0
+        ],
+        [
+          33.0,
+          30.0
+        ],
+        [
+          42.1,
+          14.7
+        ]
+      ]
+    ]
+  },
+  "processing": [
+    "selected grid cells whose centres fall inside the region outline (straight edges in lon/lat; cells on a left/bottom edge in, right/top edge out)",
+    "kept land cells only (MERRA-2 cells with root-zone soil wetness; nearest MERRA-2 cell for other grids); ocean, lakes and ice sheets excluded",
+    "masked fill value -999.0",
+    "area mean with cos(latitude) weights, ignoring missing cells",
+    "dropped time steps with no data (the store pre-allocates future dates)",
+    "kept source units"
+  ],
+  "script": "backend/trend_detective/power_zarr.py",
+  "git_commit": "3e94115"
+}

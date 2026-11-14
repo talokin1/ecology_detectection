@@ -128,3 +128,21 @@ def test_mission_gap_of_11_months_is_stated_as_caveat():
     caveats = " ".join(s.attrs["provenance"]["caveats"])
     assert "2017-07 to 2018-05" in caveats and "GRACE-FO" in caveats
     assert {"2017-07", "2018-05"} <= set(s.attrs["provenance"]["missing_months"])
+
+
+def test_grid_is_land_only_with_gap_months_kept(mascon, tmp_path):
+    ds = grace.build_grid(2.0, path=mascon, cache_dir=tmp_path / "g")
+    v = ds["lwe_thickness"]
+    assert v.sizes == {"time": 5, "lat": 90, "lon": 180} and ds.attrs["dlat"] == 2.0
+    assert list(pd.DatetimeIndex(ds.time.values).strftime("%Y-%m")) == [
+        "2003-01", "2003-02", "2003-03", "2003-04", "2003-05"
+    ]
+    assert not np.isfinite(v.sel(time="2003-03")).any()  # month without a solution: all NaN
+    assert float(v.max()) < 1000  # ocean cells (1000 cm) never leak into a land cell
+    # 2° cells 10-40E are land; latitude rows average 1° native rows: cell 0-2N holds ~1.0 in Jan
+    assert float(v.isel(time=0).sel(lat=1.0, lon=21.0)) == pytest.approx(1.0, abs=0.01)
+    assert np.isnan(float(v.isel(time=0).sel(lat=1.0, lon=-91.0)))
+    prov = json.loads((tmp_path / "g" / "grace_lwe_thickness_2deg_land.nc.provenance.json").read_text())
+    assert prov["months_without_data_kept_as_nan"] == ["2003-03"] and prov["doi"] == grace.DOI
+    again = grace.build_grid(2.0, path=mascon, cache_dir=tmp_path / "g")
+    assert again.attrs["from_cache"] == 1

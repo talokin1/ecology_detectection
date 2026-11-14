@@ -29,6 +29,14 @@ Every number in the app and slides comes from this code.
    | p < 0.10 | weak, suggestive evidence |
    | otherwise | no significant trend yet + "≈ N more years needed" |
 
+## Regions: boxes and IPCC AR6 outlines
+A region is either a latitude/longitude box or a polygon outline. The 46 IPCC AR6 WGI land reference
+regions (Iturbide et al., 2020; ids `ar6_<acronym>`) are outlines. A grid cell belongs to an outline if its
+centre is inside (edges are straight lines in longitude/latitude; a centre on a left or bottom edge is
+inside, on a right or top edge outside, so neighbouring regions never share a cell). AR6 means use land
+cells only. The ice-sheet regions (Greenland/Iceland, East and West Antarctica) are not built because the
+land mask excludes ice sheets. Rule and list: `docs/decisions/ADR-005-*.md`, amendment 1.
+
 ## Data-quality checks before any trend (acquisition layer)
 Before a regional series is analysed, `backend/trend_detective/acquire.py::assess` checks whether it
 can be investigated for a trend at all, and tells the user why not in plain language:

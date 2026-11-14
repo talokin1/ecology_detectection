@@ -33,6 +33,7 @@ from .power_zarr import REPO_ROOT, Region
 
 CATALOG_DIR = REPO_ROOT / "data" / "catalog"
 READERS = ("power_zarr", "grace", "modis_ndvi", "omi_no2")
+OUTLINE_READERS = ("power_zarr", "grace")  # readers that clip to a polygon outline (AR6 regions)
 
 # Data-quality guards (R-03). Defaults pending science-lead review; see docs/10-methods.md.
 MIN_YEARS = 10
@@ -129,13 +130,44 @@ def list_inputs(path: Path | None = None) -> dict[str, dict]:
 
 
 def list_regions(path: Path | None = None) -> dict[str, dict]:
-    """Region presets by id, each with a ``region`` (``Region``) and its catalog fields."""
-    data = _load_yaml(Path(path) if path else CATALOG_DIR / "regions.yaml")
+    """Region presets by id, each with a ``region`` (``Region``) and its catalog fields.
+
+    Files named under ``include:`` (e.g. ``regions_ar6.yaml``, the IPCC AR6 reference regions)
+    are read too. A preset with ``polygons`` is clipped to that outline; its ``bbox`` is the
+    outline's bounds. ``set`` names the region set (e.g. ``"ar6"``) for ``region_set``.
+    """
+    path = Path(path) if path else CATALOG_DIR / "regions.yaml"
+    data = _load_yaml(path)
+    entries = list(data["regions"])
+    for name in data.get("include") or []:
+        inc = _load_yaml(path.parent / name)
+        source = (inc.get("set") or {}).get("title")
+        entries += [e | {"outline_source": e.get("outline_source", source)} for e in inc["regions"]]
     out = {}
-    for e in data["regions"]:
-        west, south, east, north = e["bbox"]
-        out[e["id"]] = e | {"region": Region(e["name"], south, north, west, east)}
+    for e in entries:
+        if e["id"] in out:
+            raise ValueError(f"duplicate region id {e['id']!r} in the region catalog")
+        if e.get("polygons"):
+            reg = Region.from_polygons(e["name"], e["polygons"], e.get("outline_source"))
+            e = e | {"bbox": [reg.lon_min, reg.lat_min, reg.lon_max, reg.lat_max]}
+        else:
+            west, south, east, north = e["bbox"]
+            reg = Region(e["name"], south, north, west, east)
+        out[e["id"]] = e | {"region": reg}
     return out
+
+
+def region_set(set_id: str, *, buildable_only: bool = True, path: Path | None = None) -> list[str]:
+    """Preset ids of one region set (e.g. ``"ar6"``), in catalog order; ``buildable_only`` drops
+    presets marked ``build: false`` (e.g. the AR6 ice-sheet regions)."""
+    ids = [
+        rid
+        for rid, e in list_regions(path).items()
+        if e.get("set") == set_id and (not buildable_only or e.get("build", True))
+    ]
+    if not ids:
+        raise KeyError(f"no region set {set_id!r} in the region catalog")
+    return ids
 
 
 def resolve_region(region: str | Region | Sequence[float], name: str = "custom box") -> Region:
@@ -183,6 +215,10 @@ def get_series(
         # cells counted as land carry a little ice: a land-only mean would be a meaningless series.
         raise ValueError(f"no data: {variable_id!r} is an ocean variable and region {reg.name!r} is "
                          "land-only")
+    if reg.polygons and v.reader not in OUTLINE_READERS:
+        raise ValueError(
+            f"unsupported: the {v.reader} reader takes boxes only, and {reg.name!r} is an outline"
+        )
     offline = v.needs_login and not allow_login_fetch
 
     if v.reader == "power_zarr":

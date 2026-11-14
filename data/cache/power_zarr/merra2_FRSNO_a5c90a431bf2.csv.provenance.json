@@ -1,0 +1,65 @@
+{
+  "source": "NASA POWER Zarr archive (AWS Open Data)",
+  "source_url": "https://nasa-power.s3.us-west-2.amazonaws.com/merra2/temporal/power_merra2_monthly_temporal_utc.zarr",
+  "short_name": "power_merra2_monthly_temporal_utc.zarr",
+  "version": "POWER Version 10.0.0",
+  "doi": null,
+  "landing_page": "https://power.larc.nasa.gov/",
+  "registry_page": "https://registry.opendata.aws/nasa-power/",
+  "variable": {
+    "variable": "FRSNO",
+    "source": "merra2",
+    "long_name": "Land Snowcover Fraction",
+    "units": "1",
+    "definition": "The fraction of land covered by snow."
+  },
+  "region_name": "East Central Asia (IPCC AR6 ECA)",
+  "bbox": {
+    "lat_min": 37.0,
+    "lat_max": 45.0,
+    "lon_min": 75.0,
+    "lon_max": 117.0
+  },
+  "frequency": "monthly",
+  "n_months": 549,
+  "time_range": {
+    "start": "1981-01",
+    "end": "2026-09"
+  },
+  "accessed": "2026-11-14T18:04:13Z",
+  "land_only": true,
+  "outline": {
+    "source": "IPCC AR6 WGI land reference regions (v4)",
+    "digest": "4239e7c9f4b3",
+    "rings": [
+      [
+        [
+          75.0,
+          37.0
+        ],
+        [
+          75.0,
+          45.0
+        ],
+        [
+          117.0,
+          45.0
+        ],
+        [
+          108.0,
+          37.0
+        ]
+      ]
+    ]
+  },
+  "processing": [
+    "selected grid cells whose centres fall inside the region outline (straight edges in lon/lat; cells on a left/bottom edge in, right/top edge out)",
+    "kept land cells only (MERRA-2 cells with root-zone soil wetness; nearest MERRA-2 cell for other grids); ocean, lakes and ice sheets excluded",
+    "masked fill value -999.0",
+    "area mean with cos(latitude) weights, ignoring missing cells",
+    "dropped time steps with no data (the store pre-allocates future dates)",
+    "kept source units"
+  ],
+  "script": "backend/trend_detective/power_zarr.py",
+  "git_commit": "3e94115"
+}
