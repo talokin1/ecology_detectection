@@ -1,38 +1,38 @@
-r"""Field-team data loader: Ukraine first, then the whole world (24/7 pipeline, see scripts/PIPELINE.md).
+r"""Field-team data loader: listed countries, Ukraine first (24/7 pipeline, see scripts/PIPELINE.md).
 
 THIS IS THE FILE TO EDIT. Everything the field team is expected to change is in the
-"EDIT HERE" block below: which variables are fetched, the world grid resolution, and the
+"EDIT HERE" block below: the COUNTRIES list, which variables are fetched, and the
 preprocessing / classification hooks that run after the raw data has landed.
 
 The loader only *orchestrates*: every download goes through the repo's own readers
-(``acquire.get_series`` / ``acquire.get_input_series`` for regional series, ``grids.build_grid``
-and ``grace.build_grid`` for world grids), so caching, provenance sidecars and units are the
-same as in ``scripts/build_data.py`` and ``scripts/fetch_grid.py``. Raw cache files are never
-modified by the hooks; hooks write to ``<data-dir>/<stage>/processed/``.
+(``acquire.get_series`` / ``acquire.get_input_series`` for regional series), so caching,
+provenance sidecars and units are the same as in ``scripts/build_data.py``. Raw cache
+files are never modified by the hooks; hooks write to ``<data-dir>/<country>/processed/``.
 
-Stages (run in this order by ``--stage all``):
-    ukraine        all no-login POWER catalog variables + daily method inputs + GRACE + MODIS NDVI
-                   over the canonical ``ukraine`` preset (bbox 22,44,40.5,52.5, land_only, Crimea
-                   always included), into ``<data-dir>/ukraine/``
-    world          2-degree global monthly grid of every POWER catalog variable (+ GRACE grid),
-                   into ``<data-dir>/world/grids/``
-    ukraine_slow   slow Earthdata series for Ukraine (OMI NO2: ~8,000 small requests; resumable),
-                   run after the world so it never delays it
+Stages (run in this order by ``--stage all``), one pair per entry in COUNTRIES:
+    <country>        all no-login POWER catalog variables + daily method inputs + GRACE +
+                     MODIS NDVI (and any other regional-only reader) over that country's
+                     preset, into ``<data-dir>/<country>/``
+    <country>_slow   slow Earthdata series for that country (OMI NO2: ~8,000 small
+                     requests; resumable), after every country's fast stage
 
-Idempotent and resumable: finished files are skipped; an interrupted grid is written to a ``.tmp``
-file and rebuilt; an interrupted MODIS/OMI fetch resumes from its ``.partial.csv``. Failed items
-are retried with exponential backoff. Every stage writes ``MANIFEST.json`` (same format as
-``scripts/build_data.py --manifest-only``) and ``STAGE_STATUS.json`` in its data folder.
+The worldwide (2-degree global grid) stage has been removed. Existing files under
+``<data-dir>/world/`` are left in place and are no longer updated.
 
-Earthdata (GRACE, MODIS NDVI, OMI NO2) needs ``EARTHDATA_TOKEN`` in the environment (or the repo
-``.env``, or a ``machine urs.earthdata.nasa.gov`` entry in ``~/.netrc``). Without one these items are
-served from the repo's committed cache when possible and otherwise logged as skipped.
-The token is never printed or written anywhere by this script.
+Idempotent and resumable: finished files are skipped; an interrupted MODIS/OMI fetch
+resumes from its ``.partial.csv``. Failed items are retried with exponential backoff.
+Every stage writes ``MANIFEST.json`` (same format as ``scripts/build_data.py --manifest-only``)
+and a per-stage ``STAGE_STATUS.<stage>.json``; ``STAGE_STATUS.json`` is a combined rollup
+that keeps every stage's results (the slow stage must not overwrite the fast one).
+
+Earthdata (GRACE, MODIS NDVI, OMI NO2) needs ``EARTHDATA_TOKEN`` in the environment (or the
+repo ``.env``, or a ``machine urs.earthdata.nasa.gov`` entry in ``~/.netrc``). Without one
+these items are served from the repo's committed cache when possible and otherwise logged
+as skipped. The token is never printed or written anywhere by this script.
 
 Examples (bash):
     python scripts/pipeline_load.py --data-dir /srv/spaceapps/data            # all stages
     python scripts/pipeline_load.py --data-dir /tmp/d --stage ukraine
-    python scripts/pipeline_load.py --data-dir /tmp/d --stage world --world-variables T2M TQV
     python scripts/pipeline_load.py --dry-run
 
 SI-assisted (GOD / Grok Bot, data-entry agent, 2026-11-14); pending team review (docs/08-si-usage-log.md).
@@ -58,54 +58,54 @@ sys.path.insert(0, str(REPO_ROOT / "scripts"))
 # EDIT HERE ---------------------------------------------------------------------------------------
 # =================================================================================================
 
-# Region preset id from data/catalog/regions.yaml. `ukraine` = [22.0, 44.0, 40.5, 52.5], land_only,
-# always including Crimea (ADR-005). Do not add a no-Crimea variant.
+# Canonical Ukraine preset from data/catalog/regions.yaml: bbox [22.0, 44.0, 40.5, 52.5],
+# land_only, always including Crimea (ADR-005). Do not add a no-Crimea variant.
 UKRAINE_REGION = "ukraine"
 
-# Catalog variable ids to fetch for Ukraine, or "all" = every catalog variable that has a reader
-# (POWER, GRACE, MODIS NDVI, OMI NO2). Login-only ones are fetched only when a token is available.
-UKRAINE_VARIABLES: list[str] | str = "all"
-UKRAINE_EXCLUDE: list[str] = []
-# Login variables that take hours; fetched in the `ukraine_slow` stage AFTER the world.
-UKRAINE_SLOW: list[str] = ["no2_tropospheric_omi"]
+# Countries to fetch, as region preset ids from acquire.list_regions() (data/catalog/regions.yaml
+# and any files it includes). Adding a country is just appending its id here after the preset
+# exists in the catalog — see "Adding a country" in scripts/PIPELINE.md. If an id is missing
+# from the registry, that country fails clearly in STAGE_STATUS / status.json and the rest
+# of the run continues.
+COUNTRIES: list[str] = [UKRAINE_REGION]
+
+# Catalog variable ids to fetch for each country, or "all" = every catalog variable that has a
+# reader (POWER, GRACE, MODIS NDVI, OMI NO2). Login-only ones are fetched only when a token is
+# available. Readers that have no world-grid job (MODIS NDVI, OMI NO2, and any future regional-only
+# reader) are always included for every listed country unless they appear in COUNTRY_EXCLUDE.
+COUNTRY_VARIABLES: list[str] | str = "all"
+COUNTRY_EXCLUDE: list[str] = []
+# Login variables that take hours; fetched in the `<country>_slow` stage after every fast stage.
+COUNTRY_SLOW: list[str] = ["no2_tropospheric_omi"]
 
 # Daily method inputs (catalog `internal_inputs`; Tmax/Tmin = mean of daily extremes, never the
 # monthly store's single extreme hour). (parameter, store, how) as in data/catalog/build.yaml.
-UKRAINE_INPUTS: list[tuple[str, str, str]] = [
+COUNTRY_INPUTS: list[tuple[str, str, str]] = [
     ("T2M_MAX", "merra2_daily", "mean"),
     ("T2M_MIN", "merra2_daily", "mean"),
     ("PRECTOTCORR", "merra2_daily", "sum"),
 ]
 
-# World grid: cell size in degrees (must divide 180). 2 deg = ~26 MB and ~40 s per variable.
-WORLD_RESOLUTION = 2.0
-WORLD_METHOD = "overlap"  # grids.METHODS: "overlap" (default, area-conserving) or "centre"
-WORLD_LAND_ONLY = False
-# (source, POWER parameter) pairs, or "all" = every POWER variable in the catalog (monthly stores).
-WORLD_VARIABLES: list[tuple[str, str]] | str = "all"
-# GRACE 2-deg land water-storage grid (Earthdata; the repo ships a committed copy that is reused).
-WORLD_GRACE = True
-
-# Retries for one item (a series or a grid): wait RETRY_BASE_S * 2**attempt, capped.
+# Retries for one item (a series): wait RETRY_BASE_S * 2**attempt, capped.
 RETRIES = 4
 RETRY_BASE_S = 20
 RETRY_MAX_S = 600
 
 
 def preprocess_series(series, meta: dict):
-    """Called for every Ukraine series after it is fetched (or read from the cache).
+    """Called for every country series after it is fetched (or read from the cache).
 
     ``series``: pandas Series indexed by month (or date, for daily inputs), source units;
     ``series.attrs`` holds the catalog entry, provenance and the fit-for-trend ``assessment``.
     ``meta``: {"kind": "variable"|"input", "id": ..., "region": ..., "units": ...}.
-    Return a Series (written to ``ukraine/processed/<id>.csv``) or None to write nothing.
+    Return a Series (written to ``<country>/processed/<id>.csv``) or None to write nothing.
     Default: unchanged (a flat, easy-to-load copy of the cached series).
     """
     return series
 
 
 def classify_series(series, meta: dict) -> dict | None:
-    """Optional per-series classification/labels, collected into ``ukraine/processed/labels.json``.
+    """Optional per-series classification/labels, collected into ``<country>/processed/labels.json``.
 
     Default: the repo's own data-quality verdict (``acquire.assess``: ok / caution / too_short /
     no_variation). Replace with your classifier; NEVER hand-roll a trend test here, use
@@ -115,12 +115,8 @@ def classify_series(series, meta: dict) -> dict | None:
     return {"status": a.get("status"), "notes": a.get("notes", [])}
 
 
-def postprocess_ukraine(stage_dir: Path, results: list[dict]) -> None:
-    """Runs once after the Ukraine stage. Default: nothing."""
-
-
-def postprocess_world(stage_dir: Path, results: list[dict]) -> None:
-    """Runs once after the world stage (grids are in ``stage_dir / 'grids'``). Default: nothing."""
+def postprocess_country(stage_dir: Path, results: list[dict], country: str) -> None:
+    """Runs once after each country's fast or slow stage. Default: nothing."""
 
 
 # =================================================================================================
@@ -128,8 +124,23 @@ def postprocess_world(stage_dir: Path, results: list[dict]) -> None:
 # =================================================================================================
 
 log = logging.getLogger("pipeline_load")
-STAGES = ("ukraine", "world", "ukraine_slow")
 EARTHDATA_HOST = "urs.earthdata.nasa.gov"
+# Readers that only have a regional (per-country) implementation — no world-grid builder exists
+# in the repo. These are always fetched for every listed country (see country_plan).
+REGIONAL_ONLY_READERS = frozenset({"modis_ndvi", "omi_no2"})
+
+
+def stage_names(countries: list[str] | None = None) -> tuple[str, ...]:
+    """Fast stages first (one per country), then the matching slow stages."""
+    ids = list(countries if countries is not None else COUNTRIES)
+    return tuple(ids + [f"{cid}_slow" for cid in ids])
+
+
+def parse_stage(stage: str) -> tuple[str, bool]:
+    """``('ukraine', False)`` or ``('ukraine', True)`` for ``ukraine_slow``."""
+    if stage.endswith("_slow"):
+        return stage[: -len("_slow")], True
+    return stage, False
 
 
 def _now() -> str:
@@ -141,7 +152,12 @@ def _git_commit() -> str | None:
 
     try:
         out = subprocess.run(
-            ["git", "rev-parse", "HEAD"], cwd=REPO_ROOT, capture_output=True, text=True, timeout=5, check=True
+            ["git", "rev-parse", "HEAD"],
+            cwd=REPO_ROOT,
+            capture_output=True,
+            text=True,
+            timeout=5,
+            check=True,
         )
         return out.stdout.strip() or None
     except (OSError, subprocess.SubprocessError):
@@ -200,7 +216,12 @@ def with_retries(label: str, fn, *, retries: int = RETRIES, is_failure=None):
         except Exception as exc:  # noqa: BLE001
             last = exc
             log.warning(
-                "%s: attempt %d/%d raised %s: %s", label, attempt + 1, retries + 1, type(exc).__name__, exc
+                "%s: attempt %d/%d raised %s: %s",
+                label,
+                attempt + 1,
+                retries + 1,
+                type(exc).__name__,
+                exc,
             )
         if attempt < retries:
             wait = min(RETRY_MAX_S, RETRY_BASE_S * 2**attempt)
@@ -271,25 +292,59 @@ def seed_from_repo(
 
 
 def write_json(path: Path, obj) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
     tmp = path.with_name(path.name + ".tmp")
     tmp.write_text(json.dumps(obj, indent=2, default=str) + "\n", encoding="utf-8")
     tmp.replace(path)
 
 
 def write_stage_status(stage_dir: Path, stage: str, state: str, results: list[dict], started: str) -> None:
+    """Write a per-stage file and merge it into STAGE_STATUS.json without dropping other stages."""
     counts: dict[str, int] = {}
     for r in results:
         counts[r["status"]] = counts.get(r["status"], 0) + 1
+    payload = {
+        "stage": stage,
+        "state": state,
+        "started": started,
+        "updated": _now(),
+        "git_commit": _git_commit(),
+        "counts": counts,
+        "items": results,
+    }
+    write_json(stage_dir / f"STAGE_STATUS.{stage}.json", payload)
+    combined_path = stage_dir / "STAGE_STATUS.json"
+    combined: dict = {}
+    if combined_path.exists():
+        try:
+            combined = json.loads(combined_path.read_text(encoding="utf-8"))
+        except ValueError:
+            combined = {}
+    stages = dict(combined.get("stages") or {})
+    # Older files had a single top-level stage; keep that result under its stage name.
+    if "stage" in combined and "stages" not in combined:
+        old = combined["stage"]
+        if old not in stages:
+            stages[old] = {k: combined[k] for k in combined if k != "stages"}
+    stages[stage] = payload
+    overall = "done"
+    if any(s.get("state") == "failed" for s in stages.values()):
+        overall = "failed"
+    elif any(s.get("state") == "running" for s in stages.values()):
+        overall = "running"
+    all_counts: dict[str, int] = {}
+    for s in stages.values():
+        for k, n in (s.get("counts") or {}).items():
+            all_counts[k] = all_counts.get(k, 0) + n
     write_json(
-        stage_dir / "STAGE_STATUS.json",
+        combined_path,
         {
-            "stage": stage,
-            "state": state,
-            "started": started,
+            "country": stage_dir.name,
+            "state": overall,
             "updated": _now(),
             "git_commit": _git_commit(),
-            "counts": counts,
-            "items": results,
+            "counts": all_counts,
+            "stages": stages,
         },
     )
 
@@ -301,25 +356,79 @@ def write_manifest(stage_dir: Path) -> None:
     log.info("MANIFEST.json: %d files, %.1f MB", m["n_files"], m["total_bytes"] / 1e6)
 
 
-# --- Ukraine -------------------------------------------------------------------------------------
+# --- Countries -----------------------------------------------------------------------------------
 
 
-def ukraine_jobs(variables, exclude, slow: bool):
+def regional_only_ids(catalog) -> list[str]:
+    """Catalog ids whose reader has no world-grid job (currently MODIS NDVI and OMI NO2)."""
+    return [vid for vid, v in catalog.items() if getattr(v, "reader", None) in REGIONAL_ONLY_READERS]
+
+
+def country_plan(country: str, *, slow: bool) -> tuple[list, list[dict]]:
+    """Jobs to run for one country stage, plus items already resolved (skipped / unsupported)."""
     import build_data
     from trend_detective import acquire
 
+    catalog_all = acquire.list_variables(available_only=False)
     catalog = acquire.list_variables(available_only=True)
-    ids = list(catalog) if variables == "all" else list(variables)
-    jobs = []
-    for vid in ids:
-        if vid in exclude or (vid in UKRAINE_SLOW) != slow:
+    exclude = set(COUNTRY_EXCLUDE)
+    if COUNTRY_VARIABLES == "all":
+        requested = list(catalog)
+    else:
+        requested = list(COUNTRY_VARIABLES)
+    for vid in regional_only_ids(catalog):
+        if vid not in requested and vid not in exclude:
+            requested.append(vid)
+
+    jobs: list = []
+    items: list[dict] = []
+    seen: set[str] = set()
+
+    def record(vid: str, status: str, message: str, kind: str = "variable", store=None) -> None:
+        items.append({"kind": kind, "id": vid, "store": store, "status": status, "message": message})
+
+    # Catalog entries with no reader: list them explicitly on the fast stage when fetching "all".
+    if not slow and COUNTRY_VARIABLES == "all":
+        for vid, v in catalog_all.items():
+            if not v.available:
+                record(vid, "unsupported", "no reader in the repo yet")
+                seen.add(vid)
+
+    for vid in requested:
+        if vid in seen:
             continue
-        jobs.append(build_data.Job("variable", UKRAINE_REGION, vid, needs_login=catalog[vid].needs_login))
+        entry = catalog.get(vid) or catalog_all.get(vid)
+        if entry is None:
+            record(vid, "unsupported", f"{vid!r} is not in the variable catalog")
+            seen.add(vid)
+            continue
+        if vid in exclude:
+            record(vid, "skipped", "listed in COUNTRY_EXCLUDE")
+            seen.add(vid)
+            continue
+        if not entry.available:
+            record(vid, "unsupported", "no reader in the repo yet")
+            seen.add(vid)
+            continue
+        is_slow = vid in COUNTRY_SLOW
+        if is_slow != slow:
+            continue
+        jobs.append(build_data.Job("variable", country, vid, needs_login=entry.needs_login))
+        seen.add(vid)
+
     if not slow:
         login = [j for j in jobs if j.needs_login]
         jobs = [j for j in jobs if not j.needs_login]
-        jobs += [build_data.Job("input", UKRAINE_REGION, p, store=s, how=h) for p, s, h in UKRAINE_INPUTS]
+        jobs += [
+            build_data.Job("input", country, p, store=s, how=h) for p, s, h in COUNTRY_INPUTS
+        ]
         jobs += login  # POWER first (fast, no login), then GRACE / NDVI
+    return jobs, items
+
+
+def country_jobs(country: str, *, slow: bool = False):
+    """Runnable jobs for one country stage (skipped / unsupported items are in country_plan)."""
+    jobs, _ = country_plan(country, slow=slow)
     return jobs
 
 
@@ -344,27 +453,67 @@ def _write_processed(stage_dir: Path, job, labels: dict) -> None:
         labels[pid] = label
 
 
-def run_ukraine(
-    data_dir: Path, *, slow: bool = False, has_token: bool = False, dry_run: bool = False
+def _unknown_country_item(country: str) -> dict:
+    return {
+        "kind": "country",
+        "id": country,
+        "status": "error",
+        "message": (
+            f"{country!r} is not in acquire.list_regions(); add a preset to "
+            "data/catalog/regions.yaml before listing it in COUNTRIES"
+        ),
+    }
+
+
+def run_country(
+    data_dir: Path,
+    country: str,
+    *,
+    slow: bool = False,
+    has_token: bool = False,
+    dry_run: bool = False,
+    pre_items: list[dict] | None = None,
 ) -> list[dict]:
     import build_data
+    from trend_detective import acquire
 
-    stage = "ukraine_slow" if slow else "ukraine"
-    stage_dir = data_dir / "ukraine"
-    jobs = ukraine_jobs(UKRAINE_VARIABLES, UKRAINE_EXCLUDE, slow)
+    stage = f"{country}_slow" if slow else country
+    stage_dir = data_dir / country
+    regions = acquire.list_regions()
+    if country not in regions:
+        item = _unknown_country_item(country)
+        if dry_run:
+            print(f"{stage:12} ERROR    {item['message']}")
+            return [item]
+        started = _now()
+        write_stage_status(stage_dir, stage, "failed", [item], started)
+        log.error("%s", item["message"])
+        return [item]
+    jobs, planned = country_plan(country, slow=slow)
+    results = list(pre_items or []) + list(planned)
     if dry_run:
+        for r in results:
+            print(f"{stage:12} {r['status']:8} {r['id']:32} {r.get('message') or ''}")
         for j in jobs:
             print(f"{stage:12} {j.kind:8} {j.name:32} {'login' if j.needs_login else ''}")
-        return []
+            results.append(
+                {
+                    "kind": j.kind,
+                    "id": j.name,
+                    "store": j.store,
+                    "status": "planned",
+                    "message": "login" if j.needs_login else "",
+                }
+            )
+        return results
     use_cache_root(stage_dir)
     remove_orphans(stage_dir)
     if not slow:
-        from trend_detective import acquire
-
-        n = seed_from_repo(stage_dir, "earthdata", bbox=acquire.list_regions()[UKRAINE_REGION]["bbox"])
+        bbox = regions[country].get("bbox")
+        n = seed_from_repo(stage_dir, "earthdata", bbox=bbox)
         if n:
             log.info("seeded %d committed Earthdata cache files from the repo", n)
-    started, results, labels = _now(), [], {}
+    started, labels = _now(), {}
     labels_path = stage_dir / "processed" / "labels.json"
     if labels_path.exists():
         labels = json.loads(labels_path.read_text(encoding="utf-8"))
@@ -406,128 +555,47 @@ def run_ukraine(
         write_json(labels_path, labels)
     write_manifest(stage_dir)
     try:
-        postprocess_ukraine(stage_dir, results)
+        postprocess_country(stage_dir, results, country)
     except Exception as exc:  # noqa: BLE001
-        log.error("postprocess_ukraine failed: %s: %s", type(exc).__name__, exc)
+        log.error("postprocess_country failed: %s: %s", type(exc).__name__, exc)
     failed = [r for r in results if r["status"] == "error"]
     write_stage_status(stage_dir, stage, "failed" if failed else "done", results, started)
     return results
 
 
-# --- World ---------------------------------------------------------------------------------------
-
-
-def world_variables(selected=None) -> list[tuple[str, str]]:
-    from trend_detective import acquire, power_zarr
-
-    if selected:
-        out = []
-        for item in selected:
-            src, _, var = item.rpartition(":")
-            out.append((src or None, var))
-        catalog = {
-            v.access["variable"]: v.access.get("store", "merra2")
-            for v in acquire.list_variables().values()
-            if v.reader == "power_zarr"
+def skip_slow_without_token(data_dir: Path, country: str, *, dry_run: bool = False) -> list[dict]:
+    """Record every slow item as skipped instead of omitting the stage."""
+    msg = "Earthdata login needed and no EARTHDATA_TOKEN configured"
+    jobs, planned = country_plan(country, slow=True)
+    results = list(planned) + [
+        {
+            "kind": j.kind,
+            "id": j.name,
+            "store": j.store,
+            "status": "skipped",
+            "message": msg,
         }
-        return [(src or catalog.get(var, "merra2"), var) for src, var in out]
-    if WORLD_VARIABLES != "all":
-        return list(WORLD_VARIABLES)
-    pairs = []
-    for v in acquire.list_variables(available_only=True).values():
-        if v.reader != "power_zarr":
-            continue
-        store = v.access.get("store", "merra2")
-        if power_zarr.SOURCES[store].get("freq", "M") == "M" and (store, v.access["variable"]) not in pairs:
-            pairs.append((store, v.access["variable"]))
-    return pairs
-
-
-def run_world(data_dir: Path, *, has_token: bool = False, selected=None, dry_run: bool = False) -> list[dict]:
-    from trend_detective import earthdata, grace, grids
-
-    stage_dir = data_dir / "world"
-    pairs = world_variables(selected)
+        for j in jobs
+    ]
     if dry_run:
-        for src, var in pairs:
-            print(f"world        grid     {src}:{var} {WORLD_RESOLUTION:g} deg")
-        if WORLD_GRACE:
-            print(f"world        grid     grace:lwe_thickness {WORLD_RESOLUTION:g} deg (login)")
-        return []
-    use_cache_root(stage_dir)
-    remove_orphans(stage_dir)
-    grid_dir = stage_dir / "grids"
-    if WORLD_GRACE:
-        seed_from_repo(stage_dir, "grids", ["grace_lwe_thickness"])
-    started, results = _now(), []
-    write_stage_status(stage_dir, "world", "running", results, started)
-    total = len(pairs) + int(WORLD_GRACE)
-    for i, (src, var) in enumerate(pairs, 1):
-        label = f"[world {i}/{total}] {src}:{var}"
-        path = grids.grid_path(grid_dir, var, src, WORLD_RESOLUTION, WORLD_LAND_ONLY, WORLD_METHOD)
-        item = {"kind": "grid", "id": var, "store": src, "path": str(path)}
-        t0 = time.perf_counter()
-        log.info("%s: start", label)
-        try:
-            ds = with_retries(
-                label,
-                lambda src=src, var=var: grids.build_grid(
-                    var,
-                    src,
-                    WORLD_RESOLUTION,
-                    land_only=WORLD_LAND_ONLY,
-                    method=WORLD_METHOD,
-                    cache_dir=grid_dir,
-                ),
-            )
-            item |= {
-                "status": "done",
-                "origin": "cached" if ds.attrs.get("from_cache") else "fetched",
-                "mb": round(path.stat().st_size / 1e6, 1),
-            }
-            ds.close()
-        except Exception as exc:  # noqa: BLE001
-            item |= {"status": "error", "message": f"{type(exc).__name__}: {exc}"}
-        item["seconds"] = round(time.perf_counter() - t0, 1)
-        log.info("%s: %s %s", label, item["status"], item.get("mb", item.get("message", "")))
-        results.append(item)
-        write_stage_status(stage_dir, "world", "running", results, started)
-    if WORLD_GRACE:
-        label = f"[world {total}/{total}] grace:lwe_thickness"
-        path = grids.grid_path(grid_dir, "lwe_thickness", "grace", WORLD_RESOLUTION, land_only=True)
-        item = {"kind": "grid", "id": "lwe_thickness", "store": "grace", "path": str(path)}
-        t0 = time.perf_counter()
-        try:
-            ds = with_retries(
-                label,
-                lambda: grace.build_grid(WORLD_RESOLUTION, cache_dir=grid_dir, offline=not has_token),
-            )
-            item |= {
-                "status": "done",
-                "origin": "cached" if ds.attrs.get("from_cache") else "fetched",
-                "mb": round(path.stat().st_size / 1e6, 1),
-            }
-        except earthdata.NotCachedError:
-            item |= {
-                "status": "skipped",
-                "message": "Earthdata login needed and no EARTHDATA_TOKEN configured",
-            }
-        except Exception as exc:  # noqa: BLE001
-            item |= {"status": "error", "message": f"{type(exc).__name__}: {exc}"}
-        item["seconds"] = round(time.perf_counter() - t0, 1)
-        log.info("%s: %s %s", label, item["status"], item.get("mb", item.get("message", "")))
-        results.append(item)
-    log.info(
-        "world: MODIS NDVI has no global-grid reader in the repo (MOD13C2 world = ~45 GB raw); not built"
-    )
-    write_manifest(stage_dir)
-    try:
-        postprocess_world(stage_dir, results)
-    except Exception as exc:  # noqa: BLE001
-        log.error("postprocess_world failed: %s: %s", type(exc).__name__, exc)
-    failed = [r for r in results if r["status"] == "error"]
-    write_stage_status(stage_dir, "world", "failed" if failed else "done", results, started)
+        for r in results:
+            print(f"{country + '_slow':12} {r['status']:8} {r['id']:32} {r.get('message') or ''}")
+        return results
+    log.info("stage %s_slow: skipped (needs Earthdata token)", country)
+    write_stage_status(data_dir / country, f"{country}_slow", "done", results, _now())
     return results
+
+
+def run_world_removed(data_dir: Path, *, dry_run: bool = False) -> list[dict]:
+    """Compatibility stub: older daemons may still invoke ``--stage world``."""
+    msg = (
+        "worldwide fetch removed; the loader no longer builds global grids. "
+        f"Existing files in {data_dir / 'world'} were left in place and are not updated"
+    )
+    log.info("%s", msg)
+    if dry_run:
+        print(f"world        skipped  {msg}")
+    return [{"kind": "stage", "id": "world", "status": "skipped", "message": msg}]
 
 
 # --- CLI -----------------------------------------------------------------------------------------
@@ -544,8 +612,7 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument(
         "--data-dir", type=Path, default=None, help="default $SPACEAPPS_DATA_DIR or /srv/spaceapps/data"
     )
-    p.add_argument("--stage", choices=[*STAGES, "all"], default="all")
-    p.add_argument("--world-variables", nargs="*", metavar="[SOURCE:]VAR", help="override the world list")
+    p.add_argument("--stage", choices=[*stage_names(), "all", "world"], default="all")
     p.add_argument("--dry-run", action="store_true", help="list what would be fetched and exit")
     p.add_argument(
         "--lock",
@@ -561,7 +628,7 @@ def main(argv: list[str] | None = None) -> int:
         datefmt="%Y-%m-%dT%H:%M:%S",
     )
     data_dir = (args.data_dir or default_data_dir()).resolve()
-    stages = STAGES if args.stage == "all" else (args.stage,)
+    stages = stage_names() if args.stage == "all" else (args.stage,)
 
     lock_fh = None
     if args.lock and not args.dry_run:
@@ -582,21 +649,21 @@ def main(argv: list[str] | None = None) -> int:
             if has_token
             else "no EARTHDATA_TOKEN / ~/.netrc entry: login-only items are skipped (cached copies kept)",
         )
+        log.info("countries: %s", ", ".join(COUNTRIES) or "(none)")
     code = 0
     for stage in stages:
         t0 = time.perf_counter()
         log.info("=== stage %s: start", stage)
         if stage == "world":
-            results = run_world(
-                data_dir, has_token=has_token, selected=args.world_variables, dry_run=args.dry_run
-            )
-        elif stage == "ukraine_slow" and not has_token and not args.dry_run:
-            log.info("stage ukraine_slow: skipped (needs Earthdata token)")
-            results = []
+            results = run_world_removed(data_dir, dry_run=args.dry_run)
         else:
-            results = run_ukraine(
-                data_dir, slow=stage == "ukraine_slow", has_token=has_token, dry_run=args.dry_run
-            )
+            country, slow = parse_stage(stage)
+            if slow and not has_token and not args.dry_run:
+                results = skip_slow_without_token(data_dir, country)
+            else:
+                results = run_country(
+                    data_dir, country, slow=slow, has_token=has_token, dry_run=args.dry_run
+                )
         errors = [r for r in results if r["status"] == "error"]
         log.info(
             "=== stage %s: %s in %.0f s (%d items, %d errors)",
