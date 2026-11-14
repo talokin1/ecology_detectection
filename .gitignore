@@ -22,6 +22,7 @@ dist/
 .next/
 frontend/test-results/
 *.tsbuildinfo
+build/
 frontend/playwright-report/
 
 # Data (large raw files are rebuilt by scripts/; small curated outputs may be committed)

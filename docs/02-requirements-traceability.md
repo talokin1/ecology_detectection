@@ -22,7 +22,7 @@ Priority: **M** = mandatory by challenge/rules · **S** = strongly scored (judgi
 | R-12 | Demonstration examples users can watch | S | ≥ 2 guided "case files" playable end-to-end | | doing | 3 cases playable end to end (`#/case/01..03`) on synthetic data |
 | R-13 | SI suggests variables from region type / literature | C | Suggestions grounded in catalog; sources/rationale shown; disclosed as SI | | todo | |
 | R-14 | Non-significant trends still informative | S | "Years until detectable" estimate + explanation | | doing | 'Years to detection' sentence on none/weak verdicts |
-| R-15 | Regional opposite-sign trends ("where") | S | Per-pixel trend map with significance stippling, or two-region comparison | | doing | UI: world trend map with FDR + Compare screen. Data: 2° T2M grid (26 MB, `grids.py`, `fetch_grid.py`); case regions in ADR-005 |
+| R-15 | Regional opposite-sign trends ("where") | S | Per-pixel trend map with significance stippling, or two-region comparison | | doing | UI: world trend map with FDR + Compare screen. Data: 2° T2M grid (26 MB, `grids.py`, `fetch_grid.py`; kept in git per ADR-006); case regions in ADR-005 |
 | R-16 | Seasonal cycle handled | S | Deseasonalisation on by default for sub-annual data, toggle to view raw | | doing | Anomalies by default, 'Actual values' toggle |
 | R-17 | Daily/monthly data support | C | Monthly default; daily aggregated to monthly | | todo | |
 
