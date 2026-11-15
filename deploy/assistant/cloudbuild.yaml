@@ -1,0 +1,6 @@
+# Builds the assistant image with the Dockerfile in deploy/assistant/ (see docs/11-assistant.md).
+#   gcloud builds submit --config deploy/assistant/cloudbuild.yaml --substitutions _IMAGE=<region>-docker.pkg.dev/<project>/<repo>/assistant
+steps:
+  - name: gcr.io/cloud-builders/docker
+    args: ["build", "-f", "deploy/assistant/Dockerfile", "-t", "${_IMAGE}", "."]
+images: ["${_IMAGE}"]

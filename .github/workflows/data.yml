@@ -4,10 +4,10 @@ name: data
 # credentials leak, and the offline tests pass, on Linux and on Windows (the team's main OS).
 on:
   pull_request:
-    paths: ["data/**", "backend/**", "scripts/**", "requirements.txt", "pyproject.toml", ".github/workflows/data.yml"]
+    paths: ["data/**", "backend/**", "scripts/**", "requirements.txt", "requirements-assistant.txt", "pyproject.toml", ".github/workflows/data.yml"]
   push:
     branches: [main, data, experimental]
-    paths: ["data/**", "backend/**", "scripts/**", "requirements.txt", "pyproject.toml", ".github/workflows/data.yml"]
+    paths: ["data/**", "backend/**", "scripts/**", "requirements.txt", "requirements-assistant.txt", "pyproject.toml", ".github/workflows/data.yml"]
   workflow_dispatch:
 
 permissions:
@@ -24,7 +24,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with: { python-version: '3.12', cache: pip }
-      - run: pip install -r requirements.txt ruff
+      - run: pip install -r requirements.txt -r requirements-assistant.txt ruff
       - name: Cache integrity (manifest, provenance, secrets, build jobs, AR6 outlines)
         run: python scripts/check_cache.py
       - name: Offline tests (no network, no token)

@@ -25,6 +25,10 @@ jobs:
         working-directory: frontend
       - run: npm run lint && npm test && npm run build
         working-directory: frontend
+        env:
+          # Public URL of the SI assistant on Cloud Run (repo variable; docs/11-assistant.md).
+          # Empty = the assistant button is not shown.
+          VITE_ASSISTANT_URL: ${{ vars.ASSISTANT_URL }}
       - run: npx playwright install --with-deps chromium && npm run smoke
         working-directory: frontend
       - uses: actions/upload-pages-artifact@v3
