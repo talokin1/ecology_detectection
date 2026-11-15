@@ -8,6 +8,8 @@ const reply = {
     why: 'Farm soils.', verdict: 'Evidence: drying', href: '#/region/south_ukraine?var=soil' }],
   looked_up: [{ tool: 'rank_regions', label: 'Ranking of places: Soil wetness, drier', href: null },
     { tool: 'get_analysis', label: 'Result: Air temperature · France', href: '#/region/c_fra?var=t2m' }],
+  web_sources: [{ title: 'metoffice.gov.uk', uri: 'https://vertexaisearch.cloud.google.com/grounding-api-redirect/x', domain: 'metoffice.gov.uk' }],
+  search_suggestions_html: '<div>2010 heatwave</div>',
   unverified_numbers: ['7.7'],
   model: 'gemini-test',
   disclaimer: 'AI-generated',
@@ -44,6 +46,12 @@ describe('Assistant', () => {
     expect(screen.getByText(/AI-generated · gemini-test/)).toBeTruthy();
     expect(screen.getByText(/Check these numbers: 7.7/)).toBeTruthy();
     expect(screen.getByText('Ranking of places: Soil wetness, drier')).toBeTruthy();
+    const web = screen.getByRole('link', { name: 'metoffice.gov.uk' });
+    expect(web.getAttribute('href')).toBe('https://vertexaisearch.cloud.google.com/grounding-api-redirect/x');
+    expect(web.getAttribute('target')).toBe('_blank');
+    const frame = screen.getByTitle('Google Search suggestions for this answer');
+    expect(frame.getAttribute('sandbox')).toBe('allow-popups allow-popups-to-escape-sandbox');
+    expect(frame.getAttribute('srcdoc')).toContain('<div>2010 heatwave</div>');
     expect(screen.getByRole('link', { name: 'Result: Air temperature · France' }).getAttribute('href')).toBe('/region/c_fra?var=t2m');
     expect(screen.getByRole('link', { name: /Soil wetness · South Ukraine/ }).getAttribute('href')).toBe('/region/south_ukraine?var=soil');
   });

@@ -14,8 +14,9 @@ class FakeModel:
         self._reply = reply
         self.calls = []
 
-    async def reply(self, system, turns, run_tool=None):
+    async def reply(self, system, turns, run_tool=None, web_search=False):
         self.calls.append((system, turns))
+        self.web_flags = getattr(self, "web_flags", []) + [web_search]
         reply = dict(self._reply)
         # A scripted reply may ask for lookups, like Gemini would; run them through the real tools.
         reply["tool_calls"] = []
@@ -165,7 +166,7 @@ def test_model_failure_is_502_without_details(grounding):
     class Broken:
         name = "broken"
 
-        async def reply(self, system, turns, run_tool=None):
+        async def reply(self, system, turns, run_tool=None, web_search=False):
             raise RuntimeError("quota exceeded for project secret-123")
 
     c = TestClient(create_app(grounding, Broken()))
@@ -332,3 +333,80 @@ def test_chat_with_lookups_grounds_numbers_and_lists_sources(grounding):
     assert labels[0].startswith("Result: Air temperature") and labels[1].startswith("Ranking of places")
     assert len(labels) == 2  # the failed call is not listed
     assert body["looked_up"][0]["href"] == "#/region/c_fra?var=t2m"
+
+
+# ---------------------------------------------------------------------- web search
+WEB = {
+    "queries": ["2010 Russian heatwave cause"],
+    "sources": [
+        {
+            "title": "metoffice.gov.uk",
+            "uri": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/x",
+            "domain": "metoffice.gov.uk",
+        }
+    ],
+    "cited_segments": ["According to the Met Office, temperatures reached 38.2 °C in Moscow."],
+    "suggestions_html": "<style>.x{}</style><div class='x'>2010 Russian heatwave cause</div>",
+}
+
+
+def test_web_sources_and_suggestions_are_returned(grounding):
+    reply = {
+        "answer": "According to the Met Office, temperatures reached 38.2 °C in Moscow.",
+        "suggestions": [],
+        "web": WEB,
+    }
+    c, model = client_for(grounding, reply)
+    body = c.post("/v1/chat", json={"message": "What caused the 2010 heatwave?"}).json()
+    assert body["web_sources"][0]["uri"] == WEB["sources"][0]["uri"]  # unmodified
+    assert body["search_suggestions_html"] == WEB["suggestions_html"]
+    assert body["unverified_numbers"] == []  # the number sits in a segment cited to a web source
+    assert model.web_flags == [True]
+    assert "Web search:" in model.calls[0][0]
+
+
+def test_uncited_numbers_are_still_flagged_with_web_on(grounding):
+    reply = {"answer": "Ukraine warmed 9.99 °C per decade.", "suggestions": [], "web": WEB}
+    c, _ = client_for(grounding, reply)
+    assert c.post("/v1/chat", json={"message": "hi"}).json()["unverified_numbers"] == ["9.99"]
+
+
+def test_no_suggestions_html_without_a_search(grounding):
+    c, _ = client_for(grounding, {"answer": "ok", "suggestions": []})
+    body = c.post("/v1/chat", json={"message": "hi"}).json()
+    assert body["search_suggestions_html"] is None and body["web_sources"] == []
+
+
+def test_web_search_can_be_switched_off(grounding, monkeypatch):
+    monkeypatch.setenv("ASSISTANT_WEB_SEARCH", "0")
+    c, model = client_for(grounding, {"answer": "ok", "suggestions": []})
+    c.post("/v1/chat", json={"message": "hi"})
+    assert model.web_flags == [False] and "Web search is not available" in model.calls[0][0]
+
+
+def test_search_budget_stops_web_search(grounding, monkeypatch):
+    monkeypatch.setenv("ASSISTANT_SEARCHES_PER_DAY", "1")
+    c, model = client_for(grounding, {"answer": "ok", "suggestions": [], "web": WEB})
+    c.post("/v1/chat", json={"message": "one"})
+    c.post("/v1/chat", json={"message": "two"})
+    assert model.web_flags == [True, False]
+
+
+def test_collect_grounding_merges_and_dedupes():
+    from types import SimpleNamespace as NS
+
+    from trend_detective.assistant.llm import collect_grounding, empty_web
+
+    web_chunk = NS(web=NS(title="t", uri="https://u", domain="d"))
+    gm = NS(
+        web_search_queries=["q"],
+        grounding_chunks=[web_chunk, web_chunk],
+        grounding_supports=[NS(segment=NS(text="seg"))],
+        search_entry_point=NS(rendered_content="<b>x</b>"),
+    )
+    resp = NS(candidates=[NS(grounding_metadata=gm)])
+    web = empty_web()
+    collect_grounding(resp, web)
+    collect_grounding(resp, web)
+    assert web["queries"] == ["q"] and len(web["sources"]) == 1 and web["suggestions_html"] == "<b>x</b>"
+    collect_grounding(NS(candidates=[]), web)  # no metadata: no error
