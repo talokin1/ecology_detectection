@@ -1,6 +1,7 @@
 """Trend of any longitude/latitude box, from the frozen 2-degree grids: the Python reference for
 the web app's "your own area" tool (frontend/src/lib/area.ts and stats.ts compute the same in
-the browser). Reads the frozen cache only.
+the browser). Reads the frozen cache only; fetch the grids first with
+`python scripts/sync_cache.py pull` (ADR-010).
 
 Rules (the same as for countries, ADR-008): a square counts by the share of it inside the box
 times cos(latitude); squares without a complete record are left out. One value per year (all

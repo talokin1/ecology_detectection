@@ -99,8 +99,12 @@ distinguishable. Air temperature cannot say anything about ocean currents.
 
 ## Consequences
 
-- `frontend/public/data/` grows by about 105 MB (100 map layers, 60 yearly-series binaries). The
-  binaries change only when the cache or the grid code changes.
+- `frontend/public/data/` grows by about 95 MB (100 map layers, 13 MB; 60 yearly-series binaries,
+  82 MB). The binaries change only when the cache or the grid code changes. This runs against the aim
+  of ADR-010 (keep large data out of git): the site is built from the repository, and this change had
+  no write access to the bucket. Follow-up for the data engineer: serve `series/*.bin` from the GCS
+  data store (public read, CORS for the site's origin) and drop them from git.
+- Rebuilding the data needs the grids: `python scripts/sync_cache.py pull` first (ADR-010).
 - Analysis files gain `vs_world`; `schema/analysis.schema.json`, `schema/map.schema.json` and the new
   `schema/series-index.schema.json` are the contract; `check_data.py` also checks that every
   variable has its ten map views and that every binary has the promised size.
