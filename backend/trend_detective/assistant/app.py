@@ -14,6 +14,7 @@ from __future__ import annotations
 import json
 import logging
 import os
+import re
 import time
 from collections import defaultdict, deque
 
@@ -21,7 +22,10 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
+from .charts import build_chart
 from .grounding import Grounding, safe_id, unverified_numbers
+from .language import instruction as language_instruction
+from .language import reply_language
 from .llm import GeminiModel, Model, estimated_usd
 from .prompt import system_instruction
 from .tools import Tools
@@ -75,7 +79,9 @@ class WebSource(BaseModel):
 
 
 class ChatOut(BaseModel):
-    answer: str
+    answer: str  # small Markdown subset; links already filtered to app pages and cited web sources
+    language: str = "en"
+    chart: dict | None = None  # built from the app's data (charts.py), never from model numbers
     suggestions: list[Suggestion]
     looked_up: list[LookedUp] = Field(default_factory=list)
     web_sources: list[WebSource] = Field(default_factory=list)
@@ -162,6 +168,30 @@ def build_suggestions(g: Grounding, raw: list[dict]) -> list[Suggestion]:
             )
         )
     return out[:4]
+
+
+_LINK = re.compile(r"\[([^\]\n]{1,120})\]\(([^)\s]{1,400})\)")
+_REGION_LINK = re.compile(r"^#/region/([a-z0-9_]{1,40})\?var=([a-z0-9_]{1,40})$")
+_COMPARE_LINK = re.compile(r"^#/compare/([a-z0-9_]{1,40})/([a-z0-9_]{1,40})\?var=([a-z0-9_]{1,40})$")
+
+
+def filter_links(text: str, g: Grounding, web_uris: set[str]) -> str:
+    """Keep Markdown links only to existing app pages and to web sources the search returned;
+    any other link keeps its text and loses its target."""
+
+    def ok(target: str) -> bool:
+        if target in web_uris:
+            return True
+        m = _REGION_LINK.match(target)
+        if m:
+            return g.has_analysis(m.group(1), m.group(2))
+        m = _COMPARE_LINK.match(target)
+        if m:
+            a, b, v = m.groups()
+            return a != b and g.has_analysis(a, v) and g.has_analysis(b, v)
+        return False
+
+    return _LINK.sub(lambda m: m.group(0) if ok(m.group(2)) else m.group(1), text)
 
 
 def describe_lookups(g: Grounding, calls: list[dict]) -> list[LookedUp]:
@@ -263,8 +293,12 @@ def create_app(grounding: Grounding | None = None, model: Model | None = None) -
             started = time.monotonic()
             tools = Tools(grd)
             use_web = web_search_enabled() and searches.available()
+            lang, other = reply_language(body.message)
             raw = await m().reply(
-                system_instruction(grd, rid, vid, web=use_web), turns, tools.call, web_search=use_web
+                system_instruction(grd, rid, vid, web=use_web, language=language_instruction(lang, other)),
+                turns,
+                tools.call,
+                web_search=use_web,
             )
         except Exception:  # noqa: BLE001 - never leak provider errors to the browser
             log.exception("model call failed")
@@ -309,6 +343,10 @@ def create_app(grounding: Grounding | None = None, model: Model | None = None) -
                     else None,
                     "web_queries": len(web.get("queries") or []),
                     "web_sources": len(web.get("sources") or []),
+                    "language": lang,
+                    "chart": (raw.get("chart") or {}).get("kind")
+                    if isinstance(raw.get("chart"), dict)
+                    else None,
                     "suggestions": len(suggestions),
                     "tools": [c["name"] + ("!" if "error" in c else "") for c in calls],
                     "unverified_numbers": flagged,
@@ -316,8 +354,12 @@ def create_app(grounding: Grounding | None = None, model: Model | None = None) -
             ),
             flush=True,
         )
+        web_uris = {s["uri"] for s in (web.get("sources") or [])}
+        chart = build_chart(grd, raw.get("chart"))
         return ChatOut(
-            answer=answer,
+            answer=filter_links(answer, grd, web_uris),
+            language=lang,
+            chart=chart,
             suggestions=suggestions,
             looked_up=describe_lookups(grd, calls),
             web_sources=[WebSource(**s) for s in (web.get("sources") or [])[:8]],

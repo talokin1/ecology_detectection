@@ -86,3 +86,24 @@ Search is billed per query (third-party sources: about $14 per 1,000 for Gemini 
 read, verify before judging): `ASSISTANT_WEB_SEARCH` switches it off, `ASSISTANT_SEARCHES_PER_DAY`
 (default 500 per instance) caps it. Live check: a mixed question used NOAA for the cause and the app's
 own 2010 values for "was it unusual"; a pure data question did not search.
+
+## Amendment 4 (2026-11-15): Ukrainian and English only; formatting, charts, closer to the data
+- **Languages**: decided by code (`language.py`), not by the model: Ukrainian letters (і ї є ґ) or
+  Ukrainian function words -> Ukrainian; anything else -> English. Russian and other languages get an
+  English answer that opens with "I answer in English or Ukrainian". The instruction is the last line
+  of the prompt so the long prefix stays cacheable. (Supersedes amendment 2's "any language".)
+- **Formatting**: a small Markdown subset (bold lead sentence, lists, compact tables, links) rendered
+  by our own React renderer (`AssistantMarkdown.tsx`), which never renders HTML. The server keeps only
+  links to existing app pages (`#/region/<id>?var=<id>`, `#/compare/<a>/<b>?var=<id>`) and to cited web
+  sources (`filter_links`); any other link loses its target.
+- **Charts**: the model may request `{"kind": "rates" | "yearly", "variable_id", "region_ids"}`; the
+  server builds every plotted value from the app's files (`charts.py`): rates with 95% ranges (strong
+  colour only for "Evidence" or stronger) or yearly differences from normal. The model never supplies
+  plotted numbers.
+- **Closer to the data**: every Earth question must cite at least one app result (looked up with the
+  tools when needed); off-topic questions get one sentence and a starting point from the data.
+- **UX**: screen-aware starter questions, New chat, Try again, Esc closes, the chat survives a reload
+  (sessionStorage, this browser only), wider drawer, sources folded under "Sources (n)", a new answer
+  opens at its beginning, links close the drawer on narrow screens.
+Live check: comparison -> table + rates chart; Ukrainian -> Ukrainian with a yearly chart; Russian ->
+English with the note; "Is the world getting wetter?" -> ranking from the data; off-topic -> declined.

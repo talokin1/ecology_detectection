@@ -12,6 +12,8 @@ import os
 from collections.abc import Callable
 from typing import Protocol
 
+from .charts import CHART_SCHEMA
+
 # Structured reply: the answer text plus optional catalog suggestions (ids only; the server
 # fills names, verdict headlines and links from the precomputed data).
 REPLY_SCHEMA = {
@@ -34,6 +36,7 @@ REPLY_SCHEMA = {
     },
     "required": ["answer", "suggestions"],
 }
+REPLY_SCHEMA["properties"]["chart"] = CHART_SCHEMA
 
 
 ToolRunner = Callable[[str, dict], dict]
@@ -191,4 +194,5 @@ def parse_reply(text: str) -> dict:
         return {"answer": str(data), "suggestions": []}
     answer = data.get("answer") if isinstance(data.get("answer"), str) else ""
     sugg = data.get("suggestions") if isinstance(data.get("suggestions"), list) else []
-    return {"answer": answer.strip(), "suggestions": [s for s in sugg if isinstance(s, dict)]}
+    chart = data.get("chart") if isinstance(data.get("chart"), dict) else None
+    return {"answer": answer.strip(), "suggestions": [s for s in sugg if isinstance(s, dict)], "chart": chart}

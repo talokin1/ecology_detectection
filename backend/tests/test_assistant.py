@@ -82,6 +82,7 @@ def test_parse_reply_falls_back_to_text():
     assert parse_reply('{"answer": " hi ", "suggestions": [1, {"a": 2}]}') == {
         "answer": "hi",
         "suggestions": [{"a": 2}],
+        "chart": None,
     }
 
 
@@ -410,3 +411,80 @@ def test_collect_grounding_merges_and_dedupes():
     collect_grounding(resp, web)
     assert web["queries"] == ["q"] and len(web["sources"]) == 1 and web["suggestions_html"] == "<b>x</b>"
     collect_grounding(NS(candidates=[]), web)  # no metadata: no error
+
+
+# ---------------------------------------------------------------------- language, charts, links
+@pytest.mark.parametrize(
+    "text, lang, other",
+    [
+        ("Чи висихає ґрунт на півдні України?", "uk", False),
+        ("Де теплішає найшвидше?", "uk", False),
+        ("Как меняется температура в Украине?", "en", True),
+        ("How fast is Ukraine warming?", "en", False),
+        ("Wie schnell erwärmt sich Deutschland eigentlich?", "en", True),
+        ("hi", "en", False),
+    ],
+)
+def test_reply_language(text, lang, other):
+    from trend_detective.assistant.language import reply_language
+
+    assert reply_language(text) == (lang, other)
+
+
+def test_language_reaches_the_prompt_last(grounding):
+    c, model = client_for(grounding, {"answer": "ok", "suggestions": []})
+    body = c.post("/v1/chat", json={"message": "Чи теплішає в Україні?"}).json()
+    assert body["language"] == "uk"
+    assert model.calls[0][0].rstrip().splitlines()[-1].startswith("REPLY LANGUAGE: Ukrainian")
+    c.post("/v1/chat", json={"message": "Как дела с почвой?"})
+    assert "not in English or Ukrainian" in model.calls[1][0].rstrip().splitlines()[-1]
+
+
+def test_rates_chart_is_built_from_data(grounding):
+    reply = {
+        "answer": "ok",
+        "suggestions": [],
+        "chart": {
+            "kind": "rates",
+            "variable_id": "t2m",
+            "region_ids": ["ukraine", "c_fra", "atlantis", "../x"],
+        },
+    }
+    c, _ = client_for(grounding, reply)
+    ch = c.post("/v1/chat", json={"message": "compare"}).json()["chart"]
+    assert ch["kind"] == "rates" and [b["region_id"] for b in ch["bars"]] == ["ukraine", "c_fra"]
+    v = grounding.verdict("ukraine", "t2m")
+    assert (
+        ch["bars"][0]["value"] == v["rate_value"]
+        and [ch["bars"][0]["low"], ch["bars"][0]["high"]] == v["ci95"]
+    )
+
+
+def test_yearly_chart_and_bad_requests(grounding):
+    from trend_detective.assistant.charts import build_chart
+
+    ch = build_chart(grounding, {"kind": "yearly", "variable_id": "t2m", "region_ids": ["ukraine"]})
+    a = grounding.analysis("ukraine", "t2m")["series"]["annual"]
+    assert ch["series"][0]["x"] == a["years"] and ch["series"][0]["y"] == a["anomaly"]
+    assert build_chart(grounding, {"kind": "pie", "variable_id": "t2m", "region_ids": ["ukraine"]}) is None
+    assert build_chart(grounding, {"kind": "rates", "variable_id": "t2m", "region_ids": ["ukraine"]}) is None
+    assert (
+        build_chart(grounding, {"kind": "yearly", "variable_id": "sea_ice", "region_ids": ["ukraine"]})
+        is None
+    )
+    assert build_chart(grounding, None) is None
+
+
+def test_links_are_filtered(grounding):
+    from trend_detective.assistant.app import filter_links
+
+    web = {"https://vertexaisearch.cloud.google.com/grounding-api-redirect/x"}
+    text = (
+        "See [Ukraine](#/region/ukraine?var=t2m), [bad](#/region/atlantis?var=t2m), "
+        "[cmp](#/compare/ukraine/c_pol?var=t2m), [evil](javascript:alert(1)), [ext](https://evil.example), "
+        "[src](https://vertexaisearch.cloud.google.com/grounding-api-redirect/x)."
+    )
+    out = filter_links(text, grounding, web)
+    assert "[Ukraine](#/region/ukraine?var=t2m)" in out and "[cmp](#/compare/ukraine/c_pol?var=t2m)" in out
+    assert "(#/region/atlantis" not in out and "javascript" not in out and "evil.example" not in out
+    assert "[src](https://vertexaisearch" in out

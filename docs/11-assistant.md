@@ -33,8 +33,9 @@ Replies list the lookups under `looked_up` (label and link); the log line lists 
   "history": [{ "role": "user", "text": "..." }, { "role": "assistant", "text": "..." }] }
 ```
 
-Reply: `answer`, `suggestions[]` (ids, names, verdict, `href`), `unverified_numbers[]`, `model`,
-`disclaimer`. Errors: 400 bad id, 422 invalid body, 429 rate limit, 502 model unavailable.
+Reply: `answer` (small Markdown subset, links filtered), `language` (`en`/`uk`), `chart` (built from
+the app's data, or null), `suggestions[]` (ids, names, verdict, `href`), `looked_up[]`, `web_sources[]`,
+`search_suggestions_html`, `unverified_numbers[]`, `model`, `disclaimer`. Errors: 400 bad id, 422 invalid body, 429 rate limit, 502 model unavailable.
 `GET /health` returns `{"ok": true}`.
 
 ## Environment variables

@@ -4,11 +4,15 @@
  * precomputed JSON this app shows. Every reply is labelled as AI-generated.
  * Hidden unless VITE_ASSISTANT_URL is set at build time, so the app works without it.
  */
-import { useEffect, useRef, useState, type FormEvent } from 'react';
+import { lazy, Suspense, useEffect, useRef, useState, type FormEvent, type MouseEvent } from 'react';
 import { Link } from 'react-router-dom';
 import type { Context } from './Shell';
 import { CloseIcon } from './Icons';
+import { AssistantMarkdown } from './AssistantMarkdown';
+import type { AssistantChartData } from './AssistantChart';
 import { S } from '../strings/en';
+
+const AssistantChart = lazy(() => import('./AssistantChart').then((m) => ({ default: m.AssistantChart })));
 
 const URL_BASE = (import.meta.env.VITE_ASSISTANT_URL as string | undefined)?.replace(/\/+$/, '') ?? '';
 export const assistantEnabled = URL_BASE !== '';
@@ -19,10 +23,32 @@ type WebSource = { title: string; uri: string; domain?: string | null };
 type Reply = {
   answer: string; suggestions: Suggestion[]; looked_up?: LookedUp[]; web_sources?: WebSource[];
   search_suggestions_html?: string | null; unverified_numbers: string[]; model: string; disclaimer: string;
+  language?: string; chart?: AssistantChartData | null;
 };
 type Msg = { role: 'user'; text: string } | { role: 'assistant'; text: string; reply?: Reply; error?: boolean };
 
 const HISTORY_TURNS = 6;
+const STORE = 'td-assistant-chat';
+const KEEP = 20;
+
+function loadChat(): Msg[] {
+  try {
+    const raw = sessionStorage.getItem(STORE);
+    const v = raw ? (JSON.parse(raw) as unknown) : [];
+    return Array.isArray(v) ? (v as Msg[]).slice(-KEEP) : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveChat(msgs: Msg[]) {
+  try {
+    if (msgs.length) sessionStorage.setItem(STORE, JSON.stringify(msgs.slice(-KEEP)));
+    else sessionStorage.removeItem(STORE);
+  } catch {
+    /* storage may be blocked */
+  }
+}
 
 export async function askAssistant(message: string, context: Context, history: Msg[], signal?: AbortSignal): Promise<Reply> {
   const r = await fetch(`${URL_BASE}/v1/chat`, {
@@ -51,7 +77,7 @@ export async function askAssistant(message: string, context: Context, history: M
 
 export function Assistant({ context }: { context: Context }) {
   const [open, setOpen] = useState(false);
-  const [msgs, setMsgs] = useState<Msg[]>([]);
+  const [msgs, setMsgs] = useState<Msg[]>(loadChat);
   const [text, setText] = useState('');
   const [busy, setBusy] = useState(false);
   const input = useRef<HTMLTextAreaElement>(null);
@@ -59,19 +85,43 @@ export function Assistant({ context }: { context: Context }) {
   const abort = useRef<AbortController | null>(null);
 
   const onScreen = context?.regionId && context?.variableId ? `${context.variable} · ${context.region}` : null;
+  const starters = context?.regionId && context?.variableId && context.variable && context.region
+    ? S.assistant.starters.onScreen(context.variable, context.region)
+    : S.assistant.starters.general;
 
   useEffect(() => {
     if (open) input.current?.focus();
   }, [open]);
   useEffect(() => {
-    if (log.current) log.current.scrollTop = log.current.scrollHeight;
+    const el = log.current;
+    if (!el) return;
+    const last = msgs[msgs.length - 1];
+    if (!busy && last?.role === 'assistant') {
+      // a new answer: show its beginning, not its end
+      const node = el.querySelector<HTMLElement>('.ai-msg:last-of-type');
+      if (node) el.scrollTop = node.offsetTop - el.offsetTop - 8;
+    } else {
+      el.scrollTop = el.scrollHeight;
+    }
   }, [msgs, busy]);
   useEffect(() => () => abort.current?.abort(), []);
+  useEffect(() => saveChat(msgs), [msgs]);
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setOpen(false);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [open]);
 
-  const send = async (q: string) => {
+  const send = async (q: string, retry = false) => {
     const question = q.trim();
     if (!question || busy) return;
-    const history = msgs;
+    // a retry replaces the failed answer and resends the same question
+    const base = retry ? msgs.slice(0, -2) : msgs;
+    const history = base;
+    if (retry) setMsgs(base);
     setMsgs((m) => [...m, { role: 'user', text: question }]);
     setText('');
     setBusy(true);
@@ -85,6 +135,19 @@ export function Assistant({ context }: { context: Context }) {
     } finally {
       setBusy(false);
     }
+  };
+
+  const lastQuestion = [...msgs].reverse().find((m) => m.role === 'user')?.text ?? '';
+  const newChat = () => {
+    abort.current?.abort();
+    setBusy(false);
+    setMsgs([]);
+    input.current?.focus();
+  };
+  // on narrow screens, following a link inside an answer closes the drawer so the page is visible
+  const onLogClick = (e: MouseEvent) => {
+    const a = (e.target as HTMLElement).closest('a');
+    if (a && a.getAttribute('href')?.startsWith('#/') && window.innerWidth < 720) setOpen(false);
   };
 
   const submit = (e: FormEvent) => {
@@ -111,17 +174,22 @@ export function Assistant({ context }: { context: Context }) {
           <div className="ai-drawer__title"><span className="ai-badge">AI</span> {S.assistant.title}</div>
           <div className="ai-drawer__sub">{onScreen ? S.assistant.about(onScreen) : S.assistant.aboutNone}</div>
         </div>
-        <button type="button" className="btn btn--quiet" onClick={() => setOpen(false)} aria-label={S.assistant.close}>
-          <CloseIcon />
-        </button>
+        <div className="ai-drawer__actions">
+          {msgs.length > 0 && (
+            <button type="button" className="btn btn--quiet" onClick={newChat}>{S.assistant.newChat}</button>
+          )}
+          <button type="button" className="btn btn--quiet" onClick={() => setOpen(false)} aria-label={S.assistant.close}>
+            <CloseIcon />
+          </button>
+        </div>
       </header>
 
-      <div className="ai-drawer__log" ref={log} aria-live="polite">
+      <div className="ai-drawer__log" ref={log} aria-live="polite" onClick={onLogClick}>
         {msgs.length === 0 && (
           <div className="ai-empty">
             <p>{S.assistant.intro}</p>
             <div className="ai-chips">
-              {(onScreen ? S.assistant.starters.onScreen : S.assistant.starters.general).map((s) => (
+              {starters.map((s) => (
                 <button key={s} type="button" className="btn ai-chip" onClick={() => void send(s)}>{s}</button>
               ))}
             </div>
@@ -129,7 +197,12 @@ export function Assistant({ context }: { context: Context }) {
         )}
         {msgs.map((m, i) => (
           <div key={i} className={`ai-msg ai-msg--${m.role}${'error' in m && m.error ? ' ai-msg--error' : ''}`}>
-            <p className="ai-msg__text">{m.text}</p>
+            {m.role === 'assistant' && !('error' in m && m.error)
+              ? <AssistantMarkdown text={m.text} />
+              : <p className="ai-msg__text">{m.text}</p>}
+            {m.role === 'assistant' && 'error' in m && m.error && i === msgs.length - 1 && lastQuestion && (
+              <button type="button" className="btn ai-chip" onClick={() => void send(lastQuestion, true)}>{S.assistant.retry}</button>
+            )}
             {m.role === 'assistant' && m.reply && <ReplyExtras reply={m.reply} />}
           </div>
         ))}
@@ -156,8 +229,15 @@ export function Assistant({ context }: { context: Context }) {
 }
 
 function ReplyExtras({ reply }: { reply: Reply }) {
+  const nSources = (reply.looked_up?.length ?? 0) + (reply.web_sources?.length ?? 0);
   return (
     <>
+      {reply.chart && (
+        <Suspense fallback={<div className="ai-chart ai-chart--loading" />}>
+          <AssistantChart chart={reply.chart} />
+        </Suspense>
+      )}
+      {reply.suggestions.length > 0 && <div className="ai-sources__title ai-next">{S.assistant.exploreNext}</div>}
       {reply.suggestions.length > 0 && (
         <ul className="ai-suggest">
           {reply.suggestions.map((s) => (
@@ -169,6 +249,9 @@ function ReplyExtras({ reply }: { reply: Reply }) {
           ))}
         </ul>
       )}
+      {nSources > 0 && (
+      <details className="ai-details">
+        <summary>{S.assistant.sources(nSources)}</summary>
       {reply.looked_up && reply.looked_up.length > 0 && (
         <div className="ai-sources">
           <span className="ai-sources__title">{S.assistant.lookedUp}</span>
@@ -188,6 +271,8 @@ function ReplyExtras({ reply }: { reply: Reply }) {
             ))}
           </ul>
         </div>
+      )}
+      </details>
       )}
       {reply.search_suggestions_html && <SearchSuggestions html={reply.search_suggestions_html} />}
       {reply.unverified_numbers.length > 0 && (
