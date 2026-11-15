@@ -71,7 +71,31 @@ class GeminiModel:
         resp = await self._client.aio.models.generate_content(
             model=self.name, contents=contents, config=config
         )
-        return parse_reply(resp.text or "")
+        out = parse_reply(resp.text or "")
+        out["usage"] = usage_counts(getattr(resp, "usage_metadata", None))
+        return out
+
+
+def usage_counts(meta) -> dict:
+    """Token counts Gemini reports for one call (thinking tokens are billed as output)."""
+    get = (lambda k: int(getattr(meta, k, None) or 0)) if meta is not None else (lambda k: 0)
+    return {
+        "prompt_tokens": get("prompt_token_count"),
+        "cached_tokens": get("cached_content_token_count"),
+        "output_tokens": get("candidates_token_count"),
+        "thinking_tokens": get("thoughts_token_count"),
+    }
+
+
+def estimated_usd(usage: dict) -> float:
+    """Rough cost of one call from env prices in USD per 1M tokens (defaults: gemini-3.8-flash
+    global endpoint, introductory 2026 rate; check the Vertex AI pricing page)."""
+    p_in = float(os.environ.get("PRICE_INPUT_PER_M", "0.75"))
+    p_cached = float(os.environ.get("PRICE_CACHED_PER_M", "0.075"))
+    p_out = float(os.environ.get("PRICE_OUTPUT_PER_M", "3.75"))
+    fresh = max(usage.get("prompt_tokens", 0) - usage.get("cached_tokens", 0), 0)
+    out = usage.get("output_tokens", 0) + usage.get("thinking_tokens", 0)
+    return (fresh * p_in + usage.get("cached_tokens", 0) * p_cached + out * p_out) / 1e6
 
 
 def parse_reply(text: str) -> dict:

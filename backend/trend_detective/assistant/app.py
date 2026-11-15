@@ -11,6 +11,7 @@ GET  /health
 
 from __future__ import annotations
 
+import json
 import logging
 import os
 import time
@@ -21,7 +22,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
 from .grounding import Grounding, safe_id, unverified_numbers
-from .llm import GeminiModel, Model
+from .llm import GeminiModel, Model, estimated_usd
 from .prompt import system_instruction
 
 log = logging.getLogger("assistant")
@@ -138,7 +139,7 @@ def create_app(grounding: Grounding | None = None, model: Model | None = None) -
     )
     state = {"g": grounding, "model": model}
     limiter = RateLimiter(
-        int(os.environ.get("ASSISTANT_PER_MINUTE", "6")), 60, int(os.environ.get("ASSISTANT_PER_DAY", "2000"))
+        int(os.environ.get("ASSISTANT_PER_MINUTE", "6")), 60, int(os.environ.get("ASSISTANT_PER_DAY", "300"))
     )
 
     def g() -> Grounding:
@@ -177,6 +178,7 @@ def create_app(grounding: Grounding | None = None, model: Model | None = None) -
         turns = [{"role": "model" if t.role == "assistant" else "user", "text": t.text} for t in body.history]
         turns.append({"role": "user", "text": body.message})
         try:
+            started = time.monotonic()
             raw = await m().reply(system_instruction(grd, rid, vid), turns)
         except Exception:  # noqa: BLE001 - never leak provider errors to the browser
             log.exception("model call failed")
@@ -189,8 +191,24 @@ def create_app(grounding: Grounding | None = None, model: Model | None = None) -
         flagged = unverified_numbers(
             answer + " " + " ".join(s.why for s in suggestions), grd.facts_text(rid, vid)
         )
-        if flagged:
-            log.warning("unverified numbers in reply: %s", flagged)
+        usage = raw.get("usage") or {}
+        # One structured line per answer (Cloud Logging parses JSON on stdout): cost and quality.
+        print(
+            json.dumps(
+                {
+                    "severity": "WARNING" if flagged else "INFO",
+                    "message": "assistant_reply",
+                    "model": m().name,
+                    "screen": f"{rid}__{vid}" if rid and vid else None,
+                    "latency_ms": round((time.monotonic() - started) * 1000),
+                    **usage,
+                    "est_usd": round(estimated_usd(usage), 6) if usage else None,
+                    "suggestions": len(suggestions),
+                    "unverified_numbers": flagged,
+                }
+            ),
+            flush=True,
+        )
         return ChatOut(answer=answer, suggestions=suggestions, unverified_numbers=flagged, model=m().name)
 
     return app

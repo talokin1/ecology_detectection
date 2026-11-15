@@ -33,7 +33,8 @@ Reply: `answer`, `suggestions[]` (ids, names, verdict, `href`), `unverified_numb
 | `GEMINI_MODEL` | `gemini-3.8-flash` | Model id (check the Vertex AI model-versions page before changing) |
 | `ALLOWED_ORIGINS` | localhost dev ports | Comma-separated browser origins (CORS). With `gcloud --set-env-vars`, use a custom delimiter: `"^@^A=1@ALLOWED_ORIGINS=https://x,http://y"` |
 | `ASSISTANT_PER_MINUTE` | `6` | Questions per client per minute |
-| `ASSISTANT_PER_DAY` | `2000` | Questions per instance per day |
+| `ASSISTANT_PER_DAY` | `300` | Questions per instance per day (in-memory; resets when an instance restarts, so it limits abuse but is not a hard spending cap) |
+| `PRICE_INPUT_PER_M`, `PRICE_CACHED_PER_M`, `PRICE_OUTPUT_PER_M` | `0.75`, `0.075`, `3.75` | USD per 1M tokens used only for the `est_usd` field in the logs |
 | `ASSISTANT_MAX_OUTPUT_TOKENS` | `2048` | Reply length cap |
 | `ASSISTANT_DATA_DIR`, `ASSISTANT_METHODS` | repo paths | Set by the Dockerfile |
 
@@ -76,3 +77,17 @@ Set a **budget alert** on the billing account before the judging period.
 ## Keep it in sync
 The image contains a copy of `frontend/public/data`. After `scripts/make_app_data.py` changes the
 data, rebuild and redeploy the image (the two `gcloud` commands above).
+
+## Cost (measured 2026-11-15, gemini-3.8-flash, global endpoint)
+Each answer writes one `assistant_reply` line to Cloud Logging with token counts and `est_usd`:
+```powershell
+gcloud logging read 'resource.type="cloud_run_revision" AND resource.labels.service_name="td-assistant" AND jsonPayload.message="assistant_reply"' --project <project-id> --limit 50 --format="value(jsonPayload.prompt_tokens,jsonPayload.cached_tokens,jsonPayload.output_tokens,jsonPayload.est_usd)"
+```
+- First 7 live questions: 11.5k–16.8k input tokens, 110–430 output tokens, $0.009–0.014 each at
+  the introductory price ($0.75 / $3.75 per 1M input / output tokens until 2026-12-31; reported to
+  double from 2027-01-01).
+- The static part of the prompt (~10k tokens) comes first, so Gemini's implicit cache can bill it at
+  the cached rate; one hit gave 8.1k cached tokens and $0.0035 (−61%). Hits are best-effort.
+- Cloud Run time (~2–7 s per answer) stays inside the monthly free tier at demo volumes.
+- Ceiling: 2 instances × `ASSISTANT_PER_DAY=300` ≈ 600 answers ≈ $8/day now, ≈ $17/day in 2027.
+  The per-instance count resets on restart, so a billing budget alert is the real safety net.

@@ -174,3 +174,36 @@ def test_cors_only_allowed_origins(grounding, monkeypatch):
     )
     assert ok.headers.get("access-control-allow-origin") == "https://example.github.io"
     assert "access-control-allow-origin" not in bad.headers
+
+
+def test_static_prompt_prefix_is_shared_across_screens(grounding):
+    from trend_detective.assistant.prompt import system_instruction
+
+    a = system_instruction(grounding, "ukraine", "t2m")
+    b = system_instruction(grounding, "south_ukraine", "soil")
+    c = system_instruction(grounding, None, None)
+    head = a[: a.index("== ON SCREEN ==")]
+    assert b.startswith(head) and c.startswith(head) and len(head) > 30_000
+
+
+def test_usage_is_logged_with_cost(grounding, capsys):
+    import json
+
+    usage = {"prompt_tokens": 13000, "cached_tokens": 10000, "output_tokens": 300, "thinking_tokens": 500}
+    c, _ = client_for(grounding, {"answer": "ok", "suggestions": [], "usage": usage})
+    c.post("/v1/chat", json={"message": "hi", "region_id": "ukraine", "variable_id": "t2m"})
+    line = json.loads([x for x in capsys.readouterr().out.splitlines() if "assistant_reply" in x][-1])
+    assert line["prompt_tokens"] == 13000 and line["screen"] == "ukraine__t2m"
+    # 3000 fresh * 0.75 + 10000 cached * 0.075 + 800 out * 3.75, per 1M tokens
+    assert line["est_usd"] == round((3000 * 0.75 + 10000 * 0.075 + 800 * 3.75) / 1e6, 6)
+
+
+def test_usage_counts_handles_missing_metadata():
+    from trend_detective.assistant.llm import usage_counts
+
+    assert usage_counts(None) == {
+        "prompt_tokens": 0,
+        "cached_tokens": 0,
+        "output_tokens": 0,
+        "thinking_tokens": 0,
+    }

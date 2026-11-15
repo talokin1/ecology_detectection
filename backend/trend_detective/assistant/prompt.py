@@ -39,17 +39,19 @@ Hard rules:
 
 
 def system_instruction(g: Grounding, region_id: str | None, variable_id: str | None) -> str:
+    # Static blocks first, the on-screen analysis last: Gemini bills a repeated prompt prefix at the
+    # cached-input rate (implicit caching), so ~10k identical tokens lead every request.
     return "\n".join(
         [
             RULES,
             "GROUNDING",
-            "== ON SCREEN ==",
-            g.screen_block(region_id, variable_id),
             "== VARIABLES (id, plain definition, period, source) ==",
             g.variables_block(),
             "== REGIONS (id, name, type) ==",
             g.regions_block(),
             "== METHODS (the app's methods page) ==",
             g.methods,
+            "== ON SCREEN ==",
+            g.screen_block(region_id, variable_id),
         ]
     )
