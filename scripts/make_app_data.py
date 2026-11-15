@@ -34,6 +34,7 @@ SI-assisted (Claude, Anthropic).
 from __future__ import annotations
 
 import argparse
+import base64
 import datetime as dt
 import hashlib
 import io
@@ -41,6 +42,7 @@ import json
 import math
 import os
 import sys
+import warnings
 from concurrent.futures import ProcessPoolExecutor
 from contextlib import redirect_stdout
 from pathlib import Path
@@ -555,11 +557,78 @@ def map_layer(grid: Grid, var: str) -> tuple[dict, dict]:
     return layer, cells
 
 
+NICE = [0.005, 0.01, 0.02, 0.03, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.4, 0.5, 0.6, 0.8, 1.0, 1.2, 1.5, 2.0,
+        2.5, 3.0, 4.0, 5.0, 6.0, 8.0, 10.0, 15.0, 20.0, 30.0, 50.0, 100.0]
+
+
+def frames_layer(grid: Grid, var: str) -> dict:
+    """Year-by-year map frames for playback: each 2-degree square's yearly difference from its own
+    normal (the mean over the record), in the same smooth-map format as the trend layer. Values are
+    stored as signed bytes (base64) to keep the file near 1 MB; no statistic is computed here."""
+    spec = VARIABLES[var]
+    years = np.arange(Y0, Y1 + 1)
+    if spec.get("gap_aware"):  # GRACE (branch grace): yearly anomalies need >= 9 months
+        import gap_aware
+
+        anom = gap_aware.grid_yearly_anomalies(grid.values, grid.time, Y0, Y1)
+    else:
+        ann = grid.annual_means()
+        with np.errstate(invalid="ignore"), warnings.catch_warnings():
+            warnings.simplefilter("ignore", RuntimeWarning)
+            anom = ann - np.nanmean(ann, axis=0, keepdims=True)
+    keep = np.isfinite(anom).any(axis=(1, 2))  # drop years with no data anywhere
+    years, anom = years[keep], anom[keep]
+    finite = np.abs(anom[np.isfinite(anom)])
+    in_scale = np.isfinite(anom) & ((np.abs(grid.LAT) <= spec["legend_lat_max"])[None]
+                                    if spec.get("legend_lat_max") else True)
+    raw_lim = float(np.percentile(np.abs(anom[in_scale]), 98))
+    limit = next((v for v in NICE if v >= raw_lim), NICE[-1])
+    step = float(np.percentile(finite, 99.9)) / 127 or 1e-6  # quantisation step (stored resolution)
+    q = np.where(np.isfinite(anom), np.clip(np.round(anom / step), -127, 127), -128).astype(np.int8)
+    d = spec["series_decimals"]
+    bins = 11
+    edges = [-limit + 2 * limit * i / bins for i in range(bins + 1)]
+    unit = spec["anomaly_units"]
+    return {
+        "schema_version": SCHEMA_VERSION,
+        "variable_id": var,
+        "years": [int(y) for y in years],
+        "grid": {"lat0": float(grid.lat[0]), "lon0": float(grid.lon[0]),
+                 "dlat": float(grid.lat[1] - grid.lat[0]), "dlon": float(grid.lon[1] - grid.lon[0]),
+                 "nlat": int(grid.lat.size), "nlon": int(grid.lon.size),
+                 "order": "year-major, then row-major from south to north, west to east"},
+        "encoding": {"type": "int8-base64", "step": step, "missing": -128},
+        "data": base64.b64encode(q.tobytes()).decode("ascii"),
+        "palette": spec["palette"],
+        "limit": limit,
+        "bins": bins,
+        "value_decimals": d,
+        "units_label": f"{unit} vs normal",
+        "legend": {
+            "title": f"Difference from normal · {unit}",
+            "edges_text": [fmt(e, d) for e in edges],
+            "ticks": [{"value": v, "text": "0" if v == 0 else fmt(v, max(d - 1, 0))}
+                      for v in (-limit, -limit / 2, 0, limit / 2, limit)],
+            "min_text": f"≤ {fmt(-limit, max(d - 1, 0))}", "max_text": f"≥ {fmt(limit, max(d - 1, 0))}",
+        },
+        "mask": spec["mask"],
+        "caption": (f"{spec['source']} {spec['parameter']} · each year {years[0]}–{years[-1]} compared with "
+                    f"the {years[0]}–{years[-1]} average of the same 2° square"
+                    + (" (years with at least 9 months of data)" if spec.get("gap_aware") else "")
+                    + f". A single year is weather as much as climate: the trend map tests the change. "
+                      f"Values are stored in steps of {step:.3g} {unit}."),
+        "provenance": provenance_from(grid.provenance, spec, "frames"),
+    }
+
+
 def provenance_from(prov: dict, spec: dict, what: str) -> dict:
     """App provenance block built from the cache sidecar of the file actually used."""
     accessed = str(prov.get("accessed", ""))[:10] or None
     processing = [str(p) for p in prov.get("processing", [])][:3]
-    if what == "map":
+    if what == "frames":
+        processing += [f"yearly means {Y0}–{Y1} in each 2° square minus that square's average over the record",
+                       "no trend test: a playback of the data behind the trend map"]
+    elif what == "map":
         processing += [f"yearly means of complete years {Y0}–{Y1} in each 2° square",
                        "per-square Sen's slope and Mann-Kendall (Yue-Wang), BH FDR across squares "
                        "(trend_stats.py)"]
@@ -586,7 +655,7 @@ def provenance_from(prov: dict, spec: dict, what: str) -> dict:
                  "satellites changed in 2014 (TRMM to GPM)")
     else:
         about = "Data: MERRA-2 reanalysis, a weather model corrected by observations, about 50 km squares"
-    if what == "map":
+    if what in ("map", "frames"):
         about += " (the map averages them into 2° squares)"
     elif what == "country":
         about += " (averaged into 2° squares; coastal squares include some sea)"
@@ -1743,7 +1812,7 @@ def main(runs: int, bootstrap: int, workers: int) -> None:
     print(f"regions: {len(stories)} story, {len(countries)} countries, {len(worlds)} world regions")
 
     periods, results, skipped = {}, {}, []
-    written_maps = set()
+    written_maps, written_frames = set(), set()
     with ProcessPoolExecutor(max_workers=workers) as pool:
         for var, spec in VARIABLES.items():
             grid = first if var == next(iter(VARIABLES)) else Grid(var)
@@ -1753,6 +1822,8 @@ def main(runs: int, bootstrap: int, workers: int) -> None:
             layer, cells = map_layer(grid, var)
             write_json(OUT / "map" / f"{var}.json", layer)
             written_maps.add(f"{var}.json")
+            write_json(OUT / "frames" / f"{var}.json", frames_layer(grid, var))
+            written_frames.add(f"{var}.json")
             print(f"map {var}: {Y0}–{Y1}, limit {layer['limit']}, "
                   f"cells {sum(v is not None for v in layer['slope_per_decade'])}, significant {sum(layer['significant'])}")
             if spec["map_only"]:
@@ -1854,7 +1925,8 @@ def main(runs: int, bootstrap: int, workers: int) -> None:
             print(f"{rid:13s} {var:10s} {a['verdict']['level']:9s} {a['trend']['display']['rate']:38s} "
                   f"insights={len(a['insights'])} deeper={'-' if not dc else str(dc['clear']) + '/' + str(dc['available'])}")
     for folder, names in ((OUT / "analysis", written_an), (OUT / "compare", written_cmp),
-                          (OUT / "map", written_maps), (OUT / "stats", {f"{r}.json" for r in stories})):
+                          (OUT / "map", written_maps), (OUT / "frames", written_frames),
+                          (OUT / "stats", {f"{r}.json" for r in stories})):
         remove_stale(folder, names)
 
     index = {

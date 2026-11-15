@@ -109,6 +109,16 @@ air temperature and water vapour 2003–2025. Pages for records shorter than 30 
   page's data caveat says that the median slope can be pulled toward zero.
 - Extreme-month thresholds use 1981–2010, or the first 20 years of the shorter records.
 
+### Year-by-year playback (web app)
+"Year by year" on the map and "Play this record year by year" on a place page replay the data behind
+the trends; they add no statistic. Each frame (`frames/<variable>.json`, `frames_layer` in
+`scripts/make_app_data.py`) is a 2° square's yearly mean minus that square's average over the whole
+record, stored as signed bytes in steps of about 1/127 of the largest value (≈0.03 °C for air
+temperature) to keep each file near 1 MB; the file loads only when playback starts. A single year is
+weather as much as climate, so frames are drawn without significance dimming or dots, and the caption
+says so. On a place page the bars appear year by year on fixed axes, and the trend line and its 95%
+band appear only once the whole record has played.
+
 ### Smooth map rendering (web app)
 The map is drawn as a smooth field: per-square slopes are interpolated bilinearly between square
 centres, the colour runs continuously through the palette, and colour strength follows the share of the

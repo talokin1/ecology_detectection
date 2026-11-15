@@ -7,10 +7,11 @@ import common from '../../../schema/common.schema.json';
 import indexSchema from '../../../schema/index.schema.json';
 import analysisSchema from '../../../schema/analysis.schema.json';
 import mapSchema from '../../../schema/map.schema.json';
+import framesSchema from '../../../schema/frames.schema.json';
 import compareSchema from '../../../schema/compare.schema.json';
 import catalogSchema from '../../../schema/catalog.schema.json';
 import validationSchema from '../../../schema/validation.schema.json';
-import type { AnalysisResult, Catalog, Compare, Index, MapLayer, Validation } from './types.gen';
+import type { AnalysisResult, Catalog, Compare, FramesLayer, Index, MapLayer, Validation } from './types.gen';
 
 const ajv = new Ajv2020({ allErrors: false, strict: false });
 ajv.addSchema(common);
@@ -18,6 +19,7 @@ const validators = {
   index: ajv.compile(indexSchema),
   analysis: ajv.compile(analysisSchema),
   map: ajv.compile(mapSchema),
+  frames: ajv.compile(framesSchema),
   compare: ajv.compile(compareSchema),
   catalog: ajv.compile(catalogSchema),
   validation: ajv.compile(validationSchema),
@@ -125,6 +127,8 @@ export const api = {
   catalog: () => load<Catalog>('catalog.json', validators.catalog),
   validation: () => load<Validation>('validation.json', validators.validation),
   map: (variable: string) => load<MapLayer>(`map/${variable}.json`, validators.map),
+  /** Year-by-year frames (about 1 MB): loaded only when the visitor plays the map. */
+  frames: (variable: string) => load<FramesLayer>(`frames/${variable}.json`, validators.frames),
   analysis: (region: string, variable: string) =>
     load<AnalysisResult>(`analysis/${region}__${variable}.json`, validators.analysis),
   /** Compare files are stored once per unordered pair; the caller gets them in its own order. */

@@ -1,0 +1,183 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "frames.schema.json",
+  "title": "FramesLayer",
+  "description": "Year-by-year map frames for playback: each 2-degree square's yearly difference from its own normal. data = base64 of int8 values, year-major then row-major (south to north, west to east); value = byte * encoding.step, encoding.missing = no data. No trend test.",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "variable_id",
+    "years",
+    "grid",
+    "encoding",
+    "data",
+    "palette",
+    "limit",
+    "bins",
+    "value_decimals",
+    "units_label",
+    "legend",
+    "mask",
+    "caption",
+    "provenance"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string"
+    },
+    "variable_id": {
+      "type": "string"
+    },
+    "years": {
+      "type": "array",
+      "items": {
+        "type": "integer"
+      },
+      "minItems": 1
+    },
+    "grid": {
+      "type": "object",
+      "required": [
+        "lat0",
+        "lon0",
+        "dlat",
+        "dlon",
+        "nlat",
+        "nlon",
+        "order"
+      ],
+      "properties": {
+        "lat0": {
+          "type": "number",
+          "description": "Centre latitude of the first (southern) row."
+        },
+        "lon0": {
+          "type": "number",
+          "description": "Centre longitude of the first (western) column."
+        },
+        "dlat": {
+          "type": "number"
+        },
+        "dlon": {
+          "type": "number"
+        },
+        "nlat": {
+          "type": "integer"
+        },
+        "nlon": {
+          "type": "integer"
+        },
+        "order": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "encoding": {
+      "type": "object",
+      "required": [
+        "type",
+        "step",
+        "missing"
+      ],
+      "properties": {
+        "type": {
+          "const": "int8-base64"
+        },
+        "step": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "missing": {
+          "const": -128
+        }
+      },
+      "additionalProperties": false
+    },
+    "data": {
+      "type": "string",
+      "contentEncoding": "base64"
+    },
+    "palette": {
+      "$ref": "common.schema.json#/$defs/Palette"
+    },
+    "limit": {
+      "type": "number",
+      "exclusiveMinimum": 0,
+      "description": "Symmetric colour limit, units per decade."
+    },
+    "bins": {
+      "type": "integer",
+      "minimum": 2
+    },
+    "value_decimals": {
+      "type": "integer",
+      "description": "Values are pre-rounded to this many decimals."
+    },
+    "units_label": {
+      "type": "string"
+    },
+    "legend": {
+      "type": "object",
+      "required": [
+        "title",
+        "edges_text",
+        "ticks",
+        "min_text",
+        "max_text"
+      ],
+      "properties": {
+        "title": {
+          "type": "string"
+        },
+        "edges_text": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "ticks": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "value",
+              "text"
+            ],
+            "properties": {
+              "value": {
+                "type": "number"
+              },
+              "text": {
+                "type": "string"
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "min_text": {
+          "type": "string"
+        },
+        "max_text": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "mask": {
+      "enum": [
+        "all",
+        "land",
+        "ocean"
+      ],
+      "description": "Where the field is drawn: everywhere, land only, or sea only."
+    },
+    "caption": {
+      "type": "string"
+    },
+    "provenance": {
+      "$ref": "common.schema.json#/$defs/Provenance"
+    }
+  },
+  "additionalProperties": false
+}

@@ -5,6 +5,9 @@ import { useData } from '../data/useData';
 import type { Case, Index, Region } from '../data/types.gen';
 import type { CellInfo } from '../components/TrendMap';
 import { LegendChip } from '../components/MapLegend';
+import { TimePlayer } from '../components/TimePlayer';
+import { usePlayer } from '../lib/usePlayer';
+import { frameLayer, useFrames } from '../lib/frames';
 import { RegionLedger } from '../components/RegionLedger';
 import { FilterBar } from '../components/FilterBar';
 import { HintChip } from '../components/HintChip';
@@ -62,6 +65,14 @@ function Explore({ index }: { index: Index }) {
     [index.regions, mode, variable.map_only]);
 
   const layer = useData(() => api.map(variable.id), variable.id);
+  const [timeOn, setTimeOn] = useState(false);
+  const frames = useFrames(variable.id, timeOn);
+  const player = usePlayer(frames?.years.length ?? 0, 420);
+  const shown = useMemo(
+    () => (timeOn && frames && layer.data && layer.data.variable_id === frames.variable_id ? frameLayer(frames, layer.data, player.index) : layer.data),
+    [timeOn, frames, layer.data, player.index],
+  );
+  const yearMode = shown !== layer.data;
   const catalog = useData(api.catalog, 'catalog');
   const catalogEntry = catalog.data?.variables.find((c) => c.id === variable.catalog_id);
 
@@ -167,7 +178,8 @@ function Explore({ index }: { index: Index }) {
       <div className="explore__map">
         <Suspense fallback={<Loading />}>
           <TrendMap
-            layer={layer.data}
+            layer={shown}
+            mode={yearMode ? 'year' : 'trend'}
             regions={places}
             outline={mode === 'countries' ? 'active' : 'all'}
             activeRegionIds={activeIds}
@@ -199,7 +211,18 @@ function Explore({ index }: { index: Index }) {
       </div>
 
       <div className="explore__bottom" data-map-overlay>
-        {legendOpen && layer.data && <LegendChip layer={layer.data} onClose={() => setLegendOpen(false)} />}
+        {timeOn ? (
+          <div className="time-dock">
+            {frames ? (
+              <TimePlayer years={frames.years} index={player.index} playing={player.playing} onToggle={player.toggle}
+                onIndex={(i) => { player.setPlaying(false); player.setIndex(i); }} label={S.time.mapPlayer} />
+            ) : <span className="help"><span className="spinner" aria-hidden="true" />{S.time.loading}</span>}
+            <button type="button" className="btn btn--quiet" onClick={() => { player.setPlaying(false); setTimeOn(false); }}>{S.time.trendView}</button>
+          </div>
+        ) : (
+          <button type="button" className="btn time-start" onClick={() => setTimeOn(true)} data-tour="years">▶ {S.time.yearByYear}</button>
+        )}
+        {legendOpen && shown && <LegendChip layer={shown} caption={yearMode ? S.time.note : undefined} onClose={() => setLegendOpen(false)} />}
         {!hintsOff && hint && tour === null && !panel && (
           <HintChip hint={hint} onTry={() => tryHint(hint)} onNext={() => setHintIdx((i) => i + 1)}
             onDismiss={() => { setHintsOff(true); store.set(HINTS_OFF, '1'); }}

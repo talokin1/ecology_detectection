@@ -351,3 +351,14 @@
 .ai-details { margin-top: 6px; font-size: var(--fs-small); }
 .ai-details summary { cursor: pointer; color: var(--text-2); font-weight: 600; }
 .ai-details .ai-sources { margin-top: 4px; }
+
+/* time player (map and place page) */
+.time-player { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.time-player__play { width: 34px; padding: 0; justify-content: center; font-size: 12px; }
+.time-player__slider { flex: 1; min-width: 120px; accent-color: var(--ink); }
+.time-player__year { font-weight: 700; font-variant-numeric: tabular-nums; min-width: 3.2em; text-align: right; font-size: var(--fs-lead); }
+.time-dock { display: flex; align-items: center; gap: 10px; background: var(--surface); border: 1px solid var(--line-strong);
+  border-radius: var(--radius); padding: 6px 10px; min-width: min(520px, calc(100vw - 32px)); pointer-events: auto; }
+.time-dock .time-player { flex: 1; }
+.time-start { pointer-events: auto; align-self: flex-start; }
+.sec .time-start, .sec .time-player { margin: 0 0 6px; }

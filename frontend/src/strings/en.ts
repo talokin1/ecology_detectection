@@ -325,6 +325,17 @@ export const S = {
     label: (model: string) => `AI-generated · ${model}`,
     unverified: (nums: string) => `Check these numbers: ${nums}. They are not in this app’s analysis.`,
   },
+  time: {
+    play: 'Play the years',
+    pause: 'Pause',
+    year: 'Year',
+    yearByYear: 'Year by year',
+    trendView: 'Back to the trend',
+    mapPlayer: 'Play the map year by year',
+    chartPlayer: 'Play this record year by year',
+    loading: 'Loading the years…',
+    note: 'Each year compared with the normal for this square. One year is weather as much as climate; the trend map tests the change.',
+  },
   loading: 'Loading…',
 } as const;
 

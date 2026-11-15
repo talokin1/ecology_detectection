@@ -76,8 +76,9 @@ test('noise budget: the default Explore view stays quiet and the map fills the p
   const n = await noise(page);
   expect(n.items).toBeLessThanOrEqual(30);
   expect(n.words).toBeLessThanOrEqual(80);
-  // 18 + 1 for the AI assistant button in the top bar (ADR-009); it is absent when no assistant URL is set.
-  expect(n.controls).toBeLessThanOrEqual(19);
+  // 18 + 1 for the AI assistant button in the top bar (ADR-009; absent when no assistant URL is set)
+  // + 1 for "Year by year" (map playback, 2026-11-15).
+  expect(n.controls).toBeLessThanOrEqual(20);
   const map = (await page.locator('.explore').boundingBox())!;
   const top = (await page.locator('.topbar').boundingBox())!;
   expect((map.width * map.height) / (1440 * (900 - top.height))).toBeGreaterThanOrEqual(0.85);
@@ -290,3 +291,21 @@ test('world regions and stories are separate sets of places', async ({ page }) =
   await expect(page.locator('.ledger__row')).toHaveCount(5);
 });
 
+
+test('year by year: the world map and a place record play back without errors', async ({ page }) => {
+  const errors = trackErrors(page);
+  await page.goto('/#/');
+  await page.locator('.explore__map .maplibregl-canvas').waitFor();
+  await page.getByRole('button', { name: /Year by year/ }).click();
+  const slider = page.getByRole('slider', { name: 'Year' });
+  await slider.waitFor({ timeout: 20000 });
+  await slider.fill('29');
+  await expect(page.locator('.time-player__year')).toHaveText('2010');
+  await page.getByRole('button', { name: 'Back to the trend' }).click();
+  await expect(page.getByRole('button', { name: /Year by year/ })).toBeVisible();
+  await page.goto('/#/region/ukraine?var=t2m');
+  await page.locator('.series-chart .main-svg').first().waitFor();
+  await page.getByRole('button', { name: /Play this record year by year/ }).click();
+  await expect(page.getByRole('button', { name: 'Pause' })).toBeVisible();
+  expect(errors).toEqual([]);
+});

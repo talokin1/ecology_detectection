@@ -45,6 +45,8 @@ type Props = {
   attribution?: boolean;
   className?: string;
   ariaLabel: string;
+  /** 'year': the layer is one year's difference from normal (no stipple, no significance note). */
+  mode?: 'trend' | 'year';
 };
 
 const CORNERS: [[number, number], [number, number], [number, number], [number, number]] = [
@@ -296,7 +298,11 @@ export function TrendMap(props: Props) {
   const activeKey = activeRegionIds.join(',');
   const regionKey = regions.map((r) => r.id).join(',');
   const fitKey = Array.isArray(fit) ? fit.join(',') : fit;
-  const stipple = useMemo(() => (layer ? stipplePoints(layer, show) : null), [layer, show]);
+  const yearMode = props.mode === 'year';
+  const stipple = useMemo(
+    () => (layer ? (yearMode ? ({ type: 'FeatureCollection', features: [] } as ReturnType<typeof stipplePoints>) : stipplePoints(layer, show)) : null),
+    [layer, show, yearMode],
+  );
 
   // create the map once
   useEffect(() => {
@@ -442,7 +448,11 @@ export function TrendMap(props: Props) {
       if (cancelled || mapRef.current !== map) return;
       const canvas = paintGrid(layer, show, land);
       const src = map.getSource('trend') as ImageSource | undefined;
-      if (src) src.updateImage({ image: canvas, coordinates: CORNERS });
+      if (src) {
+        src.updateImage({ image: canvas, coordinates: CORNERS });
+        // an update can land before the first fade-in finished: make sure the field is visible
+        if (map.getLayer('trend')) map.setPaintProperty('trend', 'raster-opacity', 1);
+      }
       else {
         map.addSource('trend', { type: 'image', url: canvas.toDataURL('image/png'), coordinates: CORNERS });
         // the field fades in over the land outline instead of popping (plan B5)
@@ -561,11 +571,11 @@ export function TrendMap(props: Props) {
       <div className="map-tooltip" style={{ left: hover.x + 14, top: hover.y + 14 }}>
         {hover.region && <div className="map-tooltip__region">{hover.region}</div>}
         <div className="map-tooltip__value">{cell.value === null ? S.map.noData : `${formatCell(cell.value, decimals)} ${units}`}</div>
-        {cell.value !== null && <div className="map-tooltip__note">{cell.significant ? S.map.passes : S.map.notEnough}</div>}
+        {cell.value !== null && !yearMode && <div className="map-tooltip__note">{cell.significant ? S.map.passes : S.map.notEnough}</div>}
         <div className="map-tooltip__coords">{formatLatLon(cell.lon, cell.lat)}</div>
       </div>
     );
-  }, [hover, units, decimals, suppressTooltip]);
+  }, [hover, units, decimals, suppressTooltip, yearMode]);
 
   return (
     <div className={`trend-map${narrow ? ' is-narrow' : ''} ${props.className ?? ''}`}>

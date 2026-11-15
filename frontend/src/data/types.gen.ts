@@ -486,6 +486,67 @@ export interface MapLayer {
 }
 
 /**
+ * Year-by-year map frames for playback: each 2-degree square's yearly difference from its own normal. data = base64 of int8 values, year-major then row-major (south to north, west to east); value = byte * encoding.step, encoding.missing = no data. No trend test.
+ */
+
+export interface FramesLayer {
+  schema_version: string;
+  variable_id: string;
+  /**
+   * @minItems 1
+   */
+  years: [number, ...number[]];
+  grid: {
+    /**
+     * Centre latitude of the first (southern) row.
+     */
+    lat0: number;
+    /**
+     * Centre longitude of the first (western) column.
+     */
+    lon0: number;
+    dlat: number;
+    dlon: number;
+    nlat: number;
+    nlon: number;
+    order: string;
+  };
+  encoding: {
+    type: 'int8-base64';
+    step: number;
+    missing: -128;
+  };
+  data: string;
+  palette: 'RdBu' | 'BrBG' | 'PuOr';
+  /**
+   * Symmetric colour limit, units per decade.
+   */
+  limit: number;
+  bins: number;
+  /**
+   * Values are pre-rounded to this many decimals.
+   */
+  value_decimals: number;
+  units_label: string;
+  legend: {
+    title: string;
+    edges_text: string[];
+    ticks: {
+      value: number;
+      text: string;
+    }[];
+    min_text: string;
+    max_text: string;
+  };
+  /**
+   * Where the field is drawn: everywhere, land only, or sea only.
+   */
+  mask: 'all' | 'land' | 'ocean';
+  caption: string;
+  provenance: Provenance;
+}
+
+/**
  * @minItems 2
  * @maxItems 2
  */

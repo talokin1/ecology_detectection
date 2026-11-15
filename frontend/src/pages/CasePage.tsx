@@ -14,6 +14,9 @@ import { ErrorState, Loading, useScreenContext } from '../components/Shell';
 import { CompareView } from './ComparePage';
 import { download, seriesCsv } from '../lib/exporters';
 import { signColor, type PaletteName } from '../theme/palettes';
+import { TimePlayer } from '../components/TimePlayer';
+import { usePlayer } from '../lib/usePlayer';
+import { frameLayer, useFrames } from '../lib/frames';
 import { S } from '../strings/en';
 
 const TrendMap = lazy(() => import('../components/TrendMap').then((m) => ({ default: m.TrendMap })));
@@ -141,7 +144,34 @@ function CaseBody({ index, a, region, variable, theCase, layer }: {
   const period = `${a.period.start.slice(0, 4)}–${a.period.end.slice(0, 4)}`;
   const question = theCase?.question ?? S.case.question(variable.long_name.toLowerCase(), region.name_in_sentence);
   const fileBase = `trend-detective_${region.id}_${variable.id}`;
-  const props = useMemo(() => chartProps(a, variable, view), [a, variable, view]);
+  const baseProps = useMemo(() => chartProps(a, variable, view), [a, variable, view]);
+  // growing series: the year view replayed year by year, with the map showing the same year
+  const years = a.series.annual.years;
+  const player = usePlayer(years.length, 380);
+  const [timeOn, setTimeOn] = useState(false);
+  const growing = timeOn && view === 'year';
+  const frames = useFrames(variable.id, growing);
+  const cur = years[player.index];
+  const props = useMemo(() => {
+    if (!growing || !baseProps.bars) return baseProps;
+    const ys = baseProps.bars.y.filter((v): v is number => v !== null);
+    const pad = (Math.max(...ys) - Math.min(...ys)) * 0.08 || 0.1;
+    const done = player.index === years.length - 1;
+    return {
+      ...baseProps,
+      bars: { ...baseProps.bars, y: baseProps.bars.y.map((v, i) => (years[i] <= cur ? v : null)) },
+      line: done ? baseProps.line : null, band: done ? baseProps.band : null,
+      marker: { x: `${cur}-07-01`, label: String(cur) },
+      yRange: [Math.min(...ys) - pad, Math.max(...ys) + pad] as [number, number],
+    };
+  }, [growing, baseProps, player.index, years, cur]);
+  const fi = frames ? frames.years.indexOf(cur) : -1;
+  const mapLayer = useMemo(() => (growing && frames && layer && fi >= 0 ? frameLayer(frames, layer, fi) : layer), [growing, frames, layer, fi]);
+  const startTime = () => {
+    setView('year');
+    setTimeOn(true);
+    if (!player.playing) player.toggle();
+  };
   const footer = `${variable.long_name}, ${region.name}, ${period}. ${a.provenance.dataset}. Trend Detective.`;
   const seasonInsight = a.insights.find((i) => i.kind === 'season' || i.kind === 'season_unresolved');
 
@@ -166,6 +196,12 @@ function CaseBody({ index, a, region, variable, theCase, layer }: {
               ))}
             </div>
           </div>
+          {growing ? (
+            <TimePlayer years={years} index={player.index} playing={player.playing} onToggle={player.toggle}
+              onIndex={(i) => { player.setPlaying(false); player.setIndex(i); }} label={S.time.chartPlayer} />
+          ) : (
+            <button type="button" className="btn btn--quiet time-start" onClick={startTime}>▶ {S.time.chartPlayer}</button>
+          )}
           <TrendChart ref={chart} {...props} footer={footer}
             ariaLabel={`${variable.long_name} in ${region.name}, ${period}. ${a.verdict.headline}. ${t.annotation}.`} />
           {view !== 'raw' ? (
@@ -184,11 +220,11 @@ function CaseBody({ index, a, region, variable, theCase, layer }: {
           <Kicker>{S.case.sections.where}</Kicker>
           <div className="where-map">
             <Suspense fallback={<Loading height={300} />}>
-              <TrendMap layer={layer} regions={[region]} activeRegionIds={[region.id]} fit={region.bbox} scrollZoom={false} attribution={false}
+              <TrendMap layer={mapLayer} mode={growing && mapLayer !== layer ? 'year' : 'trend'} regions={[region]} activeRegionIds={[region.id]} fit={region.bbox} scrollZoom={false} attribution={false}
                 ariaLabel={`Map of ${region.name} showing the trend of ${variable.long_name.toLowerCase()} in each grid square.`} />
             </Suspense>
           </div>
-          {layer && legendOpen && <LegendChip layer={layer} caption={S.map.caseMapCaption} onClose={() => setLegendOpen(false)} />}
+          {mapLayer && legendOpen && <LegendChip layer={mapLayer} caption={growing && mapLayer !== layer ? S.time.note : S.map.caseMapCaption} onClose={() => setLegendOpen(false)} />}
           {layer && !legendOpen && <button type="button" className="btn btn--quiet" onClick={() => setLegendOpen(true)}>{S.explore.legend}</button>}
         </section>
       </div>
