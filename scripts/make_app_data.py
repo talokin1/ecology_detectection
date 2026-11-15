@@ -58,7 +58,9 @@ from shapely.ops import unary_union
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / ".claude" / "skills" / "trend-stats" / "scripts"))
 sys.path.insert(0, str(ROOT / "backend"))
+sys.path.insert(0, str(ROOT / "scripts"))
 import trend_stats as ts  # noqa: E402
+import gap_aware as ga  # noqa: E402  (scripts/gap_aware.py: records with missing months, e.g. GRACE)
 from trend_detective import acquire, power_zarr  # noqa: E402
 from trend_detective.climate_stats import analyze as climate_analyze  # noqa: E402
 
@@ -109,7 +111,7 @@ def _v(catalog_id, name, long_name, parameter, grid, units, rate_units, *, palet
        noun, noun_down, subject, units_long, map_title, raw_label, decimals, percent, topic, mask="all",
        scale=1.0, start=1981, extreme=None, source="NASA POWER (MERRA-2)", map_only=False,
        zero_is_missing=False, season_verbs=None, offset=0.0, grid_regions=False, caution=None,
-       in_sentence=None, twin=None):
+       in_sentence=None, twin=None, gap_aware=False, gap=None, min_region_km2=None, legend_lat_max=None):
     rd, td, sd = decimals
     unit = rate_units.replace(" per decade", "")
     return {
@@ -128,6 +130,13 @@ def _v(catalog_id, name, long_name, parameter, grid, units, rate_units, *, palet
         # in_sentence: the long name inside a sentence (default: lower case); twin: the longer-record
         # variable measuring the same thing, compared on every card (see add_twin_context)
         "in_sentence": in_sentence or long_name.lower(), "twin": twin,
+        # gap_aware: monthly record with missing months (GRACE): no gap filling, yearly means need
+        # >= 9 months, usable = >= 80% valid months (docs/planning/2026-11-15-grace-gap-method.md);
+        # gap: (first, last) month of a known data gap checked for a level shift (Pettitt);
+        # min_region_km2: smallest land area the instrument resolves (GRACE: ~2 mascons)
+        "gap_aware": gap_aware, "gap": gap, "min_region_km2": min_region_km2,
+        "legend_lat_max": legend_lat_max,  # colour scale from squares within this latitude only
+        "year_min_months": ga.MIN_YEAR_MONTHS if gap_aware else 12,
     }
 
 
@@ -289,6 +298,25 @@ VARIABLES = {
         caution=("AIRS sees mostly clear and partly cloudy skies, and its global water-vapour trend is much "
                  "smaller than MERRA-2's (about +0.1 vs +0.5 kg/m² per decade, 2003–2025); "
                  "treat this trend as not yet confirmed.")),
+    # GRACE/GRACE-FO: water stored on land, from gravity (JPL mascons). Gap-aware method; decisions
+    # D-G1..D-G6 are proposals pending the stats lead (docs/planning/2026-11-15-grace-gap-method.md).
+    "water_storage": _v(
+        "terrestrial_water_storage_grace", "Water stored on land", "Water stored on land (GRACE satellites)",
+        "lwe_thickness", "grace_lwe_thickness_2deg_land.nc", "cm", "cm per decade", palette="BrBG",
+        words={"neg": "losing water", "pos": "gaining water"}, adj={"neg": "lower", "pos": "higher"},
+        up="gaining stored water", down="losing stored water",
+        noun="gain in stored water", noun_down="loss of stored water", subject="the water stored on land",
+        units_long=("groundwater, soil moisture, snow, lakes and rivers together, as a layer of water in "
+                    "centimetres, compared with 2004–2009"),
+        map_title="Where is the land gaining or losing water?",
+        raw_label="Water stored on land vs 2004–2009 (cm of water)", decimals=(1, 1, 1), percent=False,
+        topic="water", mask="land", start=2003, grid_regions=True, gap_aware=True,
+        gap=("2017-07", "2018-05"), min_region_km2=200_000, legend_lat_max=60,
+        source="NASA/DLR GRACE and NASA/GFZ GRACE-FO (JPL mascons)",
+        in_sentence="water stored on land (GRACE)",
+        caution=("GRACE weighs all water together (it cannot say whether groundwater, soil or snow "
+                 "changed), sees blocks of about 300 km, and has no data from mid-2017 to mid-2018 "
+                 "between the two missions; months without data are left out, never filled.")),
 }
 CORE = ("t2m", "precip", "soil")  # variables with daily inputs and the climate_stats deeper checks
 
@@ -473,8 +501,16 @@ class Grid:
 def map_layer(grid: Grid, var: str) -> tuple[dict, dict]:
     """Per-cell Sen slope and Yue-Wang MK on annual means, then BH FDR across cells."""
     years = np.arange(Y0, Y1 + 1)
+    spec_ = VARIABLES[var]
+    if spec_["gap_aware"]:  # anomalies first, then yearly means of >= 9 months (no gap filling)
+        series = ga.grid_yearly_anomalies(grid.values, grid.time, Y0, Y1)
+    else:
+        series = grid.annual_means()                                             # (n, lat, lon)
+    # years with no value anywhere (a global data gap, e.g. GRACE 2017-2018) are dropped; the
+    # slopes then use the true spacing between the remaining years
+    keep = np.isfinite(series).any(axis=(1, 2))
+    years, series = years[keep], series[keep]
     n = years.size
-    series = grid.annual_means()                                                 # (n, lat, lon)
     Y = series.reshape(n, -1).T                                                 # (cells, n)
 
     valid = np.isfinite(Y).all(axis=1)
@@ -483,7 +519,7 @@ def map_layer(grid: Grid, var: str) -> tuple[dict, dict]:
     slope = np.full(Y.shape[0], np.nan)
     pval = np.full(Y.shape[0], np.nan)
     i, j = np.triu_indices(n, 1)
-    dt_ = (j - i).astype(float)
+    dt_ = (years[j] - years[i]).astype(float)
     var0 = n * (n - 1) * (2 * n + 5) / 18.0
     kk = np.arange(1, n)
     idx = np.flatnonzero(valid)
@@ -493,7 +529,7 @@ def map_layer(grid: Grid, var: str) -> tuple[dict, dict]:
         d = y[:, j] - y[:, i]
         s = np.sign(d).sum(axis=1)
         sen = np.median(d / dt_, axis=1)                                        # per year
-        detr = y - sen[:, None] * np.arange(n)[None]
+        detr = y - sen[:, None] * (years - years[0])[None]
         a = detr - detr.mean(axis=1, keepdims=True)
         r1 = np.clip((a[:, :-1] * a[:, 1:]).sum(1) / (a * a).sum(1), 0, None)
         eta = 1 + 2 * ((1 - kk / n)[None] * r1[:, None] ** kk[None]).sum(1)
@@ -510,7 +546,10 @@ def map_layer(grid: Grid, var: str) -> tuple[dict, dict]:
     sig[ok], _ = ts.fdr_bh(pval[ok], q=FDR_MAP_Q)
 
     spec = VARIABLES[var]
-    finite = np.abs(slope[np.isfinite(slope)])
+    in_scale = np.isfinite(slope)
+    if spec.get("legend_lat_max"):  # e.g. GRACE: ice-sheet losses would wash out every other colour
+        in_scale &= np.abs(grid.LAT.ravel()) <= spec["legend_lat_max"]
+    finite = np.abs(slope[in_scale])
     raw_lim = float(np.percentile(finite, 98))
     nice = [0.005, 0.01, 0.02, 0.03, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.4, 0.5, 0.6, 0.8, 1.0, 1.2, 1.5, 2.0,
             2.5, 3.0, 4.0, 5.0, 6.0, 8.0, 10.0, 15.0, 20.0, 30.0, 50.0, 100.0]
@@ -575,7 +614,10 @@ def provenance_from(prov: dict, spec: dict, what: str) -> dict:
         processing += [f"monthly series {Y0}-01 to {Y1}-12 (complete years)",
                        "anomalies from the calendar-month normal; Sen's slope, Mann-Kendall (Yue-Wang), "
                        "OLS with effective sample size (trend_stats.py)"]
-    if "AIRS" in spec["source"]:
+    if "GRACE" in spec["source"]:
+        about = ("Data: NASA/DLR GRACE and NASA/GFZ GRACE-FO satellites, which weigh the water on land by "
+                 "its gravity; JPL mascon solution RL06.3, blocks of about 300 km")
+    elif "AIRS" in spec["source"]:
         about = ("Data: NASA AIRS infrared sounder on the Aqua satellite, 1° squares, average of the "
                  "~1:30 am and ~1:30 pm passes; a satellite retrieval, not a weather model (MERRA-2 does "
                  "use AIRS measurements, so the two are not fully independent)")
@@ -666,11 +708,10 @@ def monthly_level(dates, raw) -> str:
     return weaker(level_from_cis(*cis), level_from_p(res["ols"]["p"]))
 
 
-def yearly_level(dates, raw) -> str:
+def yearly_level(dates, raw, min_months: int = 12) -> str:
     anom, _ = ts.deseasonalize(dates, raw)
-    years = dates.astype("datetime64[Y]").astype(int) + 1970
     ys = np.arange(Y0, Y1 + 1)
-    vals = np.array([anom[years == y].mean() for y in ys])
+    vals = ga.yearly_anomaly_means(dates, anom, ys, min_months)  # NaN years are left out below
     r = annual_trend(ys, vals)
     t = ys.astype(float)
     mk = ts.mann_kendall(t, vals, method="yue_wang")
@@ -678,7 +719,7 @@ def yearly_level(dates, raw) -> str:
     return weaker(level_from_cis(*cis), level_from_p(r["ols"]["p"]))
 
 
-def robustness(dates, raw, level: str) -> dict:
+def robustness(dates, raw, level: str, min_months: int = 12) -> dict:
     """Pre-declared sensitivity checks, the same for every region and variable: the verdict rule
     repeated without the first two years, without the last two years, and on yearly means.
     The headline verdict is the most cautious of the full-record result and these three; when they
@@ -690,7 +731,7 @@ def robustness(dates, raw, level: str) -> dict:
     for label, sel in ((f"leaving out {Y0}–{Y0 + 1}", years >= Y0 + 2),
                        (f"leaving out {Y1 - 1}–{Y1}", years <= Y1 - 2)):
         checks.append((label, monthly_level(dates[sel], raw[sel])))
-    checks.append(("using one average per year", yearly_level(dates, raw)))
+    checks.append(("using one average per year", yearly_level(dates, raw, min_months)))
     final = level
     for _, lv in checks:
         final = weaker(final, lv)
@@ -729,7 +770,7 @@ def analyse(var, region, cells, raw, prov):
     mk_level = level_from_cis(ci90, ci95, ci99)
     ols_level = level_from_p(res["ols"]["p"])
     full_level = weaker(mk_level, ols_level) if record_years >= 10 else "insufficient"
-    robust = robustness(dates, raw, full_level)
+    robust = robustness(dates, raw, full_level, spec["year_min_months"])
     level = robust["level"]  # the most cautious of: full record, without first/last two years, yearly means
     disagree = mk_level != ols_level
     decided_by = "both" if not disagree else ("mk" if weaker(mk_level, ols_level) == mk_level else "ols")
@@ -817,10 +858,9 @@ def analyse(var, region, cells, raw, prov):
 
     # --- annual means and signal vs noise (M4)
     yrs = np.arange(Y0, Y1 + 1)
-    ann = np.array([np.nanmean(anom[(dates >= np.datetime64(f"{y}-01-01")) & (dates < np.datetime64(f"{y + 1}-01-01"))])
-                    for y in yrs])
+    ann = ga.yearly_anomaly_means(dates, anom, yrs, spec["year_min_months"])
     ann_detr = ann - (sen["intercept"] + sen["slope"] * (yrs + 0.5))
-    swing = float(np.std(ann_detr, ddof=1))
+    swing = float(np.nanstd(ann_detr, ddof=1))
     ratio_now = abs(total) / swing if swing > 0 else None
     emergence = None
     if level in ("strong", "moderate") and ratio_now and ratio_now > 1:
@@ -965,7 +1005,9 @@ def analyse(var, region, cells, raw, prov):
         "_internal": {"family": family, "qmap": qmap, "spec": spec, "prov": prov,
                       "region": {"id": region["id"], "name": region["name"], "kind": region["kind"]},
                       "what": region_what(region),
-                      "total": total, "pct": pct_total, "unit": unit},
+                      "total": total, "pct": pct_total, "unit": unit,
+                      # D-G6: a significant level shift across a known data gap (caveat only)
+                      "gap_break": ga.gap_break(dates, anom, sen["slope"], spec["gap"]) if spec["gap"] else None},
     }
 
 
@@ -977,6 +1019,23 @@ def change_phrase(a: dict) -> str:
     if i["pct"] is not None:
         return f"about {fmt(abs(i['pct']), 0, sign=False)}% {adj}"
     return f"about {fmt(abs(i['total']), spec['total_decimals'], sign=False)} {i['unit']} {adj}"
+
+
+def add_gap_caveats(results: dict) -> None:
+    """A level shift across a known data gap (GRACE -> GRACE-FO) gets a caveat on the card; the
+    verdict itself is not changed (the shift test is approximate and only ever adds caution)."""
+    for (_rid, var), a in results.items():
+        gb = a["_internal"].get("gap_break")
+        if not gb:
+            continue
+        g0, g1 = VARIABLES[var]["gap"]
+        a["insights"].insert(0, {
+            "kind": "caveat",
+            "text": (f"The level jumps across the data gap between the two satellite missions "
+                     f"({g0} to {g1}). Part of the trend may come from that jump, so read it with care."),
+            "evidence_level": "descriptive", "tested": False, "methods_anchor": "two-tests",
+            "numbers": {"shift": round(gb["shift"], 3), "p_approx": gb["p_approx"]},
+        })
 
 
 def add_twin_context(results: dict, periods: dict) -> None:
@@ -1637,7 +1696,6 @@ def region_grid_weights(region: dict, grid) -> tuple:
 def country_regions(lat: np.ndarray, lon: np.ndarray) -> dict:
     """Countries from the committed basemap, with the weights of the 2° squares they overlap."""
     fc = json.loads(BASEMAP_COUNTRIES.read_text(encoding="utf-8"))
-    dlat, dlon = float(lat[1] - lat[0]), float(lon[1] - lon[0])
     out = {}
     for f in fc["features"]:
         iso, name = f["properties"]["iso"], f["properties"]["name"]
@@ -1699,6 +1757,17 @@ def series_from_grid(grid: Grid, weights: tuple) -> np.ndarray:
     num = np.where(ok, block, 0.0) @ w
     den = ok @ w
     return np.where(den >= 0.5 * w.sum(), num / np.where(den > 0, den, 1.0), np.nan)
+
+
+def too_small(grid: Grid, region: dict, min_km2: float) -> str | None:
+    """A region whose land with data covers less than ``min_km2`` (the instrument cannot resolve it)."""
+    rr, cc, w = region["weights"] if region["weights"] is not None else region_grid_weights(region, grid)
+    has_data = np.isfinite(grid.values).any(axis=0)[rr, cc]
+    dlat, dlon = float(grid.lat[1] - grid.lat[0]), float(grid.lon[1] - grid.lon[0])
+    km2 = float((w * has_data).sum()) * (dlat * 111.32) * (dlon * 111.32)
+    if km2 < min_km2:
+        return f"too small for this instrument ({km2:,.0f} km² of land with data, needs {min_km2:,.0f})"
+    return None
 
 
 def usable(raw: np.ndarray) -> str | None:
@@ -1772,7 +1841,9 @@ def main(runs: int, bootstrap: int, workers: int) -> None:
                 except Exception as exc:  # noqa: BLE001 - leave the pair out and say so; never invent data
                     skipped.append((r["id"], var, f"{type(exc).__name__}: {exc}"))
                     continue
-                why = usable(raw)
+                why = (ga.usable_gappy(raw, month_index(Y0, Y1).values) if spec["gap_aware"] else usable(raw))
+                if not why and spec["min_region_km2"]:
+                    why = too_small(grid, r, spec["min_region_km2"])
                 if why:
                     skipped.append((r["id"], var, why))
                     continue
@@ -1795,6 +1866,7 @@ def main(runs: int, bootstrap: int, workers: int) -> None:
         Y0, Y1 = periods[var]
         build_insights(a, regions)
     add_twin_context(results, periods)
+    add_gap_caveats(results)
 
     # deeper checks: the team's climate_stats pipeline, one document (one BH family) per story region
     Y0, Y1 = periods[CORE[0]]

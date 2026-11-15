@@ -84,6 +84,17 @@ air temperature and water vapour 2003–2025. Pages for records shorter than 30 
   decade (AIRS) vs +0.20 (MERRA-2) for temperature, but about +0.1 vs +0.5 kg/m² per decade for water
   vapour (quick global check, not yet validated). AIRS retrieves under clear and partly cloudy skies, so
   persistently cloudy, moist air is sampled less. Every AIRS water-vapour page carries this caveat.
+- **GRACE/GRACE-FO water stored on land (2003–2025) has gaps, and they are never filled.** 245 of 276
+  months have data (88.8%); 2017 and 2018 have only five months each (the gap between the missions).
+  Method (`scripts/gap_aware.py`; proposal `docs/planning/2026-11-15-grace-gap-method.md`, decisions
+  D-G1…D-G6 **pending the stats lead**): monthly anomalies from each calendar month's own normal; Sen +
+  Mann-Kendall (Yue-Wang) and the regression check on the months that exist, at their true dates;
+  yearly means only from years with ≥ 9 months (2017 and 2018 drop out); the map uses those yearly
+  anomalies with the true spacing between years; no extreme-month counts; a Pettitt level-shift test
+  adds a caveat when a significant step falls in the 2017–2018 gap (it never strengthens a verdict).
+  GRACE resolves blocks of about 300 km, so places with less than 200,000 km² of land with data get
+  no regional answer. The colour scale is set from squares between 60°S and 60°N, so the large losses
+  of the Greenland and Antarctic ice sheets show as "≤ −30" instead of washing out every other colour.
 - **AIRS temperature over hot deserts.** Yearly anomalies of AIRS and MERRA-2 (2003–2025) correlate at
   0.93–0.94 for Ukraine and Europe but only 0.3–0.8 for Mali, Egypt and the Sahara region, where AIRS
   trends run cooler; every AIRS temperature page carries a desert caveat. Both records show the Sahel

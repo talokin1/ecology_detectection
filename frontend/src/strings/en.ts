@@ -181,6 +181,7 @@ export const S = {
       ['NASA CERES SYN1deg (through POWER)', 'https://ceres.larc.nasa.gov/', 'sunlight at the ground and haze; 2001–2025'],
       ['NASA GPM IMERG (through POWER)', 'https://gpm.nasa.gov/data/imerg', 'rainfall measured from space; 1998–2025'],
       ['NASA AIRS on the Aqua satellite, AIRS3STM v7.0', 'https://doi.org/10.5067/UBENJB9D3T2H', 'air temperature and water vapour measured from space; 2003–2025'],
+      ['NASA/DLR GRACE and NASA/GFZ GRACE-FO, JPL mascons RL06.3', 'https://doi.org/10.5067/TEMSC-3JC634', 'water stored on land, weighed by gravity; 2003–2025'],
       ['IPCC AR6 reference regions (Iturbide et al., 2020)', 'https://github.com/SantanderMetGroup/ATLAS', 'outlines of the world regions (CC BY 4.0)'],
       ['Natural Earth', 'https://www.naturalearthdata.com/', 'coastlines and borders, Ukrainian point of view (public domain)'],
     ] as [string, string, string][],

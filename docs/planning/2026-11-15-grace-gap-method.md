@@ -78,3 +78,24 @@ give zero analyses and an empty map.
 `gap_aware` flag in the variable spec; `usable()` accepts ≥ 80% valid months for such variables;
 map code with true year spacing and year filter; Pettitt caveat wiring; region-size filter; catalog
 and Methods text; assistant image rebuild. Estimate: 4–6 hours including validation.
+
+## Validation result (stats-validator, 2026-11-15) — NOT ready for main
+Built on branch `grace` (123 regional analyses, map, `scripts/gap_aware.py`). Ukraine (−11.9 cm/decade,
+strong), Iran (−12.6, strong) and India (−4.7, moderate) reproduced with independent code (PASS WITH
+NOTES). Blocking issues before publishing:
+1. **Yearly stability check cannot pass smooth, slowing declines.** Its OLS effective sample size
+   falls to the floor of 3 (1 degree of freedom) when yearly residual r1 ≳ 0.75, so 42 of 123 GRACE
+   cards are downgraded: Greenland −118 cm/decade "a hint", Norway −60 "none", Saudi Arabia −7.6
+   "a hint", Arabian Peninsula −5.3 [−5.8, −4.8] "none". Options for the stats lead (ADR):
+   (a) treat the yearly check as not informative when its n_eff < 5 and use its MK-YW result;
+   (b) cap a downgrade at one level; (c) at least: headline "clear decline, not confirmed by the
+   yearly check", no "moves up and down" sentence and no years-to-detection when the full record
+   is strong or moderate. The rule applies to every variable, so re-check other layers too.
+2. **Iran: Caspian Sea inside the product's land mask** (up to ~13% of the trend; −10.9 without the
+   coastal squares, still strong): needs a caveat.
+3. **Norway includes Svalbard** (country cluster rule): its −60 is glacier ice loss; exclude or label.
+4. **Mission-gap caveat**: say "may jump (offset or a real wet/dry spell)"; the Pettitt approximate p is
+   liberal (AR(1) Monte Carlo p 0.5–0.8 for the 3 flagged places); set the gap end to 2018-09 (2018-08
+   and 2018-09 are missing too) or say why not; ar6_eau's break is the 2017–19 drought, not the gap.
+5. India declines to 2019 and partly recovers since: consider a "decline, partial recovery" finding.
+6. Methods: solutions sit on their window-midpoint month (up to one month off).
