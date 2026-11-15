@@ -1,0 +1,55 @@
+{
+  "source": "NASA GES DISC (OPeNDAP, Earthdata Login)",
+  "source_url": "https://opendap.earthdata.nasa.gov/collections/C1701805662-GES_DISC/granules/",
+  "short_name": "AIRS3STM",
+  "version": "7.0",
+  "title": "Aqua/AIRS L3 Monthly Standard Physical Retrieval (AIRS-only) 1 degree x 1 degree V7.0",
+  "doi": "10.5067/UBENJB9D3T2H",
+  "landing_page": "https://doi.org/10.5067/UBENJB9D3T2H",
+  "variable": {
+    "variable": "SurfAirTemp",
+    "source": "airs",
+    "long_name": "Surface air temperature (AIRS, day/night mean)",
+    "units": "K",
+    "definition": "Temperature of the air just above the surface retrieved from AIRS infrared radiances, mean of the ~1:30 am and ~1:30 pm overpasses."
+  },
+  "grid": {
+    "lat0": -89.0,
+    "lon0": -179.0,
+    "dlat": 2.0,
+    "dlon": 2.0,
+    "nlat": 90,
+    "nlon": 180,
+    "grid_reference": "lat0/lon0 are the centre of the south-west cell; rows go north, columns east"
+  },
+  "native_grid": {
+    "nlat": 180,
+    "nlon": 360,
+    "resolution_deg": 1.0
+  },
+  "method": "overlap",
+  "frequency": "monthly",
+  "n_months": 290,
+  "time_range": {
+    "start": "2002-09",
+    "end": "2026-10"
+  },
+  "months_without_data_kept_as_nan": [],
+  "accessed": "2026-11-15T14:24:50Z",
+  "land_only": false,
+  "processing": [
+    "one OPeNDAP DAP4 subset per monthly granule: SurfAirTemp_A, SurfAirTemp_D, TotH2OVap_A, TotH2OVap_D (no other fields)",
+    "masked fill value -9999",
+    "day/night mean = (ascending ~1:30 pm + descending ~1:30 am) / 2, only where both orbits have a value (37622 native cell-months with a single orbit were left out)",
+    "coarsened 1 deg to 2 deg with grids.coarsen (overlap; 1 deg cells nest exactly), cos(latitude) weights, missing native cells left out",
+    "valid_fraction = weighted share of the cell's native area with data, per month",
+    "time labelled by month start; calendar months without a granule kept as NaN",
+    "kept source units (K, kg/m2); stored as float32 with zlib compression"
+  ],
+  "caveats": [
+    "satellite retrieval under clear and partly cloudy skies (cloud clearing); persistently overcast regions are sampled less",
+    "surface air temperature is retrieved, not measured by a thermometer; compare its trends with MERRA-2 T2M as an independent check, not as the same quantity"
+  ],
+  "script": "backend/trend_detective/airs.py",
+  "git_commit": "2790668"
+}
