@@ -36,22 +36,8 @@ data/cache/**/*.nc4
 .cdsapirc
 cookies.txt
 !data/cache/**/*.provenance.json
-# World-map grids committed on purpose (ADR-006, data plan D2: only grids the map uses; rebuild others
-# with scripts/fetch_grid.py). List each file explicitly so local test grids never slip in.
-!data/cache/grids/grace_lwe_thickness_2deg_land.nc
-!data/cache/grids/imerg_IMERG_PRECTOT_2deg.nc
-!data/cache/grids/merra2_EVLAND_2deg.nc
-!data/cache/grids/merra2_FRSEAICE_2deg.nc
-!data/cache/grids/merra2_FRSNO_2deg.nc
-!data/cache/grids/merra2_GWETROOT_2deg.nc
-!data/cache/grids/merra2_PRECTOTCORR_2deg.nc
-!data/cache/grids/merra2_SNODP_2deg.nc
-!data/cache/grids/merra2_T2M_2deg.nc
-!data/cache/grids/merra2_TO3_2deg.nc
-!data/cache/grids/merra2_TQV_2deg.nc
-!data/cache/grids/syn1deg_ALLSKY_SFC_SW_DWN_2deg.nc
-!data/cache/grids/syn1deg_AOD_55_ADJ_2deg.nc
-!data/cache/grids/syn1deg_CLOUD_AMT_2deg.nc
+# World-map grids live in the GCS data store, not in git (ADR-010; supersedes ADR-006's grid list).
+# MANIFEST.json pins their sha256; fetch them with: python scripts/sync_cache.py pull
 
 # OS / editors
 .DS_Store

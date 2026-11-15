@@ -7,7 +7,7 @@ Regional series and grids built from NASA data, with provenance. See `docs/plann
 |---|---|---|
 | `power_zarr/` | NASA POWER series: `<store>_<VARIABLE>_<hash>.csv` (monthly `month,value`; daily `date,value`) | yes |
 | `earthdata/` | Earthdata series: GRACE `grace_lwe_<hash>.csv` (`month,value`), MODIS NDVI `mod13c2_ndvi_<hash>.csv` (`month,value,valid_fraction`) | yes |
-| `grids/` | global monthly grids for the world map (NetCDF): `<store>_<VAR>_<res>deg.nc` | only grids the map uses, listed in `.gitignore` (ADR-006; now: T2M at 2°, 26.1 MB); rebuild others with `python scripts/fetch_grid.py --variable <VAR> --resolution 2` (~40 s, no login) |
+| `grids/` | global monthly grids for the world map (NetCDF): `<store>_<VAR>_<res>deg.nc` | **no**: kept in the GCS data store `gs://trend-detective-data/sha256/<sha256>` (ADR-010). `python scripts/sync_cache.py pull` downloads them (public HTTPS, no login, sha256-checked against MANIFEST); `push` uploads new ones (needs `gcloud` write access). Rebuild from NASA with `python scripts/fetch_grid.py --variable <VAR> --resolution 2` |
 | `raw/` | whole downloaded files (GRACE mascon NetCDF) | **no**, rebuilt by scripts |
 | `MANIFEST.json` | every committed series **and map grid** (`kind`), with sha256, rows (months for grids), preset `region_id`, freeze date | yes |
 
@@ -36,7 +36,7 @@ or a token; POWER needs no login).
   older all-cells ukraine copies, not build jobs.
 
 ## Rules
-- **The data is frozen and committed.** Do not refetch on your own machine; pull. A refresh is a deliberate
+- **The data is frozen and committed** (series in git, grids in the data store, both pinned by MANIFEST). After cloning, run `python scripts/sync_cache.py pull`. Do not refetch on your own machine; pull. A refresh is a deliberate
   commit by the data engineer that also updates `MANIFEST.json`.
 - Use `backend/trend_detective/acquire.py` to read series (`get_series`, `get_input_series`,
   `get_monthly_from_daily`). Earthdata series are served from this cache, so no token is needed.

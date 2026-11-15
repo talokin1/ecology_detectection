@@ -25,6 +25,8 @@ jobs:
       - uses: actions/setup-python@v5
         with: { python-version: '3.12', cache: pip }
       - run: pip install -r requirements.txt -r requirements-assistant.txt ruff
+      - name: Download map grids from the data store (public HTTPS, sha256-checked; ADR-010)
+        run: python scripts/sync_cache.py pull
       - name: Cache integrity (manifest, provenance, secrets, build jobs, AR6 outlines)
         run: python scripts/check_cache.py
       - name: Offline tests (no network, no token)
