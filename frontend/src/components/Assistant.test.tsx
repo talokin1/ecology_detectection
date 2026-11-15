@@ -6,6 +6,8 @@ const reply = {
   answer: 'Ukraine warmed about +0.54 °C per decade.',
   suggestions: [{ variable_id: 'soil', region_id: 'south_ukraine', variable_name: 'Soil wetness', region_name: 'South Ukraine',
     why: 'Farm soils.', verdict: 'Evidence: drying', href: '#/region/south_ukraine?var=soil' }],
+  looked_up: [{ tool: 'rank_regions', label: 'Ranking of places: Soil wetness, drier', href: null },
+    { tool: 'get_analysis', label: 'Result: Air temperature · France', href: '#/region/c_fra?var=t2m' }],
   unverified_numbers: ['7.7'],
   model: 'gemini-test',
   disclaimer: 'AI-generated',
@@ -41,6 +43,8 @@ describe('Assistant', () => {
     expect(JSON.parse(init.body)).toMatchObject({ message: 'What does this mean?', region_id: 'ukraine', variable_id: 't2m', history: [] });
     expect(screen.getByText(/AI-generated · gemini-test/)).toBeTruthy();
     expect(screen.getByText(/Check these numbers: 7.7/)).toBeTruthy();
+    expect(screen.getByText('Ranking of places: Soil wetness, drier')).toBeTruthy();
+    expect(screen.getByRole('link', { name: 'Result: Air temperature · France' }).getAttribute('href')).toBe('/region/c_fra?var=t2m');
     expect(screen.getByRole('link', { name: /Soil wetness · South Ukraine/ }).getAttribute('href')).toBe('/region/south_ukraine?var=soil');
   });
 

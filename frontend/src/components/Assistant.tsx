@@ -14,7 +14,8 @@ const URL_BASE = (import.meta.env.VITE_ASSISTANT_URL as string | undefined)?.rep
 export const assistantEnabled = URL_BASE !== '';
 
 type Suggestion = { variable_id: string; region_id: string; variable_name: string; region_name: string; why: string; verdict: string | null; href: string };
-type Reply = { answer: string; suggestions: Suggestion[]; unverified_numbers: string[]; model: string; disclaimer: string };
+type LookedUp = { tool: string; label: string; href: string | null };
+type Reply = { answer: string; suggestions: Suggestion[]; looked_up?: LookedUp[]; unverified_numbers: string[]; model: string; disclaimer: string };
 type Msg = { role: 'user'; text: string } | { role: 'assistant'; text: string; reply?: Reply; error?: boolean };
 
 const HISTORY_TURNS = 6;
@@ -163,6 +164,16 @@ function ReplyExtras({ reply }: { reply: Reply }) {
             </li>
           ))}
         </ul>
+      )}
+      {reply.looked_up && reply.looked_up.length > 0 && (
+        <div className="ai-sources">
+          <span className="ai-sources__title">{S.assistant.lookedUp}</span>
+          <ul>
+            {reply.looked_up.map((l) => (
+              <li key={l.label}>{l.href ? <Link to={l.href.replace(/^#/, '')}>{l.label}</Link> : l.label}</li>
+            ))}
+          </ul>
+        </div>
       )}
       {reply.unverified_numbers.length > 0 && (
         <p className="ai-warn" role="note">{S.assistant.unverified(reply.unverified_numbers.join(', '))}</p>

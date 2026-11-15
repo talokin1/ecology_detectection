@@ -11,6 +11,8 @@ COPY backend/trend_detective/__init__.py app/trend_detective/__init__.py
 COPY backend/trend_detective/assistant app/trend_detective/assistant
 COPY frontend/public/data/index.json frontend/public/data/catalog.json data/
 COPY frontend/public/data/analysis data/analysis
+COPY frontend/public/data/compare data/compare
+COPY frontend/public/data/map data/map
 COPY docs/10-methods.md docs/10-methods.md
 RUN useradd --system --uid 10001 app
 USER app

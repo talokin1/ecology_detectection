@@ -15,6 +15,10 @@
 !frontend/public/data/catalog.json
 !frontend/public/data/analysis/
 !frontend/public/data/analysis/**
+!frontend/public/data/compare/
+!frontend/public/data/compare/**
+!frontend/public/data/map/
+!frontend/public/data/map/**
 !docs/
 !docs/10-methods.md
 **/__pycache__/

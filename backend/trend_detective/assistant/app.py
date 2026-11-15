@@ -24,6 +24,7 @@ from pydantic import BaseModel, Field
 from .grounding import Grounding, safe_id, unverified_numbers
 from .llm import GeminiModel, Model, estimated_usd
 from .prompt import system_instruction
+from .tools import Tools
 
 log = logging.getLogger("assistant")
 
@@ -57,9 +58,18 @@ class Suggestion(BaseModel):
     href: str
 
 
+class LookedUp(BaseModel):
+    """One lookup the assistant made in our precomputed data (shown under the answer)."""
+
+    tool: str
+    label: str
+    href: str | None = None
+
+
 class ChatOut(BaseModel):
     answer: str
     suggestions: list[Suggestion]
+    looked_up: list[LookedUp] = Field(default_factory=list)
     unverified_numbers: list[str]
     model: str
     disclaimer: str = DISCLAIMER
@@ -121,6 +131,44 @@ def build_suggestions(g: Grounding, raw: list[dict]) -> list[Suggestion]:
     return out[:4]
 
 
+def describe_lookups(g: Grounding, calls: list[dict]) -> list[LookedUp]:
+    """Human-readable list of successful tool calls; names come from the data, not the model."""
+    out: list[LookedUp] = []
+    seen = set()
+    for c in calls:
+        if "error" in c:
+            continue
+        a, name = c.get("args", {}), c["name"]
+        var = g.variables.get(str(a.get("variable_id")), {}).get("name", "")
+        reg = lambda k: g.regions.get(str(a.get(k)), {}).get("name", "")  # noqa: E731
+        if name in ("get_analysis", "get_series"):
+            what = "Result" if name == "get_analysis" else "Yearly values"
+            item = LookedUp(
+                tool=name,
+                label=f"{what}: {var} · {reg('region_id')}",
+                href=f"#/region/{a.get('region_id')}?var={a.get('variable_id')}",
+            )
+        elif name == "rank_regions":
+            word = (g.variables.get(str(a.get("variable_id")), {}).get("words") or {}).get(
+                "pos" if a.get("direction") == "up" else "neg", a.get("direction", "")
+            )
+            item = LookedUp(tool=name, label=f"Ranking of places: {var}, {word}")
+        elif name == "compare_regions":
+            item = LookedUp(
+                tool=name,
+                label=f"Comparison: {var} · {reg('region_a')} vs {reg('region_b')}",
+                href=f"#/compare/{a.get('region_a')}/{a.get('region_b')}?var={a.get('variable_id')}",
+            )
+        elif name == "map_cell":
+            item = LookedUp(tool=name, label=f"Map square near {a.get('lat')}, {a.get('lon')}: {var}")
+        else:
+            continue
+        if item.label not in seen:
+            seen.add(item.label)
+            out.append(item)
+    return out
+
+
 def create_app(grounding: Grounding | None = None, model: Model | None = None) -> FastAPI:
     app = FastAPI(title="Trend Detective assistant", docs_url=None, redoc_url=None, openapi_url=None)
     origins = [
@@ -179,7 +227,8 @@ def create_app(grounding: Grounding | None = None, model: Model | None = None) -
         turns.append({"role": "user", "text": body.message})
         try:
             started = time.monotonic()
-            raw = await m().reply(system_instruction(grd, rid, vid), turns)
+            tools = Tools(grd)
+            raw = await m().reply(system_instruction(grd, rid, vid), turns, tools.call)
         except Exception:  # noqa: BLE001 - never leak provider errors to the browser
             log.exception("model call failed")
             raise HTTPException(
@@ -188,8 +237,15 @@ def create_app(grounding: Grounding | None = None, model: Model | None = None) -
 
         answer = raw.get("answer") or "Sorry, I could not answer that. Try asking about the result on screen."
         suggestions = build_suggestions(grd, raw.get("suggestions", []))
+        calls = raw.get("tool_calls") or []
+        # Numbers from tool results (and the model's own lookup arguments, e.g. a latitude) count as
+        # grounded; everything else in the answer is checked against the same facts as before.
+        looked_up_facts = json.dumps(
+            [{"args": c.get("args"), "result": c.get("result")} for c in calls], ensure_ascii=False
+        )
         flagged = unverified_numbers(
-            answer + " " + " ".join(s.why for s in suggestions), grd.facts_text(rid, vid)
+            answer + " " + " ".join(s.why for s in suggestions),
+            grd.facts_text(rid, vid) + "\n" + looked_up_facts,
         )
         usage = raw.get("usage") or {}
         # One structured line per answer (Cloud Logging parses JSON on stdout): cost and quality.
@@ -204,12 +260,19 @@ def create_app(grounding: Grounding | None = None, model: Model | None = None) -
                     **usage,
                     "est_usd": round(estimated_usd(usage), 6) if usage else None,
                     "suggestions": len(suggestions),
+                    "tools": [c["name"] + ("!" if "error" in c else "") for c in calls],
                     "unverified_numbers": flagged,
                 }
             ),
             flush=True,
         )
-        return ChatOut(answer=answer, suggestions=suggestions, unverified_numbers=flagged, model=m().name)
+        return ChatOut(
+            answer=answer,
+            suggestions=suggestions,
+            looked_up=describe_lookups(grd, calls),
+            unverified_numbers=flagged,
+            model=m().name,
+        )
 
     return app
 

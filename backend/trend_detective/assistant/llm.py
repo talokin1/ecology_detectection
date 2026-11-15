@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import json
 import os
+from collections.abc import Callable
 from typing import Protocol
 
 # Structured reply: the answer text plus optional catalog suggestions (ids only; the server
@@ -35,11 +36,15 @@ REPLY_SCHEMA = {
 }
 
 
+ToolRunner = Callable[[str, dict], dict]
+
+
 class Model(Protocol):
     name: str
 
-    async def reply(self, system: str, turns: list[dict]) -> dict:
-        """turns: [{"role": "user"|"model", "text": str}, ...] -> REPLY_SCHEMA dict."""
+    async def reply(self, system: str, turns: list[dict], run_tool: ToolRunner | None = None) -> dict:
+        """turns: [{"role": "user"|"model", "text": str}, ...] -> REPLY_SCHEMA dict plus
+        "usage" (summed over calls) and "tool_calls" ([{"name", "args", "result"|"error"}])."""
         ...
 
 
@@ -56,23 +61,57 @@ class GeminiModel:
             location=location or os.environ.get("GOOGLE_CLOUD_LOCATION", "global"),
         )
 
-    async def reply(self, system: str, turns: list[dict]) -> dict:
+    async def reply(self, system: str, turns: list[dict], run_tool: ToolRunner | None = None) -> dict:
+        """Manual tool loop: Gemini may call our read-only lookup tools (tools.py) for up to
+        ASSISTANT_MAX_TOOL_ROUNDS rounds, then must answer in REPLY_SCHEMA JSON."""
         from google.genai import types
 
+        from .tools import DECLARATIONS
+
         contents = [types.Content(role=t["role"], parts=[types.Part(text=t["text"])]) for t in turns]
-        config = types.GenerateContentConfig(
-            system_instruction=system,
-            temperature=0.2,
-            max_output_tokens=int(os.environ.get("ASSISTANT_MAX_OUTPUT_TOKENS", "2048")),
-            response_mime_type="application/json",
-            response_json_schema=REPLY_SCHEMA,
-            thinking_config=types.ThinkingConfig(thinking_level=types.ThinkingLevel.LOW),
-        )
-        resp = await self._client.aio.models.generate_content(
-            model=self.name, contents=contents, config=config
-        )
+        tools = [types.Tool(function_declarations=[types.FunctionDeclaration(**d) for d in DECLARATIONS])]
+
+        def config(with_tools: bool):
+            return types.GenerateContentConfig(
+                system_instruction=system,
+                temperature=0.2,
+                max_output_tokens=int(os.environ.get("ASSISTANT_MAX_OUTPUT_TOKENS", "2048")),
+                response_mime_type="application/json",
+                response_json_schema=REPLY_SCHEMA,
+                thinking_config=types.ThinkingConfig(thinking_level=types.ThinkingLevel.LOW),
+                tools=tools if with_tools else None,
+                automatic_function_calling=types.AutomaticFunctionCallingConfig(disable=True),
+            )
+
+        usage = {"prompt_tokens": 0, "cached_tokens": 0, "output_tokens": 0, "thinking_tokens": 0}
+        calls: list[dict] = []
+        max_rounds = int(os.environ.get("ASSISTANT_MAX_TOOL_ROUNDS", "4"))
+        for round_no in range(max_rounds + 1):
+            # The last round has no tools, so the model must answer with what it has.
+            with_tools = run_tool is not None and round_no < max_rounds
+            resp = await self._client.aio.models.generate_content(
+                model=self.name, contents=contents, config=config(with_tools)
+            )
+            for k, v in usage_counts(getattr(resp, "usage_metadata", None)).items():
+                usage[k] += v
+            fcs = resp.function_calls or []
+            if not fcs or not with_tools:
+                break
+            contents.append(resp.candidates[0].content)  # keeps the model's thought signatures
+            parts = []
+            for fc in fcs[:6]:
+                args = dict(fc.args or {})
+                try:
+                    result = run_tool(fc.name, args)
+                    calls.append({"name": fc.name, "args": args, "result": result})
+                    parts.append(types.Part.from_function_response(name=fc.name, response={"result": result}))
+                except ValueError as e:  # ToolError: tell the model so it can fix the call
+                    calls.append({"name": fc.name, "args": args, "error": str(e)})
+                    parts.append(types.Part.from_function_response(name=fc.name, response={"error": str(e)}))
+            contents.append(types.Content(role="user", parts=parts))
         out = parse_reply(resp.text or "")
-        out["usage"] = usage_counts(getattr(resp, "usage_metadata", None))
+        out["usage"] = usage
+        out["tool_calls"] = calls
         return out
 
 

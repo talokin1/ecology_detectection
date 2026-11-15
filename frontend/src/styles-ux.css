@@ -327,3 +327,6 @@
 @media (max-width: 520px) {
   .ai-drawer { right: 0; top: auto; bottom: 0; width: 100vw; height: 85vh; border-radius: var(--radius) var(--radius) 0 0; }
 }
+.ai-sources { margin: 8px 0 0; font-size: var(--fs-small); color: var(--text-2); }
+.ai-sources__title { font-weight: 600; }
+.ai-sources ul { margin: 2px 0 0; padding-left: 16px; }

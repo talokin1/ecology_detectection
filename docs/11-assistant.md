@@ -13,6 +13,18 @@ UI: `frontend/src/components/Assistant.tsx`.
   a no-clear-trend result (Ukraine soil: verdict stated plainly, FDR-passing sub-findings named),
   and a prompt-injection + forecast request (refused; "2050" flagged as unverified).
 
+## Tools (read-only lookups Gemini can call; ADR-009 amendment 1)
+| Tool | Answers | Reads |
+|---|---|---|
+| `get_analysis(region_id, variable_id)` | any place's full result | `analysis/*.json` |
+| `rank_regions(variable_id, direction, place_set, min_level, limit)` | where a variable changes most | `index.json` verdicts |
+| `compare_regions(region_a, region_b, variable_id)` | A vs B (tested only for story-region pairs) | `compare/*.json`, verdicts |
+| `get_series(region_id, variable_id, start_year, end_year)` | yearly (and one year's monthly) anomalies | `analysis/*.json` series |
+| `map_cell(variable_id, lat, lon)` | the trend in one 2° map square | `map/*.json` |
+
+Replies list the lookups under `looked_up` (label and link); the log line lists `tools`
+(`!` marks a rejected call). `ASSISTANT_MAX_TOOL_ROUNDS` (default 4) caps the loop.
+
 ## API
 `POST /v1/chat`
 

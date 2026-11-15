@@ -14,9 +14,17 @@ class FakeModel:
         self._reply = reply
         self.calls = []
 
-    async def reply(self, system, turns):
+    async def reply(self, system, turns, run_tool=None):
         self.calls.append((system, turns))
-        return self._reply
+        reply = dict(self._reply)
+        # A scripted reply may ask for lookups, like Gemini would; run them through the real tools.
+        reply["tool_calls"] = []
+        for name, args in reply.pop("lookups", []):
+            try:
+                reply["tool_calls"].append({"name": name, "args": args, "result": run_tool(name, args)})
+            except ValueError as e:
+                reply["tool_calls"].append({"name": name, "args": args, "error": str(e)})
+        return reply
 
 
 @pytest.fixture(scope="module")
@@ -148,7 +156,7 @@ def test_model_failure_is_502_without_details(grounding):
     class Broken:
         name = "broken"
 
-        async def reply(self, system, turns):
+        async def reply(self, system, turns, run_tool=None):
             raise RuntimeError("quota exceeded for project secret-123")
 
     c = TestClient(create_app(grounding, Broken()))
@@ -207,3 +215,111 @@ def test_usage_counts_handles_missing_metadata():
         "output_tokens": 0,
         "thinking_tokens": 0,
     }
+
+
+# ---------------------------------------------------------------------- tools
+@pytest.fixture(scope="module")
+def tools(grounding):
+    from trend_detective.assistant.tools import Tools
+
+    return Tools(grounding)
+
+
+def test_get_analysis_any_place(tools, grounding):
+    r = tools.call("get_analysis", {"region_id": "c_fra", "variable_id": "t2m"})
+    assert r["available"] and r["on_screen"]["region"] == grounding.regions["c_fra"]["name"]
+    assert "series" not in r["analysis"]
+    missing = tools.call("get_analysis", {"region_id": "ukraine", "variable_id": "sea_ice"})
+    assert missing["available"] is False
+
+
+def test_rank_regions_filters_and_sorts(tools, grounding):
+    from trend_detective.assistant.tools import LEVEL_RANK
+
+    r = tools.call(
+        "rank_regions",
+        {
+            "variable_id": "t2m",
+            "direction": "up",
+            "place_set": "countries",
+            "min_level": "strong",
+            "limit": 5,
+        },
+    )
+    assert 0 < len(r["top"]) <= 5 and r["places_tested"] > 100 and "chance" in r["note"]
+    rates = [abs(x["rate_value"]) for x in r["top"]]
+    assert rates == sorted(rates, reverse=True)
+    for x in r["top"]:
+        v = grounding.verdict(x["region_id"], "t2m")
+        assert x["region_id"].startswith("c_") and v["direction"] == "up" and LEVEL_RANK[v["level"]] == 3
+
+
+def test_compare_uses_tested_file_or_refuses_to_rank(tools):
+    tested = tools.call(
+        "compare_regions", {"region_a": "north_europe", "region_b": "sahel", "variable_id": "t2m"}
+    )
+    assert tested["difference_tested"] is True and "p" in tested and "gap_series" not in tested
+    untested = tools.call("compare_regions", {"region_a": "c_fra", "region_b": "c_esp", "variable_id": "t2m"})
+    assert untested["difference_tested"] is False and "do not say" in untested["rule"]
+
+
+def test_get_series_year_and_range(tools, grounding):
+    one = tools.call("get_series", {"region_id": "ukraine", "variable_id": "t2m", "start_year": 2010})
+    assert [y["year"] for y in one["yearly"]] == [2010] and len(one["monthly"]) == 12
+    a = grounding.analysis("ukraine", "t2m")["series"]["annual"]
+    assert one["yearly"][0]["anomaly"] == a["anomaly"][a["years"].index(2010)]
+    rng = tools.call(
+        "get_series", {"region_id": "ukraine", "variable_id": "t2m", "start_year": 2000, "end_year": 2004}
+    )
+    assert [y["year"] for y in rng["yearly"]] == [2000, 2001, 2002, 2003, 2004] and "monthly" not in rng
+
+
+def test_map_cell_finds_the_right_square(tools):
+    import json
+
+    r = tools.call("map_cell", {"variable_id": "t2m", "lat": 50.45, "lon": 30.52})  # Kyiv
+    assert r["square_centre"] == {"lat": 51.0, "lon": 31.0}
+    m = json.loads((tools.g.data_dir / "map" / "t2m.json").read_text())
+    assert r["trend_per_decade"] == m["slope_per_decade"][70 * 180 + 105]
+
+
+@pytest.mark.parametrize(
+    "name, args",
+    [
+        ("get_analysis", {"region_id": "../x", "variable_id": "t2m"}),
+        ("get_analysis", {"region_id": "atlantis", "variable_id": "t2m"}),
+        ("rank_regions", {"variable_id": "t2m", "direction": "sideways"}),
+        ("map_cell", {"variable_id": "t2m", "lat": 95, "lon": 0}),
+        ("get_analysis", {"region": "ukraine"}),
+        ("delete_everything", {}),
+    ],
+)
+def test_bad_tool_calls_are_reported_to_the_model(tools, name, args):
+    from trend_detective.assistant.tools import ToolError
+
+    with pytest.raises(ToolError):
+        tools.call(name, args)
+
+
+def test_chat_with_lookups_grounds_numbers_and_lists_sources(grounding):
+    v = grounding.verdict("c_fra", "t2m")
+    soil = [
+        x for k, x in grounding.index["verdicts"].items() if k.endswith("__soil") and x["direction"] == "down"
+    ]
+    worst = max(soil, key=lambda x: abs(x["rate_value"]))  # appears only in the ranking result
+    reply = {
+        "answer": f"France: {v['rate']}. Fastest drying: {worst['range_text']}.",
+        "suggestions": [],
+        "lookups": [
+            ("get_analysis", {"region_id": "c_fra", "variable_id": "t2m"}),
+            ("rank_regions", {"variable_id": "soil", "direction": "down"}),
+            ("get_analysis", {"region_id": "atlantis", "variable_id": "t2m"}),
+        ],
+    }
+    c, _ = client_for(grounding, reply)
+    body = c.post("/v1/chat", json={"message": "How is France doing?"}).json()
+    assert body["unverified_numbers"] == []  # the rate came from a tool result
+    labels = [x["label"] for x in body["looked_up"]]
+    assert labels[0].startswith("Result: Air temperature") and labels[1].startswith("Ranking of places")
+    assert len(labels) == 2  # the failed call is not listed
+    assert body["looked_up"][0]["href"] == "#/region/c_fra?var=t2m"

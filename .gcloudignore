@@ -33,6 +33,8 @@ frontend/public/data/*
 !frontend/public/data/index.json
 !frontend/public/data/catalog.json
 !frontend/public/data/analysis/
+!frontend/public/data/compare/
+!frontend/public/data/map/
 *.md
 !docs/10-methods.md
 *.txt

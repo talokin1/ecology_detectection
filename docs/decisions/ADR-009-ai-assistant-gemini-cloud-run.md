@@ -50,3 +50,19 @@ Grounding and honesty safeguards:
   eliminates, the risk of a wrong number. Before the demo, the team reviews sample answers for the
   case questions (log them in `docs/08-si-usage-log.md`).
 - Deployment steps: `docs/11-assistant.md`.
+
+## Amendment 1 (2026-11-15): tool calling over our precomputed results
+At first the model saw only the analysis on screen, so it could not answer "where", "A vs B" or
+"what happened in 2010". We chose **tool calling** over embedding-based RAG: the data are exact
+structured numbers (rankings, comparisons, yearly values), which similarity search retrieves
+poorly, and the text corpus (the Methods page) already fits in the prompt.
+
+`backend/trend_detective/assistant/tools.py` declares five **read-only** tools over the files the
+app ships: `get_analysis`, `rank_regions`, `compare_regions`, `get_series`, `map_cell`. None
+computes a new statistic. `compare_regions` returns a tested difference only where one was
+precomputed (story regions); otherwise it returns both results with `difference_tested: false`
+and the rule that neither may be called faster. `rank_regions` carries a multiple-places caveat.
+Tool results join the facts for the number check; successful lookups are listed under the answer
+with links. At most `ASSISTANT_MAX_TOOL_ROUNDS` (4) rounds; the last round has no tools.
+
+Cost: about 1.5–2× per question (each round resends the prompt; implicit caching softens it).
