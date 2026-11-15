@@ -69,9 +69,28 @@ Cross-check of the country method against the native-resolution series, Ukraine,
 Same verdict in all four cases. Ukraine itself is shown with the native series.
 
 ### Variables and their periods (web app)
-Twelve variables are on the map. MERRA-2 variables use 1981–2025; CERES SYN1deg variables (sunlight,
-haze) 2001–2025; GPM IMERG rainfall 1998–2025 (TRMM-era and GPM-era satellites, change in 2014). Pages
-for records shorter than 30 years say so.
+Fourteen variables are on the map. MERRA-2 variables use 1981–2025; CERES SYN1deg variables (sunlight,
+haze) 2001–2025; GPM IMERG rainfall 1998–2025 (TRMM-era and GPM-era satellites, change in 2014); AIRS
+air temperature and water vapour 2003–2025. Pages for records shorter than 30 years say so.
+- **AIRS (Aqua satellite) is a second, satellite view of MERRA-2's temperature and water vapour.** Not fully
+  independent: MERRA-2 assimilates AIRS radiances. AIRS3STM v7.0 "AIRS-only" (infrared
+  retrieval for the whole record, so no step when the AMSU microwave instrument degraded). Each month is
+  the mean of the ~1:30 am and ~1:30 pm passes where both exist (0.2% of 1° temperature cell-months had
+  one pass and were left out), coarsened to 2° like every grid. AIRS has no per-region files: every
+  region's series is the area-weighted mean of the 2° squares its outline overlaps (the country method,
+  ADR-008), so coastal regions include some sea. The record starts in September 2002; analyses use the
+  complete years 2003–2025.
+- **AIRS and MERRA-2 disagree on water vapour.** Over 2003–2025 the global trend is about +0.24 °C per
+  decade (AIRS) vs +0.20 (MERRA-2) for temperature, but about +0.1 vs +0.5 kg/m² per decade for water
+  vapour (quick global check, not yet validated). AIRS retrieves under clear and partly cloudy skies, so
+  persistently cloudy, moist air is sampled less. Every AIRS water-vapour page carries this caveat.
+- **AIRS temperature over hot deserts.** Yearly anomalies of AIRS and MERRA-2 (2003–2025) correlate at
+  0.93–0.94 for Ukraine and Europe but only 0.3–0.8 for Mali, Egypt and the Sahara region, where AIRS
+  trends run cooler; every AIRS temperature page carries a desert caveat. Both records show the Sahel
+  cooling over 2003–2025 (AIRS −0.36, MERRA-2 −0.25 to −0.36 °C per decade depending on the averaging;
+  `stats-validator`, 2026-11-15), so it is not an AIRS artefact, while MERRA-2's 1981–2025 record shows
+  slight warming there. When the satellite window and the long record point in opposite directions, the
+  card says so (a descriptive caveat; no cause is claimed).
 - **Aerosol optical depth of exactly 0 is "no retrieval"**, not clean air: the smallest positive value
   in the grid is 0.0025, and zeros occur under a low sun and over snow or ice (about 14% of
   cell-months, in winter down to 50°N). They are treated as missing. For a high-latitude country a
