@@ -10,7 +10,9 @@ import mapSchema from '../../../schema/map.schema.json';
 import compareSchema from '../../../schema/compare.schema.json';
 import catalogSchema from '../../../schema/catalog.schema.json';
 import validationSchema from '../../../schema/validation.schema.json';
-import type { AnalysisResult, Catalog, Compare, Index, MapLayer, Validation } from './types.gen';
+import seriesIndexSchema from '../../../schema/series-index.schema.json';
+import type { AnalysisResult, Catalog, Compare, Index, MapLayer, SeriesIndex, Validation } from './types.gen';
+import { parseSeries, type GridSeries, type Season } from '../lib/area';
 
 const ajv = new Ajv2020({ allErrors: false, strict: false });
 ajv.addSchema(common);
@@ -21,6 +23,7 @@ const validators = {
   compare: ajv.compile(compareSchema),
   catalog: ajv.compile(catalogSchema),
   validation: ajv.compile(validationSchema),
+  seriesIndex: ajv.compile(seriesIndexSchema),
 };
 
 export class DataError extends Error {
@@ -120,11 +123,42 @@ function hydratedIndex(): Promise<Index> {
   return hydrated;
 }
 
+const gridSeries = new Map<string, Promise<GridSeries>>();
+/** Yearly means of every 2° square for one variable and season (binary, about 1.5 MB). */
+function loadGridSeries(variable: string, season: Season): Promise<GridSeries> {
+  const key = `${variable}/${season}`;
+  const hit = gridSeries.get(key);
+  if (hit) return hit;
+  const p = load<SeriesIndex>('series/index.json', validators.seriesIndex).then(async (index) => {
+    const view = index.variables[variable]?.[season];
+    if (!view) throw new DataError(key, `No yearly grid for ${variable}.`, true);
+    const file = `series/${view.file}`;
+    const r = await fetch(DATA_ROOT + file, { cache: 'no-cache' });
+    if (!r.ok) throw new DataError(file, `${file} is not available (HTTP ${r.status}).`, r.status === 404);
+    try {
+      return parseSeries(index, variable, season, await r.arrayBuffer());
+    } catch (e) {
+      throw new DataError(file, e instanceof Error ? e.message : `${file} could not be read.`);
+    }
+  }).catch((err) => {
+    gridSeries.delete(key);
+    throw err instanceof DataError ? err : new DataError(key, `The yearly grid for ${variable} could not be read.`);
+  });
+  gridSeries.set(key, p);
+  return p;
+}
+
+/** File name of a map view: whole year or one season, plain or minus the world average. */
+export const mapFile = (variable: string, season: Season = 'year', relative = false) =>
+  `map/${variable}${season === 'year' ? '' : `__${season}`}${relative ? '__rel' : ''}.json`;
+
 export const api = {
   index: () => hydratedIndex(),
   catalog: () => load<Catalog>('catalog.json', validators.catalog),
   validation: () => load<Validation>('validation.json', validators.validation),
-  map: (variable: string) => load<MapLayer>(`map/${variable}.json`, validators.map),
+  map: (variable: string, season: Season = 'year', relative = false) =>
+    load<MapLayer>(mapFile(variable, season, relative), validators.map),
+  gridSeries: loadGridSeries,
   analysis: (region: string, variable: string) =>
     load<AnalysisResult>(`analysis/${region}__${variable}.json`, validators.analysis),
   /** Compare files are stored once per unordered pair; the caller gets them in its own order. */

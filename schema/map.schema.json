@@ -21,7 +21,10 @@
     "provenance",
     "value_decimals",
     "legend",
-    "mask"
+    "mask",
+    "season",
+    "relative",
+    "reference"
   ],
   "properties": {
     "schema_version": {
@@ -173,6 +176,48 @@
         "ocean"
       ],
       "description": "Where the field is drawn: everywhere, land only, or sea only."
+    },
+    "season": {
+      "enum": [
+        "year",
+        "djf",
+        "mam",
+        "jja",
+        "son"
+      ],
+      "description": "Months averaged in each year: all twelve, or one three-month season."
+    },
+    "relative": {
+      "type": "boolean",
+      "description": "true = each square's yearly values minus the world average of the same year."
+    },
+    "reference": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "object",
+          "required": [
+            "name",
+            "sen_per_decade",
+            "display"
+          ],
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "sen_per_decade": {
+              "type": "number"
+            },
+            "display": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false,
+          "description": "The world average that was subtracted (relative layers), with its own trend."
+        }
+      ]
     }
   },
   "additionalProperties": false

@@ -10,6 +10,7 @@ import { isDarkBin, swatches } from '../theme/encoding';
 import { cellIndex, formatLatLon, latToMercY, MERC_MAX_LAT, mercYToLat, pointInGeometry } from '../lib/geo';
 import { formatCell } from '../lib/format';
 import { cellVisible, type ShowFilter } from '../lib/filter';
+import { boxIsValid, normaliseBox, type Box } from '../lib/area';
 import { useTheme } from '../state/theme';
 import { S } from '../strings/en';
 
@@ -43,6 +44,11 @@ type Props = {
   show?: ShowFilter;
   /** MapLibre attribution control; the credit also lives in the legend and on About. */
   attribution?: boolean;
+  /** Boxes the visitor drew ("your own area"); the second one is drawn in the comparison colour. */
+  areas?: { id: string; box: Box }[];
+  /** While true, dragging on the map marks a box instead of moving the map. */
+  drawing?: boolean;
+  onDrawn?: (box: Box) => void;
   className?: string;
   ariaLabel: string;
 };
@@ -235,6 +241,17 @@ function regionsFC(regions: Region[], active: string[], highlight: string | null
   };
 }
 
+/** Colour of the second drawn area (Okabe-Ito vermillion), as in the area panel. */
+const AREA_B = '#D55E00';
+
+function boxFeature(b: Box, props: Record<string, number | string> = {}) {
+  return {
+    type: 'Feature' as const, properties: props,
+    geometry: { type: 'Polygon' as const, coordinates: [[[b[0], b[1]], [b[2], b[1]], [b[2], b[3]], [b[0], b[3]], [b[0], b[1]]]] },
+  };
+}
+const EMPTY = { type: 'FeatureCollection' as const, features: [] };
+
 /** A small diagonal hatch for land squares without data. */
 function hatchImage(color: string) {
   const size = 8;
@@ -259,6 +276,8 @@ function baseStyle(): StyleSpecification {
       land: { type: 'geojson', data: basemapUrl('land'), attribution: 'Basemap: Natural Earth' },
       countries: { type: 'geojson', data: basemapUrl('countries') },
       regions: { type: 'geojson', data: { type: 'FeatureCollection', features: [] } },
+      areas: { type: 'geojson', data: { type: 'FeatureCollection', features: [] } },
+      draft: { type: 'geojson', data: { type: 'FeatureCollection', features: [] } },
       stipple: { type: 'geojson', data: { type: 'FeatureCollection', features: [] } },
     },
     layers: [
@@ -277,6 +296,10 @@ function baseStyle(): StyleSpecification {
       { id: 'regions-fill', type: 'fill', source: 'regions', paint: { 'fill-color': ink, 'fill-opacity': 0 } },
       { id: 'regions-halo', type: 'line', source: 'regions', paint: { 'line-color': cssVar('--map-halo'), 'line-width': ['case', ['any', ['==', ['get', 'active'], 1], ['==', ['get', 'hl'], 1]], 6, 3.5], 'line-opacity': 0.9 } },
       { id: 'regions-line', type: 'line', source: 'regions', paint: { 'line-color': ink, 'line-width': ['case', ['==', ['get', 'hl'], 1], 3.5, ['==', ['get', 'active'], 1], 3, 1.8] } },
+      { id: 'areas-halo', type: 'line', source: 'areas', paint: { 'line-color': cssVar('--map-halo'), 'line-width': 5.5, 'line-opacity': 0.9 } },
+      { id: 'areas-line', type: 'line', source: 'areas', paint: { 'line-color': ['case', ['==', ['get', 'second'], 1], AREA_B, ink], 'line-width': 2.6, 'line-dasharray': [2.2, 1.4] } },
+      { id: 'draft-fill', type: 'fill', source: 'draft', paint: { 'fill-color': ink, 'fill-opacity': 0.12 } },
+      { id: 'draft-line', type: 'line', source: 'draft', paint: { 'line-color': ink, 'line-width': 2, 'line-dasharray': [2.2, 1.4] } },
     ],
   };
 }
@@ -340,6 +363,7 @@ export function TrendMap(props: Props) {
     };
     let lastRegion: string | null = null;
     const showAt = (lng: number, lat: number, x: number, y: number) => {
+      if (latest.current.drawing) return setHover(null);
       const region = regionAt(lng, lat);
       const id = region?.id ?? null;
       if (id !== lastRegion) {
@@ -352,6 +376,7 @@ export function TrendMap(props: Props) {
     };
     const activate = (lng: number, lat: number, x: number, y: number) => {
       const p = latest.current;
+      if (p.drawing) return;
       const region = regionAt(lng, lat);
       if (region && p.onRegionClick) return p.onRegionClick(region.id);
       const cell = cellAt(lng, lat);
@@ -474,6 +499,77 @@ export function TrendMap(props: Props) {
     (map.getSource('regions') as GeoJSONSource).setData(regionsFC(regions, activeRegionIds, highlightRegionId, outline));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [regionKey, activeKey, ready, highlightRegionId, outline]);
+
+  // boxes the visitor drew
+  const areaKey = (props.areas ?? []).map((a) => `${a.id}:${a.box.join(',')}`).join('|');
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !ready) return;
+    const areas = props.areas ?? [];
+    (map.getSource('areas') as GeoJSONSource).setData({
+      type: 'FeatureCollection', features: areas.map((a, i) => boxFeature(a.box, { second: i > 0 ? 1 : 0 })),
+    });
+    const tags = areas.length > 1 ? areas.map((a, i) => {
+      const el = document.createElement('span');
+      el.className = `area-tag${i > 0 ? ' area-tag--b' : ''}`;
+      el.textContent = i > 0 ? 'B' : 'A';
+      return new Marker({ element: el, anchor: 'bottom-left', offset: [2, -2] }).setLngLat([a.box[0], a.box[3]]).addTo(map);
+    }) : [];
+    return () => tags.forEach((m) => m.remove());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [areaKey, ready]);
+
+  // drawing a box: the map stops panning, a drag (mouse or one finger) marks the area
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !ready || !props.drawing) return;
+    const draft = map.getSource('draft') as GeoJSONSource;
+    const canvas = map.getCanvas();
+    map.dragPan.disable();
+    map.boxZoom.disable();
+    map.doubleClickZoom.disable();
+    canvas.style.cursor = 'crosshair';
+    let start: [number, number] | null = null;
+    let last: [number, number] | null = null;
+    type Ev = { lngLat: { lng: number; lat: number }; preventDefault: () => void; points?: unknown[] };
+    const down = (e: Ev) => {
+      if (e.points && e.points.length > 1) return; // two fingers still zoom
+      start = [e.lngLat.lng, e.lngLat.lat];
+      last = start;
+      e.preventDefault();
+    };
+    const move = (e: Ev) => {
+      if (!start) return;
+      last = [e.lngLat.lng, e.lngLat.lat];
+      draft.setData({ type: 'FeatureCollection', features: [boxFeature(normaliseBox(start, last))] });
+    };
+    const up = () => {
+      if (!start || !last) return;
+      const box = normaliseBox(start, last);
+      start = null;
+      draft.setData(EMPTY);
+      if (boxIsValid(box)) latest.current.onDrawn?.(box);
+    };
+    map.on('mousedown', down);
+    map.on('mousemove', move);
+    map.on('mouseup', up);
+    map.on('touchstart', down);
+    map.on('touchmove', move);
+    map.on('touchend', up);
+    return () => {
+      map.off('mousedown', down);
+      map.off('mousemove', move);
+      map.off('mouseup', up);
+      map.off('touchstart', down);
+      map.off('touchmove', move);
+      map.off('touchend', up);
+      draft.setData(EMPTY);
+      map.dragPan.enable();
+      map.boxZoom.enable();
+      map.doubleClickZoom.enable();
+      canvas.style.cursor = '';
+    };
+  }, [props.drawing, ready]);
 
   // labels as HTML markers (no glyph server needed)
   useEffect(() => {

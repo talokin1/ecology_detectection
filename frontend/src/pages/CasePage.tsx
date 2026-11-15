@@ -7,6 +7,7 @@ import { LegendChip } from '../components/MapLegend';
 import { Readout, VerdictDetails } from '../components/VerdictCard';
 import { InsightList } from '../components/InsightList';
 import { DeeperChecks } from '../components/DeeperChecks';
+import { VsWorld } from '../components/VsWorld';
 import { TrendChart, type ChartBars, type ChartHandle } from '../components/SeriesChart';
 import { ExtremesChart, MonthChart, SeasonChart } from '../components/SmallCharts';
 import { Disclosure, InfoPopover } from '../components/Panel';
@@ -208,6 +209,11 @@ function CaseBody({ index, a, region, variable, theCase, layer }: {
       </div>
 
       <div className="stack">
+        {a.vs_world && (
+          <Disclosure title={S.vsWorld.title(a.vs_world.reference)} summary={a.vs_world.headline}>
+            <VsWorld a={a} region={region} variable={variable} />
+          </Disclosure>
+        )}
         <Disclosure title={S.case.sections.closer} summary={seasonInsight?.text ?? `${S.case.bySeason}, ${S.case.byMonth.toLowerCase()}`}>
           <div className="sec__head">
             <p className="sec__units">{variable.rate_units}</p>

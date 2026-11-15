@@ -108,6 +108,10 @@ export interface VariableRef {
    * Shown on the map only (ocean variable): no regional analyses.
    */
   map_only: boolean;
+  /**
+   * false = no 'compared with the world' view: the world average of this field is not a sound yardstick.
+   */
+  world_reference: boolean;
 }
 /**
  * What negative and positive trends mean in plain words, e.g. cooling / warming.
@@ -302,6 +306,7 @@ export interface AnalysisResult {
     pipeline_version?: string | null;
     text: string;
   };
+  vs_world: null | VsWorld;
 }
 
 export interface Period {
@@ -422,6 +427,90 @@ export interface DeeperCheck {
   methods_disagree?: boolean;
   warnings?: string[];
 }
+/**
+ * The region compared with the world average of the same variable.
+ */
+
+export interface VsWorld {
+  /**
+   * e.g. 'world average', 'world land average'.
+   */
+  reference: string;
+  reference_note: string;
+  rate_units: string;
+  here: {
+    sen_per_decade: number;
+    display: string;
+  };
+  world: {
+    sen_per_decade: number;
+    /**
+     * @minItems 2
+     * @maxItems 2
+     */
+    ci95: [number, number];
+    display: string;
+    level: 'strong' | 'moderate' | 'weak' | 'none' | 'insufficient';
+  };
+  /**
+   * Trend of (region minus world), month by month; same verdict rule as the headline.
+   */
+  difference: {
+    sen_per_decade: number;
+    /**
+     * @minItems 2
+     * @maxItems 2
+     */
+    ci95: [number, number];
+    display: string;
+    range: string;
+    level: 'strong' | 'moderate' | 'weak' | 'none' | 'insufficient';
+    level_word: string;
+    full_record_level: 'strong' | 'moderate' | 'weak' | 'none' | 'insufficient';
+    p: number;
+  };
+  headline: string;
+  sentence: string;
+  seasons: VsWorldSeason[];
+  /**
+   * Yearly means of the anomalies, each against its own calendar-month normal.
+   */
+  annual: {
+    years: number[];
+    here: (number | null)[];
+    world: (number | null)[];
+  };
+  percent_per_decade: null | {
+    here: number;
+    world: number;
+  };
+}
+
+export interface VsWorldSeason {
+  season: string;
+  label: string;
+  months: string;
+  here: number;
+  world: number;
+  difference: number;
+  /**
+   * @minItems 2
+   * @maxItems 2
+   */
+  ci95: [number, number];
+  display: {
+    here: string;
+    world: string;
+    difference: string;
+    range: string;
+  };
+  p: number;
+  q: number;
+  /**
+   * The difference passes BH FDR across the four seasons.
+   */
+  clear: boolean;
+}
 
 /**
  * Global per-cell trend of one variable. Arrays are flat, row-major from south to north, west to east (index = row * nlon + col).
@@ -483,6 +572,19 @@ export interface MapLayer {
    * Where the field is drawn: everywhere, land only, or sea only.
    */
   mask: 'all' | 'land' | 'ocean';
+  /**
+   * Months averaged in each year: all twelve, or one three-month season.
+   */
+  season: 'year' | 'djf' | 'mam' | 'jja' | 'son';
+  /**
+   * true = each square's yearly values minus the world average of the same year.
+   */
+  relative: boolean;
+  reference: null | {
+    name: string;
+    sen_per_decade: number;
+    display: string;
+  };
 }
 
 /**
@@ -587,5 +689,83 @@ export interface Validation {
     power_text: string;
   }[];
   summary: string;
+}
+
+/**
+ * Describes series/*.bin: one mean per year of every 2-degree square, used by the 'your own area' tool. Each file is float32[nlat*nlon] means (NaN = no complete record), float32[nlat*nlon] step sizes, then int16[years*nlat*nlon] differences from the mean, year by year, counted in the square's own steps.
+ */
+
+export interface SeriesIndex {
+  schema_version: string;
+  grid: {
+    /**
+     * Centre latitude of the first (southern) row.
+     */
+    lat0: number;
+    /**
+     * Centre longitude of the first (western) column.
+     */
+    lon0: number;
+    dlat: number;
+    dlon: number;
+    nlat: number;
+    nlon: number;
+    order: string;
+  };
+  layout: string;
+  variables: {
+    [k: string]: {
+      year: {
+        file: string;
+        first_year: number;
+        last_year: number;
+        /**
+         * Largest step size in the file, in the variable's units.
+         */
+        scale: number;
+        squares_with_data: number;
+      };
+      djf: {
+        file: string;
+        first_year: number;
+        last_year: number;
+        /**
+         * Size of one int16 step, in the variable's units.
+         */
+        scale: number;
+        squares_with_data: number;
+      };
+      mam: {
+        file: string;
+        first_year: number;
+        last_year: number;
+        /**
+         * Size of one int16 step, in the variable's units.
+         */
+        scale: number;
+        squares_with_data: number;
+      };
+      jja: {
+        file: string;
+        first_year: number;
+        last_year: number;
+        /**
+         * Size of one int16 step, in the variable's units.
+         */
+        scale: number;
+        squares_with_data: number;
+      };
+      son: {
+        file: string;
+        first_year: number;
+        last_year: number;
+        /**
+         * Size of one int16 step, in the variable's units.
+         */
+        scale: number;
+        squares_with_data: number;
+      };
+    };
+  };
 }
 

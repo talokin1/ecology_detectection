@@ -13,6 +13,9 @@ const routes = [
   '/compare/ukraine/sahel?var=t2m',
   '/?in=world', '/?in=stories', '/?var=sea_ice', '/?var=haze&panel=regions', '/?panel=quick&region=c_bra&var=haze', '/?var=snow_cover',
   '/region/c_fra?var=sunlight', '/region/ar6_med?var=ozone', '/region/ukraine?var=evap',
+  '/?var=t2m&s=mam', '/?var=t2m&vs=world', '/?var=precip&s=djf&vs=world', '/?var=sea_ice&s=son&vs=world',
+  '/?var=t2m&panel=area&area=-46,46,-20,62', '/?var=soil&s=jja&panel=area&area=-12,34,4,46&area2=10,45,30,55',
+  '/methods?s=area', '/?var=t2m_sat&s=jja', '/?var=vapour_sat&panel=area&area=10,40,30,55',
   '/catalog', '/catalog?topic=water', '/methods', '/methods?s=fdr', '/about', '/about?s=data',
 ];
 
@@ -61,7 +64,7 @@ for (const r of routes) {
     await page.goto(`/#${r}`);
     await expect(page.locator('.topbar')).toBeVisible();
     await expect(page.locator('.state h2')).toHaveCount(0); // no error state
-    if (/^\/(case|region|compare)/.test(r) || r.includes('panel=quick')) {
+    if (/^\/(case|region|compare)/.test(r) || r.includes('panel=quick') || r.includes('panel=area')) {
       await expect(page.locator('.series-chart .main-svg').first()).toBeVisible({ timeout: 15000 });
     }
     expect(errors).toEqual([]);
@@ -76,8 +79,9 @@ test('noise budget: the default Explore view stays quiet and the map fills the p
   const n = await noise(page);
   expect(n.items).toBeLessThanOrEqual(30);
   expect(n.words).toBeLessThanOrEqual(80);
-  // 18 + 1 for the AI assistant button in the top bar (ADR-009); it is absent when no assistant URL is set.
-  expect(n.controls).toBeLessThanOrEqual(19);
+  // 18 + 1 for the AI assistant button in the top bar (ADR-009; absent when no assistant URL is set)
+  // + 3 for the map views and the area tool (months, view, "Draw an area"; ADR-011).
+  expect(n.controls).toBeLessThanOrEqual(22);
   const map = (await page.locator('.explore').boundingBox())!;
   const top = (await page.locator('.topbar').boundingBox())!;
   expect((map.width * map.height) / (1440 * (900 - top.height))).toBeGreaterThanOrEqual(0.85);
@@ -290,3 +294,113 @@ test('world regions and stories are separate sets of places', async ({ page }) =
   await expect(page.locator('.ledger__row')).toHaveCount(5);
 });
 
+
+/** Screen point of a longitude/latitude on the Explore map. */
+async function onMap(page: Page, lon: number, lat: number) {
+  return page.evaluate(([x, y]) => {
+    const el = document.querySelector('.trend-map__canvas') as HTMLElement & { __map: { project: (c: [number, number]) => { x: number; y: number } } };
+    const p = el.__map.project([x, y]);
+    const b = el.getBoundingClientRect();
+    return { x: b.left + p.x, y: b.top + p.y };
+  }, [lon, lat]);
+}
+
+async function drag(page: Page, from: [number, number], to: [number, number]) {
+  const a = await onMap(page, from[0], from[1]);
+  const b = await onMap(page, to[0], to[1]);
+  await page.mouse.move(a.x, a.y);
+  await page.mouse.down();
+  await page.mouse.move((a.x + b.x) / 2, (a.y + b.y) / 2, { steps: 4 });
+  await page.mouse.move(b.x, b.y, { steps: 4 });
+  await page.mouse.up();
+}
+
+test('map views: a season and "compared with the world" are in the URL and in the legend (ADR-011)', async ({ page }) => {
+  await returning(page);
+  await page.goto('/#/?var=t2m');
+  await page.locator('.explore__map .maplibregl-canvas').waitFor();
+  await page.getByLabel('Months').selectOption('mam');
+  await expect(page).toHaveURL(/s=mam/);
+  await page.getByRole('button', { name: 'Explain the colours' }).click();
+  await expect(page.locator('.lchip__more')).toContainText('March to May mean of each year');
+  await page.getByLabel('View').selectOption('world');
+  await expect(page).toHaveURL(/vs=world/);
+  await expect(page.locator('.lchip__word').first()).toHaveText('below the world trend');
+  await expect(page.locator('.lchip__more')).toContainText('after subtracting the world average');
+  await page.getByRole('button', { name: 'Reset' }).click();
+  await expect(page).not.toHaveURL(/s=mam|vs=world/);
+  // precipitation has no sound world average (ADR-011): the view is not offered, even from an old link
+  await page.goto('/#/?var=precip&vs=world');
+  await expect(page.getByLabel('View')).toBeDisabled();
+  await expect(page.locator('.lchip__word').first()).toHaveText('drier');
+});
+
+test('your own area: draw it, read the answer, compare with a second area (ADR-011)', async ({ page }) => {
+  const errors = trackErrors(page);
+  await returning(page);
+  await page.goto('/#/?var=t2m');
+  await page.locator('.explore__map .maplibregl-canvas').waitFor();
+  await page.waitForFunction(() => Boolean((document.querySelector('.trend-map__canvas') as HTMLElement & { __map?: { getSource: (s: string) => unknown } })?.__map?.getSource('trend')));
+  await page.getByRole('button', { name: 'Draw an area' }).click();
+  await expect(page.getByText('Drag on the map to mark your area.')).toBeVisible();
+  await drag(page, [-46, 62], [-20, 46]);
+  await expect(page).toHaveURL(/panel=area/);
+  await expect(page).toHaveURL(/area=-4\d(\.\d)?%2C4\d/);
+  const panel = page.getByRole('dialog', { name: 'Your area' });
+  await expect(panel).toBeVisible();
+  await expect(panel.locator('.quick__value')).toBeVisible({ timeout: 15000 });
+  await expect(panel).toContainText('World average');
+  await expect(panel.locator('.series-chart .main-svg').first()).toBeVisible({ timeout: 15000 });
+
+  // exact box by keyboard: the number must be the one the Python reference gives for this box
+  await panel.getByText('Edit the coordinates').click();
+  for (const [name, value] of [['West', '-46'], ['South', '46'], ['East', '-20'], ['North', '62']]) await panel.getByLabel(name).fill(value);
+  await panel.getByRole('button', { name: 'Apply' }).click();
+  await expect(page).toHaveURL(/area=-46%2C46%2C-20%2C62/);
+  await expect(panel.locator('.quick__value')).toHaveText('+0.13');
+  await expect(panel.locator('.quick__headline')).toHaveText('No clear trend yet');
+  await expect(panel.locator('.area__caution')).toHaveCount(0); // the warning appears only under a clear-looking result
+
+  await panel.getByRole('button', { name: 'Draw a second area' }).click();
+  await drag(page, [-75, 44], [-50, 34]);
+  await expect(page).toHaveURL(/area2=/);
+  await expect(panel).toContainText('Your area minus the second area');
+  await panel.getByRole('button', { name: 'Remove' }).click();
+  await expect(page).not.toHaveURL(/area2=/);
+
+  // the season of the map is the season of the answer
+  await page.getByLabel('Months').selectOption('djf');
+  await expect(panel.locator('.panel-side__kicker')).toContainText('Dec–Feb');
+  await expect(panel.locator('.panel-side__kicker')).toContainText('1982–2025');
+  await page.keyboard.press('Escape');
+  await expect(panel).toHaveCount(0);
+  await expect(page).not.toHaveURL(/area=/);
+  expect(errors).toEqual([]);
+});
+
+test('your own area: drawing can be cancelled, and a box without data says so', async ({ page }) => {
+  await returning(page);
+  await page.goto('/#/?var=t2m');
+  await page.locator('.explore__map .maplibregl-canvas').waitFor();
+  await page.getByRole('button', { name: 'Draw an area' }).click();
+  await page.keyboard.press('Escape');
+  await expect(page.getByText('Drag on the map to mark your area.')).toHaveCount(0);
+  await page.goto('/#/?var=soil&panel=area&area=-40,20,-30,30'); // open Atlantic: no soil
+  await expect(page.getByRole('dialog', { name: 'Your area' })).toContainText('There is no complete record of soil wetness inside this area.');
+  // a clear-looking result carries the "chosen before looking?" warning; precipitation is not compared with the world
+  await page.goto('/#/?var=t2m&panel=area&area=-10,36,40,70');
+  const europe = page.getByRole('dialog', { name: 'Your area' });
+  await expect(europe.locator('.area__caution')).toBeVisible({ timeout: 15000 });
+  await page.goto('/#/?var=precip&panel=area&area=-10,36,40,70');
+  await expect(europe).toContainText('not compared with a world average');
+});
+
+test('a region page compares the place with the world (ADR-011)', async ({ page }) => {
+  await page.goto('/#/region/c_usa?var=t2m');
+  const d = page.locator('details.disclosure', { hasText: 'Compared with the world average' });
+  await expect(d).toBeVisible({ timeout: 15000 });
+  await d.locator('summary').click();
+  await expect(d.locator('.vsworld__table tbody tr')).toHaveCount(4);
+  await expect(d.locator('.series-chart .main-svg').first()).toBeVisible({ timeout: 15000 });
+  await expect(d).toContainText('The world average is the area-weighted mean');
+});
