@@ -256,8 +256,6 @@ export const S = {
       ['Natural Earth', 'https://www.naturalearthdata.com/', 'coastlines and borders, Ukrainian point of view (public domain)'],
     ] as [string, string, string][],
     software: 'Built with React, MapLibre GL JS, Plotly.js and Ajv; statistics in Python with NumPy and SciPy; typeface Inter (SIL Open Font License).',
-    si: 'Use of AI',
-    siText: 'We used Claude (Anthropic) as a development assistant: to summarise documentation, scaffold documents, write and review code (all such commits are marked), and cross-check statistical calculations. The concept, the questions and the scientific interpretation are the team’s. No numbers on this site are produced by AI. The assistant button uses Google Gemini to explain the numbers our pipeline computed and to suggest places to look; its answers are labelled as AI-generated, and any number it writes that is not in our analysis is flagged. For background (named events, explanations, published research) it may search the web with Google Search; those sources are listed separately as web sources, never as our data.',
     code: 'Source code',
     codeText: 'The full code, data contract and methods are open in our repository.',
     repo: 'https://github.com/talokin1/tellus',
