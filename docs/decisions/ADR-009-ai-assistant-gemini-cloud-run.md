@@ -66,3 +66,10 @@ Tool results join the facts for the number check; successful lookups are listed 
 with links. At most `ASSISTANT_MAX_TOOL_ROUNDS` (4) rounds; the last round has no tools.
 
 Cost: about 1.5–2× per question (each round resends the prompt; implicit caching softens it).
+
+## Amendment 2 (2026-11-15): replies in the visitor's language
+The interface, documentation and default stay English (CLAUDE.md rule 1, submission rule). Only the
+assistant's reply follows the language of the visitor's latest question (English when unclear), with
+the cautious wording translated faithfully. The number check reads decimal commas ("0,54") as well as
+thousands separators ("1,000"), so invented numbers are still flagged in other languages. Live check:
+Ukrainian and English questions answered in kind; all numbers grounded.

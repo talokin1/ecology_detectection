@@ -125,12 +125,24 @@ def _load_analysis(data_dir: str, region_id: str, variable_id: str) -> dict | No
 
 
 # ---------------------------------------------------------------------- number check
-# English numbers: "1,000" and "12,345.6" use thousands separators; the decimal mark is "."
-_NUM = re.compile(r"(?<![\w.,])[-+−]?(?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d+)?")
+# Numbers in English and in languages with a decimal comma (Ukrainian "0,54"):
+# - "1,000" / "12,345.6": comma + exactly three digits after a non-zero integer part = thousands;
+# - any other "d,d" (e.g. "0,54", "2,4", "0,545") = decimal comma.
+_NUM = re.compile(r"(?<![\w.,])[-+−]?\d+(?:,\d{3})*(?:[.,]\d+)?")
+_THOUSANDS = re.compile(r"^[1-9]\d{0,2}(?:,\d{3})+(?:\.\d+)?$")
+
+
+def _normalise(s: str) -> str:
+    s = s.replace("−", "-").lstrip("+-")
+    if _THOUSANDS.match(s):
+        return s.replace(",", "")
+    if "," in s and "." not in s:
+        return s.replace(",", ".")  # decimal comma
+    return s.replace(",", "")
 
 
 def _numbers(text: str) -> list[str]:
-    return [m.group(0).replace("−", "-").lstrip("+-").replace(",", "") for m in _NUM.finditer(text)]
+    return [_normalise(m.group(0)) for m in _NUM.finditer(text)]
 
 
 def _decimals(s: str) -> int:

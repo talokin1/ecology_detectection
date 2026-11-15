@@ -61,6 +61,15 @@ def test_number_check_accepts_rounding_and_flags_invented():
     assert unverified_numbers("Two tests and 4 seasons agree.", facts) == []
 
 
+def test_number_check_reads_decimal_commas():
+    facts = '{"sen_per_decade": 0.5446, "total_change": 2.45, "p": 0.043}'
+    assert (
+        unverified_numbers("Україна теплішає на +0,54 °C за десятиліття, разом 2,4 °C (p = 0,043).", facts)
+        == []
+    )
+    assert unverified_numbers("Прогноз: 3,7 °C до 2060 року.", facts) == ["3.7", "2060"]
+
+
 def test_number_check_reads_thousands_separators():
     facts = '{"n": 1000, "distance_km": 2500, "rate": 0.25}'
     assert unverified_numbers("less than 1 in 1,000; 2,500 km away; 0.25 per decade", facts) == []
