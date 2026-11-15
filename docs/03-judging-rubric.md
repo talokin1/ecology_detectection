@@ -24,4 +24,4 @@ Run the `judge-panel` agent at each milestone and record the scores here.
 
 | Date/time | Milestone | Impact | Creativity | Validity | Relevance | Presentation | Top 3 fixes |
 |---|---|---|---|---|---|---|---|
-| | | | | | | | |
+| 2026-11-15 | Draft submission (`docs/12-submission.md`), judge-panel | 4 | 4 | 4 | 4 | 2 | Record the demo + screenshots + one name; one external validation line; one validated pair of opposite trends |

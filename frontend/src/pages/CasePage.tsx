@@ -177,7 +177,7 @@ function CaseBody({ index, a, region, variable, theCase, layer }: {
             </div>
           ) : null}
           <p className="help">
-            {view === 'year' ? (a.emergence.label ?? S.case.yearHelp) : view === 'month' ? S.case.monthHelp : S.case.rawHelp}
+            {view === 'year' ? (a.emergence.label ?? S.case.yearHelp) : view === 'month' ? S.case.monthHelp : S.case.rawHelp(variable.source)}
           </p>
         </section>
 
