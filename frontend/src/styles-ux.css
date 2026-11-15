@@ -360,3 +360,6 @@
 .vsworld__table thead th { font-size: var(--fs-micro); color: var(--text-3); font-weight: 600; }
 .vsworld__table td.is-clear { font-weight: 700; }
 .vsworld__range { color: var(--text-2); font-weight: 400; }
+.ai-sources--web { border-left: 2px solid var(--line-strong); padding-left: 8px; }
+.ai-sources--web a { overflow-wrap: anywhere; }
+.ai-suggestions-frame { display: block; width: 100%; height: 64px; margin-top: 6px; border: 0; background: transparent; }

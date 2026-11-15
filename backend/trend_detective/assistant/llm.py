@@ -42,9 +42,12 @@ ToolRunner = Callable[[str, dict], dict]
 class Model(Protocol):
     name: str
 
-    async def reply(self, system: str, turns: list[dict], run_tool: ToolRunner | None = None) -> dict:
+    async def reply(
+        self, system: str, turns: list[dict], run_tool: ToolRunner | None = None, web_search: bool = False
+    ) -> dict:
         """turns: [{"role": "user"|"model", "text": str}, ...] -> REPLY_SCHEMA dict plus
-        "usage" (summed over calls) and "tool_calls" ([{"name", "args", "result"|"error"}])."""
+        "usage" (summed over calls), "tool_calls" ([{"name", "args", "result"|"error"}]) and
+        "web" (Google Search grounding: queries, sources, cited segments, suggestions HTML)."""
         ...
 
 
@@ -61,15 +64,20 @@ class GeminiModel:
             location=location or os.environ.get("GOOGLE_CLOUD_LOCATION", "global"),
         )
 
-    async def reply(self, system: str, turns: list[dict], run_tool: ToolRunner | None = None) -> dict:
-        """Manual tool loop: Gemini may call our read-only lookup tools (tools.py) for up to
-        ASSISTANT_MAX_TOOL_ROUNDS rounds, then must answer in REPLY_SCHEMA JSON."""
+    async def reply(
+        self, system: str, turns: list[dict], run_tool: ToolRunner | None = None, web_search: bool = False
+    ) -> dict:
+        """Manual tool loop: Gemini may call our read-only lookup tools (tools.py) and, when
+        ``web_search`` is on, Google Search (grounding) for up to ASSISTANT_MAX_TOOL_ROUNDS rounds,
+        then must answer in REPLY_SCHEMA JSON."""
         from google.genai import types
 
         from .tools import DECLARATIONS
 
         contents = [types.Content(role=t["role"], parts=[types.Part(text=t["text"])]) for t in turns]
         tools = [types.Tool(function_declarations=[types.FunctionDeclaration(**d) for d in DECLARATIONS])]
+        if web_search:
+            tools.append(types.Tool(google_search=types.GoogleSearch()))
 
         def config(with_tools: bool):
             return types.GenerateContentConfig(
@@ -85,6 +93,7 @@ class GeminiModel:
 
         usage = {"prompt_tokens": 0, "cached_tokens": 0, "output_tokens": 0, "thinking_tokens": 0}
         calls: list[dict] = []
+        web = empty_web()
         max_rounds = int(os.environ.get("ASSISTANT_MAX_TOOL_ROUNDS", "4"))
         for round_no in range(max_rounds + 1):
             # The last round has no tools, so the model must answer with what it has.
@@ -94,6 +103,7 @@ class GeminiModel:
             )
             for k, v in usage_counts(getattr(resp, "usage_metadata", None)).items():
                 usage[k] += v
+            collect_grounding(resp, web)
             fcs = resp.function_calls or []
             if not fcs or not with_tools:
                 break
@@ -112,7 +122,39 @@ class GeminiModel:
         out = parse_reply(resp.text or "")
         out["usage"] = usage
         out["tool_calls"] = calls
+        out["web"] = web
         return out
+
+
+def empty_web() -> dict:
+    return {"queries": [], "sources": [], "cited_segments": [], "suggestions_html": None}
+
+
+def collect_grounding(resp, web: dict) -> None:
+    """Merge one response's Google Search grounding metadata into ``web`` (sources de-duplicated by
+    URI; source URIs and the suggestions HTML are kept exactly as Google returns them)."""
+    try:
+        gm = resp.candidates[0].grounding_metadata
+    except (AttributeError, IndexError, TypeError):
+        return
+    if gm is None:
+        return
+    for q in gm.web_search_queries or []:
+        if q not in web["queries"]:
+            web["queries"].append(q)
+    for ch in gm.grounding_chunks or []:
+        w = getattr(ch, "web", None)
+        if w is not None and w.uri and all(s["uri"] != w.uri for s in web["sources"]):
+            web["sources"].append(
+                {"title": w.title or w.domain or "source", "uri": w.uri, "domain": w.domain}
+            )
+    for s in gm.grounding_supports or []:
+        seg = getattr(s, "segment", None)
+        if seg is not None and seg.text:
+            web["cited_segments"].append(seg.text)
+    ep = gm.search_entry_point
+    if ep is not None and ep.rendered_content:
+        web["suggestions_html"] = ep.rendered_content
 
 
 def usage_counts(meta) -> dict:
@@ -126,7 +168,7 @@ def usage_counts(meta) -> dict:
     }
 
 
-def estimated_usd(usage: dict) -> float:
+def estimated_usd(usage: dict, searches: int = 0) -> float:
     """Rough cost of one call from env prices in USD per 1M tokens (defaults: gemini-3.8-flash
     global endpoint, introductory 2026 rate; check the Vertex AI pricing page)."""
     p_in = float(os.environ.get("PRICE_INPUT_PER_M", "0.75"))
@@ -134,7 +176,9 @@ def estimated_usd(usage: dict) -> float:
     p_out = float(os.environ.get("PRICE_OUTPUT_PER_M", "3.75"))
     fresh = max(usage.get("prompt_tokens", 0) - usage.get("cached_tokens", 0), 0)
     out = usage.get("output_tokens", 0) + usage.get("thinking_tokens", 0)
-    return (fresh * p_in + usage.get("cached_tokens", 0) * p_cached + out * p_out) / 1e6
+    p_search = float(os.environ.get("PRICE_SEARCH_PER_1K", "14"))  # Gemini 3: billed per search query
+    tokens = (fresh * p_in + usage.get("cached_tokens", 0) * p_cached + out * p_out) / 1e6
+    return tokens + searches * p_search / 1000
 
 
 def parse_reply(text: str) -> dict:

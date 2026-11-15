@@ -15,7 +15,7 @@ const routes = [
   '/region/c_fra?var=sunlight', '/region/ar6_med?var=ozone', '/region/ukraine?var=evap',
   '/?var=t2m&s=mam', '/?var=t2m&vs=world', '/?var=precip&s=djf&vs=world', '/?var=sea_ice&s=son&vs=world',
   '/?var=t2m&panel=area&area=-46,46,-20,62', '/?var=soil&s=jja&panel=area&area=-12,34,4,46&area2=10,45,30,55',
-  '/methods?s=area',
+  '/methods?s=area', '/?var=t2m_sat&s=jja', '/?var=vapour_sat&panel=area&area=10,40,30,55',
   '/catalog', '/catalog?topic=water', '/methods', '/methods?s=fdr', '/about', '/about?s=data',
 ];
 

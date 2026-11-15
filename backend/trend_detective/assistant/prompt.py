@@ -54,12 +54,30 @@ Hard rules:
 """
 
 
-def system_instruction(g: Grounding, region_id: str | None, variable_id: str | None) -> str:
+WEB_RULES = """\
+Web search: you can also use Google Search, for CONTEXT only - named events (a heatwave, a drought,
+an eruption), physical explanations, what published research says, how a dataset or instrument
+works. Rules:
+- Never use the web for the app's own trends, rates, ranges, p-values or verdicts; those come only
+  from GROUNDING and the lookup tools. Never let a web number replace, "correct" or average with them.
+- Do not search when the app's data answers the question.
+- Name the source in the sentence for every fact you take from the web ("According to the Met
+  Office, ..."). If a web figure differs from the app's, say they come from different data or years.
+- Prefer scientific and official sources (space and weather agencies, IPCC, peer-reviewed papers)
+  over blogs and news; say so when a source is weak.
+"""
+NO_WEB = "Web search is not available right now: answer from the app's data and METHODS only.\n"
+
+
+def system_instruction(
+    g: Grounding, region_id: str | None, variable_id: str | None, web: bool = False
+) -> str:
     # Static blocks first, the on-screen analysis last: Gemini bills a repeated prompt prefix at the
     # cached-input rate (implicit caching), so ~10k identical tokens lead every request.
     return "\n".join(
         [
             RULES,
+            WEB_RULES if web else NO_WEB,
             "GROUNDING",
             "== VARIABLES (id, plain definition, period, source) ==",
             g.variables_block(),

@@ -73,3 +73,16 @@ assistant's reply follows the language of the visitor's latest question (English
 the cautious wording translated faithfully. The number check reads decimal commas ("0,54") as well as
 thousands separators ("1,000"), so invented numbers are still flagged in other languages. Live check:
 Ukrainian and English questions answered in kind; all numbers grounded.
+
+## Amendment 3 (2026-11-15): Google Search for context
+The assistant may use Gemini's Grounding with Google Search, for **context only** (named events,
+physical explanations, published research, how instruments work). The prompt forbids using the web
+for the app's own trends, rates, ranges, p-values or verdicts, forbids searching when the app's data
+answers, and requires naming the source in the sentence. Web sources are listed under the answer as
+"From the web (not our data)" with Google's URIs unmodified; Google's Search Suggestions HTML is shown
+unmodified in a sandboxed frame (no scripts). Numbers inside answer segments that grounding cites to
+a web source are not flagged; every other number must still come from the app's data or tools.
+Search is billed per query (third-party sources: about $14 per 1,000 for Gemini 3; Google's page not
+read, verify before judging): `ASSISTANT_WEB_SEARCH` switches it off, `ASSISTANT_SEARCHES_PER_DAY`
+(default 500 per instance) caps it. Live check: a mixed question used NOAA for the cause and the app's
+own 2010 values for "was it unusual"; a pure data question did not search.

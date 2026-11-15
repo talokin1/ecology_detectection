@@ -48,6 +48,9 @@ Reply: `answer`, `suggestions[]` (ids, names, verdict, `href`), `unverified_numb
 | `ASSISTANT_PER_DAY` | `300` | Questions per instance per day (in-memory; resets when an instance restarts, so it limits abuse but is not a hard spending cap) |
 | `PRICE_INPUT_PER_M`, `PRICE_CACHED_PER_M`, `PRICE_OUTPUT_PER_M` | `0.75`, `0.075`, `3.75` | USD per 1M tokens used only for the `est_usd` field in the logs |
 | `ASSISTANT_MAX_OUTPUT_TOKENS` | `2048` | Reply length cap |
+| `ASSISTANT_WEB_SEARCH` | `1` | Google Search grounding for context (`0` = off; ADR-009 amendment 3) |
+| `ASSISTANT_SEARCHES_PER_DAY` | `500` | Search queries per instance per day; then answers use the app's data only |
+| `PRICE_SEARCH_PER_1K` | `14` | USD per 1,000 search queries, only for `est_usd` in the logs |
 | `ASSISTANT_DATA_DIR`, `ASSISTANT_METHODS` | repo paths | Set by the Dockerfile |
 
 No API key is used: authentication is Application Default Credentials.

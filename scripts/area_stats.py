@@ -150,6 +150,7 @@ AREA_CASES = [
     ("soil", "year", [-12, 34, 4, 46]),           # land-only field over a coast: part of the box has no data
     ("haze", "year", [100, 20, 125, 42]),         # shorter record
     ("sea_ice", "son", [-180, 66, 180, 90]),      # sea-only field
+    ("t2m_sat", "year", [10, 40, 30, 55]),          # satellite record with an offset (K to °C)
 ]
 
 

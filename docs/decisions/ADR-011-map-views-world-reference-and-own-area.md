@@ -10,7 +10,7 @@ The team wants visitors to be able to test an idea of the form "the world is war
 is doing something else" (the example that started it: local cooling around the North Atlantic next
 to global warming). The Lead's decision: **no page built for one hypothesis and no prepared "story"
 areas**. The app must give general tools, so that a visitor can run such a check on any variable and
-any place. The map seasons and the area tool work for all twelve variables; the comparison with the
+any place. The map seasons and the area tool work for all fourteen variables; the comparison with the
 world for eight (decision 2).
 
 ## Decisions
@@ -29,8 +29,9 @@ world for eight (decision 2).
 2. **The world average** is the area-weighted (cos latitude) mean of every 2° square with a complete
    record: the whole globe for global fields, land squares for land-only fields. For air temperature it
    therefore includes the oceans, which warm more slowly than land; the app says so wherever the
-   comparison is shown. **Four variables get no comparison with the world** (`world_ref=False`), because
-   the review showed their world average is not a sound yardstick:
+   comparison is shown. **Six variables get no comparison with the world** (`world_ref=False`). For four
+   the review showed that their world average is not a sound yardstick; the two AIRS variables,
+   added to the app by another change on the same day, have not been reviewed for this yet:
    - *MERRA-2 precipitation.* Its world mean falls by 1.0% per decade, but only because its ocean
      squares fall by 2.2% per decade (strong by our rule), while its land squares, which are corrected
      with gauges, rise by 0.9% (no clear trend) and the IMERG satellite record shows no fall either
@@ -40,6 +41,8 @@ world for eight (decision 2).
      reference drifts (e.g. Egypt, own trend 0.000, "strong" gap).
    - *Sea ice, snow cover, snow depth.* A mean over all sea or all land is mostly squares that never
      have any; for sea ice the Arctic loss and the Antarctic change cancel.
+   - *AIRS air temperature and water vapour.* AIRS samples clear and partly cloudy scenes, and its
+     world vapour trend disagrees with MERRA-2's; no world comparison until that is looked at.
    The other world averages carry a caveat in the app: a world mean from a reanalysis or a merged
    satellite product can drift when the observing system changes.
 3. **Every regional analysis gets `vs_world`.** The monthly series "region minus world" goes through
@@ -99,8 +102,8 @@ distinguishable. Air temperature cannot say anything about ocean currents.
 
 ## Consequences
 
-- `frontend/public/data/` grows by about 95 MB (100 map layers, 13 MB; 60 yearly-series binaries,
-  82 MB). The binaries change only when the cache or the grid code changes. This runs against the aim
+- `frontend/public/data/` grows by about 105 MB (110 map layers, 14 MB; 70 yearly-series binaries,
+  91 MB). The binaries change only when the cache or the grid code changes. This runs against the aim
   of ADR-010 (keep large data out of git): the site is built from the repository, and this change had
   no write access to the bucket. Follow-up for the data engineer: serve `series/*.bin` from the GCS
   data store (public read, CORS for the site's origin) and drop them from git.

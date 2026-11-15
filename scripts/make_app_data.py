@@ -122,12 +122,15 @@ MINUS = "−"
 #              MERRA-2 precipitation: its world mean falls only because its ocean rain falls (about
 #              -2% per decade), while its gauge-corrected land rain and the IMERG satellite record do
 #              not, the signature of observing-system changes; sea ice and snow: a mean over all sea
-#              or all land is mostly squares that never have any, and the Arctic and Antarctic cancel.
+#              or all land is mostly squares that never have any, and the Arctic and Antarctic cancel;
+#              the two AIRS fields: their world averages have not been reviewed yet (AIRS samples
+#              clear and partly cloudy scenes, and its world vapour trend disagrees with MERRA-2).
 #   extreme    which tail of monthly anomalies is counted as an "extreme month" (None = not counted)
 def _v(catalog_id, name, long_name, parameter, grid, units, rate_units, *, palette, words, adj, up, down,
        noun, noun_down, subject, units_long, map_title, raw_label, decimals, percent, topic, mask="all",
        scale=1.0, start=1981, extreme=None, source="NASA POWER (MERRA-2)", map_only=False, world_ref=True,
-       zero_is_missing=False, season_verbs=None):
+       zero_is_missing=False, season_verbs=None, offset=0.0, grid_regions=False, caution=None,
+       in_sentence=None, twin=None):
     rd, td, sd = decimals
     unit = rate_units.replace(" per decade", "")
     return {
@@ -141,6 +144,12 @@ def _v(catalog_id, name, long_name, parameter, grid, units, rate_units, *, palet
         "grid": grid, "grid_var": parameter, "extreme": extreme, "source": source, "map_only": map_only,
         "world_ref": world_ref,
         "zero_is_missing": zero_is_missing, "season_verbs": season_verbs,
+        # offset: added after scale (K -> °C); grid_regions: every region's series comes from the
+        # 2° grid (no per-region cache files); caution: extra caveat on every card of this variable
+        "offset": offset, "grid_regions": grid_regions, "caution": caution,
+        # in_sentence: the long name inside a sentence (default: lower case); twin: the longer-record
+        # variable measuring the same thing, compared on every card (see add_twin_context)
+        "in_sentence": in_sentence or long_name.lower(), "twin": twin,
     }
 
 
@@ -272,6 +281,38 @@ VARIABLES = {
         map_title="Where is the ozone layer getting thinner or thicker?",
         raw_label="Monthly total ozone (Dobson units)", decimals=(1, 1, 1), percent=True, topic="air",
         extreme=_ex("thin_ozone_months", "lower", "Months with very thin ozone", "thinner")),
+    # AIRS on NASA's Aqua satellite: an independent check of the MERRA-2 temperature and water vapour
+    # (grids built by backend/trend_detective/airs.py; regional series from the grid, ADR-008 method)
+    "t2m_sat": _v(
+        "surface_air_temperature_airs", "Air temperature from space", "Surface air temperature measured from space (AIRS)",
+        "SurfAirTemp", "airs_SurfAirTemp_2deg.nc", "°C", "°C per decade", palette="RdBu",
+        words={"neg": "cooling", "pos": "warming"}, adj={"neg": "cooler", "pos": "warmer"},
+        up="getting warmer", down="getting cooler", noun="warming", noun_down="cooling", subject="it",
+        units_long="in °C, the air just above the ground as seen by a satellite (day and night average)",
+        map_title="Where does the satellite see the air getting warmer or cooler?",
+        raw_label="Monthly mean temperature (°C)", decimals=(2, 1, 2), percent=False, topic="temperature",
+        start=2003, offset=-273.15, grid_regions=True, source="NASA AIRS (Aqua satellite)", twin="t2m",
+        world_ref=False,
+        in_sentence="surface air temperature measured from space (AIRS)",
+        caution=("Over hot deserts AIRS and MERRA-2 agree poorly (infrared retrievals over bright desert "
+                 "surfaces are hard), so read desert results with care; elsewhere the two usually agree."),
+        extreme=_ex("hot_months", "upper", "Very hot months", "hotter"),
+        season_verbs={"warming": ("warming", "warm fastest"), "cooling": ("cooling", "cool fastest")}),
+    "vapour_sat": _v(
+        "water_vapor_airs", "Water vapour from space", "Water vapour in the air measured from space (AIRS)",
+        "TotH2OVap", "airs_TotH2OVap_2deg.nc", "kg/m²", "kg/m² per decade", palette="BrBG",
+        words={"neg": "drier air", "pos": "moister air"}, adj={"neg": "lower", "pos": "higher"},
+        up="holding more water vapour", down="holding less water vapour",
+        noun="rise in water vapour", noun_down="drop in water vapour", subject="water vapour in the air",
+        units_long="all the water vapour above a square metre of ground, in kilograms, as seen by a satellite",
+        map_title="Where does the satellite see the air holding more or less water?",
+        raw_label="Monthly water vapour (kg/m²)", decimals=(2, 2, 2), percent=True, topic="water",
+        start=2003, grid_regions=True, source="NASA AIRS (Aqua satellite)", twin="vapour", world_ref=False,
+        in_sentence="water vapour in the air measured from space (AIRS)",
+        extreme=_ex("humid_months", "upper", "Very humid months", "more humid"),
+        caution=("AIRS sees mostly clear and partly cloudy skies, and its global water-vapour trend is much "
+                 "smaller than MERRA-2's (about +0.1 vs +0.5 kg/m² per decade, 2003–2025); "
+                 "treat this trend as not yet confirmed.")),
 }
 CORE = ("t2m", "precip", "soil")  # variables with daily inputs and the climate_stats deeper checks
 
@@ -431,7 +472,7 @@ class Grid:
         self.time = pd.DatetimeIndex(ds["time"].values)
         self.lat = ds["lat"].values.astype(float)
         self.lon = ds["lon"].values.astype(float)
-        self.values = da.transpose("time", "lat", "lon").values.astype(float) * spec["scale"]
+        self.values = da.transpose("time", "lat", "lon").values.astype(float) * spec["scale"] + spec["offset"]
         if spec["zero_is_missing"]:  # aerosol optical depth 0.000 = no retrieval (low sun, snow or ice)
             self.values[self.values == 0] = np.nan
         ds.close()
@@ -604,6 +645,10 @@ def provenance_from(prov: dict, spec: dict, what: str) -> dict:
                        "per-square Sen's slope and Mann-Kendall (Yue-Wang), BH FDR across squares "
                        "(trend_stats.py)"]
     else:
+        if what == "grid":
+            processing = processing[:2] + [
+                "region value = mean of the 2° map squares that overlap the region's outline, weighted "
+                "by the overlapping area"]
         if what == "country":
             processing = processing[:2] + [
                 "country value = mean of the 2° map squares that overlap the country, weighted by the "
@@ -611,7 +656,11 @@ def provenance_from(prov: dict, spec: dict, what: str) -> dict:
         processing += [f"monthly series {Y0}-01 to {Y1}-12 (complete years)",
                        "anomalies from the calendar-month normal; Sen's slope, Mann-Kendall (Yue-Wang), "
                        "OLS with effective sample size (trend_stats.py)"]
-    if "CERES" in spec["source"]:
+    if "AIRS" in spec["source"]:
+        about = ("Data: NASA AIRS infrared sounder on the Aqua satellite, 1° squares, average of the "
+                 "~1:30 am and ~1:30 pm passes; a satellite retrieval, not a weather model (MERRA-2 does "
+                 "use AIRS measurements, so the two are not fully independent)")
+    elif "CERES" in spec["source"]:
         about = "Data: NASA CERES SYN1deg, built from satellite measurements, about 100 km squares"
     elif "IMERG" in spec["source"]:
         about = ("Data: NASA GPM IMERG, rainfall estimated from satellites, about 10 km squares; the "
@@ -633,7 +682,8 @@ def provenance_from(prov: dict, spec: dict, what: str) -> dict:
         "caveat": (about + f". The trend is a straight line through {Y0}–{Y1}; it shows what changed, not why."
                    + (f" The record is {Y1 - Y0 + 1} years long, shorter than the 30 years usually used to "
                       "describe a climate." if Y1 - Y0 + 1 < 30 else "")
-                   + (" " + prov["_caution"] if prov.get("_caution") else "")),
+                   + (" " + prov["_caution"] if prov.get("_caution") else "")
+                   + (" " + spec["caution"] if spec.get("caution") else "")),
     }
 
 
@@ -891,6 +941,12 @@ def vs_world_block(var: str, region: dict, dates, raw, per_dec: float, own_level
     }
 
 
+def region_what(region: dict) -> str:
+    """How a region's series was made: 'country' / 'grid' (2° squares) or 'region' (cached series)."""
+    w = region.get("weights")
+    return "grid" if w == "grid" else "country" if w is not None else "region"
+
+
 def analyse(var, region, cells, raw, prov, world=None):
     """Full analysis of one monthly series (already in app units, complete for Y0..Y1)."""
     spec = VARIABLES[var]
@@ -933,10 +989,10 @@ def analyse(var, region, cells, raw, prov, world=None):
     moved = "rose" if total > 0 else "dropped"
     total_abs = f"{fmt(abs(total), td, sign=False)} {unit}"
     if level == "strong":
-        sentence = (f"Since {Y0}, {spec['long_name'].lower()} in {name_s} {moved} by about {total_abs}. "
+        sentence = (f"Since {Y0}, {spec['in_sentence']} in {name_s} {moved} by about {total_abs}. "
                     f"A drift this large would be very rare if nothing were really changing ({p_text(mk['p'])}).")
     elif level == "moderate":
-        sentence = (f"Since {Y0}, {spec['long_name'].lower()} in {name_s} {moved} by about {total_abs}. "
+        sentence = (f"Since {Y0}, {spec['in_sentence']} in {name_s} {moved} by about {total_abs}. "
                     f"This would be rare if nothing were changing ({p_text(mk['p'])}).")
     elif level == "weak":
         sentence = (f"{spec['long_name']} in {name_s} may be {words}, but the evidence is not "
@@ -1143,10 +1199,10 @@ def analyse(var, region, cells, raw, prov, world=None):
         "insights": [],
         "insights_audit": {"tested": len(family), "passed": int(sig.sum()), "shown": 0, "q": FDR_INSIGHT_Q, "text": ""},
         "deeper_checks": None,
-        "provenance": provenance_from(prov, spec, "country" if region.get("weights") is not None else "region"),
+        "provenance": provenance_from(prov, spec, region_what(region)),
         "_internal": {"family": family, "qmap": qmap, "spec": spec, "prov": prov,
                       "region": {"id": region["id"], "name": region["name"], "kind": region["kind"]},
-                      "what": "country" if region.get("weights") is not None else "region",
+                      "what": region_what(region),
                       "total": total, "pct": pct_total, "unit": unit},
     }
 
@@ -1159,6 +1215,30 @@ def change_phrase(a: dict) -> str:
     if i["pct"] is not None:
         return f"about {fmt(abs(i['pct']), 0, sign=False)}% {adj}"
     return f"about {fmt(abs(i['total']), spec['total_decimals'], sign=False)} {i['unit']} {adj}"
+
+
+def add_twin_context(results: dict, periods: dict) -> None:
+    """When a shorter satellite record and the longer record of the same quantity point in opposite
+    directions for a place, say so on the satellite card (stats-validator note, 2026-11-15). Only
+    computed results are quoted; no cause is claimed."""
+    for (rid, var), a in results.items():
+        twin = VARIABLES[var].get("twin")
+        b = results.get((rid, twin)) if twin else None
+        if b is None:
+            continue
+        va, vb = a["verdict"], b["verdict"]
+        opposite = {va["direction"], vb["direction"]} == {"up", "down"}
+        if not opposite or max(LEVEL_RANK[va["level"]], LEVEL_RANK[vb["level"]]) < 2:
+            continue
+        y0, y1 = periods[twin]
+        a["insights"].insert(0, {
+            "kind": "caveat",
+            "text": (f"This satellite record starts in {periods[var][0]}. The longer {y0}–{y1} record "
+                     f"({VARIABLES[twin]['source']}) for this place says: {vb['headline'].lower()}, "
+                     f"{b['trend']['display']['rate']}. A shorter window can show a different direction."),
+            "evidence_level": "descriptive", "tested": False, "methods_anchor": "trend-test",
+            "numbers": {"long_record_rate": b["trend"]["sen_per_decade"]},
+        })
 
 
 def build_insights(a: dict, regions: dict) -> None:
@@ -1771,6 +1851,27 @@ def world_regions() -> dict:
     return out
 
 
+def grid_weights(geom, lat: np.ndarray, lon: np.ndarray):
+    """Rows, columns and weights (overlap fraction x cos(latitude)) of the 2° squares a shape overlaps."""
+    dlat, dlon = float(lat[1] - lat[0]), float(lon[1] - lon[0])
+    w, s, e, n = geom.bounds
+    rows = np.flatnonzero((lat + dlat / 2 > s) & (lat - dlat / 2 < n))
+    cols = np.flatnonzero((lon + dlon / 2 > w) & (lon - dlon / 2 < e))
+    rr, cc = np.meshgrid(rows, cols, indexing="ij")
+    rr, cc = rr.ravel(), cc.ravel()
+    boxes = shapely.box(lon[cc] - dlon / 2, lat[rr] - dlat / 2, lon[cc] + dlon / 2, lat[rr] + dlat / 2)
+    frac = shapely.area(shapely.intersection(geom, boxes)) / (dlat * dlon)
+    keep = frac > 1e-4
+    return rr[keep], cc[keep], frac[keep] * np.cos(np.deg2rad(lat[rr[keep]]))
+
+
+def region_grid_weights(region: dict, grid) -> tuple:
+    """2° square weights of a story or world region's outline (for variables with only a grid)."""
+    if region.get("grid_weights") is None:
+        region["grid_weights"] = grid_weights(shape(region["geometry"]).buffer(0), grid.lat, grid.lon)
+    return region["grid_weights"]
+
+
 def country_regions(lat: np.ndarray, lon: np.ndarray) -> dict:
     """Countries from the committed basemap, with the weights of the 2° squares they overlap."""
     fc = json.loads(BASEMAP_COUNTRIES.read_text(encoding="utf-8"))
@@ -1799,25 +1900,18 @@ def country_regions(lat: np.ndarray, lon: np.ndarray) -> dict:
         if km2 < COUNTRY_MIN_KM2:
             continue
         w, s, e, n = main.bounds
-        rows = np.flatnonzero((lat + dlat / 2 > s) & (lat - dlat / 2 < n))
-        cols = np.flatnonzero((lon + dlon / 2 > w) & (lon - dlon / 2 < e))
-        rr, cc = np.meshgrid(rows, cols, indexing="ij")
-        rr, cc = rr.ravel(), cc.ravel()
-        boxes = shapely.box(lon[cc] - dlon / 2, lat[rr] - dlat / 2, lon[cc] + dlon / 2, lat[rr] + dlat / 2)
-        frac = shapely.area(shapely.intersection(main, boxes)) / (dlat * dlon)
-        keep = frac > 1e-4
-        weights = frac[keep] * np.cos(np.deg2rad(lat[rr[keep]]))
+        rr_k, cc_k, weights = grid_weights(main, lat, lon)
         if weights.sum() <= 0:
             continue
         name = COUNTRY_NAMES.get(name, name)
         c = cluster[0].representative_point()
         rid = f"c_{iso.lower()}"
         mask = np.zeros((lat.size, lon.size), dtype=bool)
-        mask[rr[keep], cc[keep]] = True
+        mask[rr_k, cc_k] = True
         out[rid] = {"id": rid, "preset": None, "name": name, "place_type": "country",
                     "bbox": [round(w, 2), round(s, 2), round(e, 2), round(n, 2)],
                     "centroid": [round(c.x, 2), round(c.y, 2)], "geometry": None, "kind": "country",
-                    "story": False, "iso": iso, "weights": (rr[keep], cc[keep], weights), "mask": mask,
+                    "story": False, "iso": iso, "weights": (rr_k, cc_k, weights), "mask": mask,
                     "name_in_sentence": f"the {name}" if name in THE else name}
     return dict(sorted(out.items(), key=lambda kv: kv[1]["name"]))
 
@@ -1833,10 +1927,10 @@ def series_from_cache(var: str, preset: str) -> tuple[np.ndarray, dict]:
     return raw, s.attrs.get("provenance", {})
 
 
-def series_from_grid(grid: Grid, region: dict) -> np.ndarray:
+def series_from_grid(grid: Grid, weights: tuple) -> np.ndarray:
     """Area-weighted monthly mean of the 2° squares a country overlaps; a month needs data in
     squares holding at least half of the country's weight."""
-    rr, cc, w = region["weights"]
+    rr, cc, w = weights
     sel = (grid.time.year >= Y0) & (grid.time.year <= Y1)
     block = grid.values[sel][:, rr, cc]
     ok = np.isfinite(block)
@@ -1921,7 +2015,9 @@ def main(runs: int, bootstrap: int, workers: int) -> None:
                     r["mask"] = region_mask(cells, shape(r["geometry"]))
                 try:
                     if r["weights"] is not None:
-                        raw, prov = series_from_grid(grid, r), grid.provenance
+                        raw, prov = series_from_grid(grid, r["weights"]), grid.provenance
+                    elif spec["grid_regions"]:  # no per-region files: average the region's 2° squares
+                        raw, prov = series_from_grid(grid, region_grid_weights(r, grid)), grid.provenance
                     else:
                         raw, prov = series_from_cache(var, r["preset"])
                 except Exception as exc:  # noqa: BLE001 - leave the pair out and say so; never invent data
@@ -1935,7 +2031,7 @@ def main(runs: int, bootstrap: int, workers: int) -> None:
                 if notes:
                     prov = {**prov, "_caution": " ".join(str(x) for x in notes)}
                 slim = {"id": r["id"], "name": r["name"], "kind": r["kind"], "mask": r["mask"],
-                        "weights": True if r["weights"] is not None else None}
+                        "weights": True if r["weights"] is not None else ("grid" if spec["grid_regions"] else None)}
                 tasks.append((var, Y0, Y1, slim, slim_cells, raw, prov, world))
             for key, a in pool.map(_analyse_task, tasks, chunksize=4):
                 results[key] = a
@@ -1949,6 +2045,7 @@ def main(runs: int, bootstrap: int, workers: int) -> None:
     for (rid, var), a in results.items():
         Y0, Y1 = periods[var]
         build_insights(a, regions)
+    add_twin_context(results, periods)
 
     # deeper checks: the team's climate_stats pipeline, one document (one BH family) per story region
     Y0, Y1 = periods[CORE[0]]

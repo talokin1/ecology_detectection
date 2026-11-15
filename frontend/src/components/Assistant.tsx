@@ -15,7 +15,11 @@ export const assistantEnabled = URL_BASE !== '';
 
 type Suggestion = { variable_id: string; region_id: string; variable_name: string; region_name: string; why: string; verdict: string | null; href: string };
 type LookedUp = { tool: string; label: string; href: string | null };
-type Reply = { answer: string; suggestions: Suggestion[]; looked_up?: LookedUp[]; unverified_numbers: string[]; model: string; disclaimer: string };
+type WebSource = { title: string; uri: string; domain?: string | null };
+type Reply = {
+  answer: string; suggestions: Suggestion[]; looked_up?: LookedUp[]; web_sources?: WebSource[];
+  search_suggestions_html?: string | null; unverified_numbers: string[]; model: string; disclaimer: string;
+};
 type Msg = { role: 'user'; text: string } | { role: 'assistant'; text: string; reply?: Reply; error?: boolean };
 
 const HISTORY_TURNS = 6;
@@ -175,10 +179,37 @@ function ReplyExtras({ reply }: { reply: Reply }) {
           </ul>
         </div>
       )}
+      {reply.web_sources && reply.web_sources.length > 0 && (
+        <div className="ai-sources ai-sources--web">
+          <span className="ai-sources__title">{S.assistant.webSources}</span>
+          <ul>
+            {reply.web_sources.map((w) => (
+              <li key={w.uri}><a href={w.uri} target="_blank" rel="noopener noreferrer">{w.title}</a></li>
+            ))}
+          </ul>
+        </div>
+      )}
+      {reply.search_suggestions_html && <SearchSuggestions html={reply.search_suggestions_html} />}
       {reply.unverified_numbers.length > 0 && (
         <p className="ai-warn" role="note">{S.assistant.unverified(reply.unverified_numbers.join(', '))}</p>
       )}
       <p className="ai-msg__label">{S.assistant.label(reply.model)}</p>
     </>
+  );
+}
+
+/**
+ * Google's Search Suggestions, shown unmodified as Google requires for grounded answers. They are
+ * isolated in a sandboxed frame (no scripts, no access to this page); a <base> tag makes their
+ * links open in a new tab.
+ */
+function SearchSuggestions({ html }: { html: string }) {
+  return (
+    <iframe
+      className="ai-suggestions-frame"
+      title={S.assistant.searchSuggestions}
+      sandbox="allow-popups allow-popups-to-escape-sandbox"
+      srcDoc={`<!doctype html><base target="_blank">${html}`}
+    />
   );
 }

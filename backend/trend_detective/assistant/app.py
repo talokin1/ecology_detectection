@@ -66,13 +66,46 @@ class LookedUp(BaseModel):
     href: str | None = None
 
 
+class WebSource(BaseModel):
+    """A web page Google Search grounding cited (URI kept exactly as Google returns it)."""
+
+    title: str
+    uri: str
+    domain: str | None = None
+
+
 class ChatOut(BaseModel):
     answer: str
     suggestions: list[Suggestion]
     looked_up: list[LookedUp] = Field(default_factory=list)
+    web_sources: list[WebSource] = Field(default_factory=list)
+    # Google's Search Suggestions HTML, to be displayed unmodified next to a grounded answer
+    search_suggestions_html: str | None = None
     unverified_numbers: list[str]
     model: str
     disclaimer: str = DISCLAIMER
+
+
+class SearchBudget:
+    """Per-instance daily cap on Google Search queries (each query is billed); when it is used up,
+    the assistant answers from the app's data only."""
+
+    def __init__(self, per_day: int):
+        self.per_day = per_day
+        self.day, self.used = time.strftime("%Y-%m-%d"), 0
+
+    def available(self) -> bool:
+        today = time.strftime("%Y-%m-%d")
+        if today != self.day:
+            self.day, self.used = today, 0
+        return self.used < self.per_day
+
+    def spend(self, n: int) -> None:
+        self.used += n
+
+
+def web_search_enabled() -> bool:
+    return os.environ.get("ASSISTANT_WEB_SEARCH", "1").strip().lower() not in ("0", "false", "no", "off")
 
 
 class RateLimiter:
@@ -189,6 +222,7 @@ def create_app(grounding: Grounding | None = None, model: Model | None = None) -
     limiter = RateLimiter(
         int(os.environ.get("ASSISTANT_PER_MINUTE", "6")), 60, int(os.environ.get("ASSISTANT_PER_DAY", "300"))
     )
+    searches = SearchBudget(int(os.environ.get("ASSISTANT_SEARCHES_PER_DAY", "500")))
 
     def g() -> Grounding:
         if state["g"] is None:
@@ -228,7 +262,10 @@ def create_app(grounding: Grounding | None = None, model: Model | None = None) -
         try:
             started = time.monotonic()
             tools = Tools(grd)
-            raw = await m().reply(system_instruction(grd, rid, vid), turns, tools.call)
+            use_web = web_search_enabled() and searches.available()
+            raw = await m().reply(
+                system_instruction(grd, rid, vid, web=use_web), turns, tools.call, web_search=use_web
+            )
         except Exception:  # noqa: BLE001 - never leak provider errors to the browser
             log.exception("model call failed")
             raise HTTPException(
@@ -243,9 +280,18 @@ def create_app(grounding: Grounding | None = None, model: Model | None = None) -
         looked_up_facts = json.dumps(
             [{"args": c.get("args"), "result": c.get("result")} for c in calls], ensure_ascii=False
         )
+        web = raw.get("web") or {}
+        searches.spend(len(web.get("queries") or []))
+        # Numbers inside answer segments that Google Search grounding cites to a web source are
+        # attributed to that source (listed under the answer as web, not our data); everything else
+        # must come from the app's own data and tools.
         flagged = unverified_numbers(
             answer + " " + " ".join(s.why for s in suggestions),
-            grd.facts_text(rid, vid) + "\n" + looked_up_facts,
+            grd.facts_text(rid, vid)
+            + "\n"
+            + looked_up_facts
+            + "\n"
+            + "\n".join(web.get("cited_segments") or []),
         )
         usage = raw.get("usage") or {}
         # One structured line per answer (Cloud Logging parses JSON on stdout): cost and quality.
@@ -258,7 +304,11 @@ def create_app(grounding: Grounding | None = None, model: Model | None = None) -
                     "screen": f"{rid}__{vid}" if rid and vid else None,
                     "latency_ms": round((time.monotonic() - started) * 1000),
                     **usage,
-                    "est_usd": round(estimated_usd(usage), 6) if usage else None,
+                    "est_usd": round(estimated_usd(usage, len(web.get("queries") or [])), 6)
+                    if usage
+                    else None,
+                    "web_queries": len(web.get("queries") or []),
+                    "web_sources": len(web.get("sources") or []),
                     "suggestions": len(suggestions),
                     "tools": [c["name"] + ("!" if "error" in c else "") for c in calls],
                     "unverified_numbers": flagged,
@@ -270,6 +320,10 @@ def create_app(grounding: Grounding | None = None, model: Model | None = None) -
             answer=answer,
             suggestions=suggestions,
             looked_up=describe_lookups(grd, calls),
+            web_sources=[WebSource(**s) for s in (web.get("sources") or [])[:8]],
+            search_suggestions_html=web.get("suggestions_html")
+            if web.get("sources") or web.get("queries")
+            else None,
             unverified_numbers=flagged,
             model=m().name,
         )
