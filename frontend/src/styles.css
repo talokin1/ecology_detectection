@@ -235,15 +235,17 @@ code { font-size: var(--fs-small); background: var(--surface-2); padding: 1px 5p
 
 /* findings */
 .insights { display: grid; gap: 14px; }
-.insights__list { list-style: none; margin: 0; padding: 0; display: grid; }
-.insight { padding: 11px 0; border-bottom: 1px solid var(--line); }
-.insight:first-child { padding-top: 2px; }
+.insights__list { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+.insight { padding: 14px 16px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); }
 .insight__num { font-size: var(--fs-small); color: var(--text-3); padding-top: 2px; font-weight: 700; }
 .insight__text { font-size: var(--fs-lead); line-height: 1.45; }
-.insight__links { display: flex; flex-wrap: wrap; gap: 4px 14px; margin-top: 4px; font-size: var(--fs-small); color: var(--text-2); align-items: center; }
+.insight__links { display: flex; flex-wrap: wrap; gap: 4px 16px; margin-top: 8px; font-size: var(--fs-small); color: var(--text-2); align-items: center; }
 .insight__tested { font-weight: 700; color: var(--text); }
 .insights__empty { font-size: var(--fs-body); }
 .insights__audit { font-size: var(--fs-small); color: var(--text-2); }
+.insights__audit summary { cursor: pointer; width: fit-content; }
+.insights__audit summary:hover { color: var(--text); }
+.insights__audit p { margin-top: 8px; max-width: 72ch; }
 .insights--compact .insight__text { font-size: var(--fs-body); }
 
 /* small charts */
@@ -295,14 +297,23 @@ code { font-size: var(--fs-small); background: var(--surface-2); padding: 1px 5p
 .filters { display: grid; gap: 10px; padding: 14px 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
 .filters__row { display: grid; grid-template-columns: 120px 1fr; align-items: center; gap: 10px; }
 .filters__label { font-size: var(--fs-small); font-weight: 600; color: var(--text-2); }
-.catalog__section { font-size: var(--fs-body); font-weight: 700; margin: 28px 0 10px; }
+.catalog__block { margin-top: 36px; }
+.catalog__block--next { background: var(--surface-2); border-radius: var(--radius); padding: 20px 20px 8px; }
+.catalog__head { border-top: 3px solid var(--ink); padding-top: 12px; margin-bottom: 16px; }
+.catalog__block--next .catalog__head { border-top: 0; padding-top: 0; }
+.catalog__head h2 { font-size: var(--fs-verdict); font-weight: 700; letter-spacing: -0.01em; display: flex; align-items: center; gap: 10px; }
+.catalog__head p { color: var(--text-2); font-size: var(--fs-small); margin-top: 2px; }
+.catalog__count { font-size: var(--fs-small); font-weight: 600; color: var(--text-2); border: 1px solid var(--line-strong); border-radius: 999px; padding: 0 9px; line-height: 1.7; }
 .ready { list-style: none; margin: 0; padding: 0; display: grid; }
-.ready__item { display: grid; grid-template-columns: 1fr auto; gap: 24px; align-items: center; padding: 16px 0; border-top: 1px solid var(--line); }
-.ready__item:last-child { border-bottom: 1px solid var(--line); }
+.ready { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; }
+.ready__item { display: flex; flex-direction: column; gap: 6px; padding: 18px 18px 16px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); }
+.ready__item:hover { border-color: var(--line-strong); }
+.ready__topic { font-size: var(--fs-micro); text-transform: uppercase; letter-spacing: .06em; color: var(--text-2); }
 .ready__name { font-size: var(--fs-verdict); font-weight: 700; letter-spacing: -0.01em; }
-.ready__def { font-size: var(--fs-lead); margin-top: 4px; max-width: 64ch; }
-.ready__why { font-size: var(--fs-body); margin-top: 4px; max-width: 70ch; }
-.ready__src { font-size: var(--fs-small); color: var(--text-2); margin-top: 6px; }
+.ready__def { font-size: var(--fs-body); }
+.ready__why { font-size: var(--fs-small); color: var(--text-2); }
+.ready__src { font-size: var(--fs-micro); color: var(--text-3); margin-top: auto; padding-top: 6px; }
+.ready__go { font-weight: 600; font-size: var(--fs-small); width: fit-content; }
 .catalog-next { width: 100%; border-collapse: collapse; font-size: var(--fs-small); color: var(--text-2); }
 .catalog-next th { text-align: left; font-weight: 600; padding: 6px 12px 6px 0; border-bottom: 1px solid var(--line-strong); }
 .catalog-next td { vertical-align: top; padding: 9px 14px 9px 0; border-bottom: 1px solid var(--line); }

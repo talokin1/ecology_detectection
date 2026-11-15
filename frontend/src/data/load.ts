@@ -86,8 +86,42 @@ function load<T>(file: string, validate: ValidateFunction): Promise<T> {
   return p;
 }
 
+type Geometry = { type: 'Polygon' | 'MultiPolygon'; coordinates: unknown[] };
+let hydrated: Promise<Index> | null = null;
+
+/**
+ * index.json lists countries without outlines (they would repeat the basemap). The outline is
+ * taken from basemap/countries.geojson by ISO code; parts far from the mainland (outside the
+ * region's bbox) are left out, exactly as in the data.
+ */
+function hydratedIndex(): Promise<Index> {
+  if (hydrated) return hydrated;
+  hydrated = load<Index>('index.json', validators.index).then(async (index) => {
+    if (!index.regions.some((r) => r.geometry === null)) return index;
+    const fc = (await (await fetch(basemapUrl('countries'))).json()) as { features: { properties: { iso: string }; geometry: Geometry }[] };
+    const byIso = new Map(fc.features.map((f) => [f.properties.iso, f.geometry]));
+    const regions = index.regions.map((r) => {
+      if (r.geometry !== null || !r.iso) return r;
+      const g = byIso.get(r.iso);
+      if (!g) return r;
+      const polys = (g.type === 'Polygon' ? [g.coordinates] : g.coordinates) as number[][][][];
+      const [w, s, e, n] = r.bbox;
+      const inside = polys.filter((rings) => {
+        const [x, y] = rings[0][0];
+        return x >= w - 0.6 && x <= e + 0.6 && y >= s - 0.6 && y <= n + 0.6;
+      });
+      return { ...r, geometry: { type: 'MultiPolygon' as const, coordinates: inside } };
+    });
+    return { ...index, regions: regions.filter((r) => r.geometry !== null) };
+  }).catch((err) => {
+    hydrated = null;
+    throw err;
+  });
+  return hydrated;
+}
+
 export const api = {
-  index: () => load<Index>('index.json', validators.index),
+  index: () => hydratedIndex(),
   catalog: () => load<Catalog>('catalog.json', validators.catalog),
   validation: () => load<Validation>('validation.json', validators.validation),
   map: (variable: string) => load<MapLayer>(`map/${variable}.json`, validators.map),

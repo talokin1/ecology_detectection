@@ -139,14 +139,15 @@ def test_default_matrix_uses_available_catalog(bd):
     jobs = bd.expand_jobs(bd.load_jobs(bd.DEFAULT_JOBS))
     avail = acquire.list_variables(available_only=True)
     assert {j.name for j in jobs if j.kind == "variable"} == set(avail)
-    countries = set(acquire.region_set("countries"))
+    stories = set(acquire.region_set("countries")) | {"sahel"}  # web-app story regions
     main = [j for j in jobs
-            if j.kind == "variable" and not j.region.startswith("ar6_") and j.region not in countries]
+            if j.kind == "variable" and not j.region.startswith("ar6_") and j.region not in stories]
     assert len(main) == 4 * len(avail)
-    app = [j for j in jobs if j.kind == "variable" and j.region in countries]
-    app_vars = {"air_temperature_power", "precipitation_power", "root_zone_soil_wetness_power"}
-    assert {j.name for j in app} == app_vars
-    assert len(app) == 3 * len(countries)
+    app = [j for j in jobs if j.kind == "variable" and j.region in stories]
+    assert len(app) == len(stories) * len(avail)
+    not_built = {"sea_ice_fraction_power", "ndvi_modis", "no2_tropospheric_omi",
+                 "terrestrial_water_storage_grace"}
+    assert {j.name for j in app if j.excluded} == not_built
 
 
 def test_ar6_matrix_from_region_set(bd):

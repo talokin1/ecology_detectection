@@ -20,14 +20,17 @@ Every number in the app and slides comes from this code.
    5% level (Weatherhead et al., 1998): n* = [(3.3 σ_N √(12/f) / |ω₀|) · √((1+φ)/(1−φ))]^{2/3},
    σ_N = std of deseasonalised residuals, φ = their lag-1 autocorrelation, ω₀ = trend per year,
    f = observations per year (12 → original formula).
-8. **Verdict** (plain language):
-   | Condition | Verdict |
-   |---|---|
-   | record < 10 years | insufficient record |
-   | p < 0.01 and CI excludes 0 | strong evidence |
-   | p < 0.05 | evidence |
-   | p < 0.10 | weak, suggestive evidence |
-   | otherwise | no significant trend yet + "≈ N more years needed" |
+8. **Verdict** (plain language). Each test gives a level, and the reported level is the weaker of the
+   two (ADR-003 "conservative verdict"):
+   | Level | Mann–Kendall (Yue–Wang) | OLS with n_eff |
+   |---|---|---|
+   | strong evidence | 99% Sen CI excludes 0 | p < 0.01 |
+   | evidence | 95% Sen CI excludes 0 | p < 0.05 |
+   | a hint | 90% Sen CI excludes 0 | p < 0.10 |
+   | no clear trend yet (+ "≈ N more years needed") | otherwise | otherwise |
+
+   A record shorter than 10 years gives "not enough data". In the web app the headline is further
+   capped by three stability checks (see "Robustness" below).
 
 ## Regions: boxes and IPCC AR6 outlines
 A region is either a latitude/longitude box or a polygon outline. The 46 IPCC AR6 WGI land reference
@@ -44,6 +47,55 @@ as seven countries (748; Åland is a separate Natural Earth unit and is not incl
 twelve countries, Kosovo included as part of Serbia in the Ukrainian-POV file (493). Same cell-centre rule, land cells
 only. The Sahel stays a box. The map outline drawn for each region is the same polygon the numbers are
 averaged over. ADR-005 amendment 2.
+
+### Countries (web app)
+The app also offers 152 countries. A country's monthly value is the mean of the 2° map squares it
+overlaps, weighted by (area of overlap) x cos(latitude); a month needs data in squares holding at least
+half of the country's weight. Outlines come from the committed basemap (Natural Earth 1:10m, Ukrainian
+point of view); parts farther than about 1,000 km from the mainland are left out (chain rule), and
+countries under 20,000 km² are not offered. Coastal squares include some sea for atmospheric variables.
+Rule and reasons: ADR-008.
+
+Cross-check of the country method against the native-resolution series, Ukraine, same whole-year period
+(`python scripts/crosscheck_country_grid.py`, run on 2026-11-15):
+
+| Variable | Sen per decade, 2° squares | Sen per decade, native ~50 km | Correlation of the monthly anomalies |
+|---|---|---|---|
+| Air temperature (°C) | +0.537 [0.380, 0.694] | +0.545 [0.385, 0.703] | 0.9999 |
+| Precipitation (mm/day) | +0.019 [-0.020, 0.058] | +0.018 [-0.021, 0.057] | 0.9992 |
+| Soil wetness (pp) | +0.06 [-0.87, 0.98] | +0.03 [-0.90, 0.94] | 0.9992 |
+| Sunlight (MJ/m²/day, 2001–2025) | +0.169 [0.031, 0.309] | +0.179 [0.040, 0.320] | 0.9994 |
+
+Same verdict in all four cases. Ukraine itself is shown with the native series.
+
+### Variables and their periods (web app)
+Twelve variables are on the map. MERRA-2 variables use 1981–2025; CERES SYN1deg variables (sunlight,
+haze) 2001–2025; GPM IMERG rainfall 1998–2025 (TRMM-era and GPM-era satellites, change in 2014). Pages
+for records shorter than 30 years say so.
+- **Aerosol optical depth of exactly 0 is "no retrieval"**, not clean air: the smallest positive value
+  in the grid is 0.0025, and zeros occur under a low sun and over snow or ice (about 14% of
+  cell-months, in winter down to 50°N). They are treated as missing. For a high-latitude country a
+  winter month can therefore rest on part of the country (at least half of its weight, by rule).
+- **CERES cloud amount is not offered.** Its 60°S–60°N mean anomaly is about +1.7 points in 2001–2005,
+  near 0 in 2006–2021 and about -1.5 in 2022–2025: two steps in a near-global mean, the signature of
+  changes in the observing system. A trend through them would be an artefact. (Checked on the cached
+  grid on 2026-11-15; the provider's data-quality summary should be cited before the variable returns.)
+- **Snow cover, snow depth and sea ice are map-only.** Their monthly anomalies are identically zero in
+  the snow-free months, which pulls the median (Sen) slope to zero and prints a falsely tight range
+  (found by `stats-validator` for Ukraine). The map uses yearly means and is not affected. Regional
+  answers need a snow-season method first.
+- A region/variable pair is left out, never filled, when a month is missing or when fewer than three
+  calendar months hold a non-zero value in at least half of the years.
+- When several calendar months hardly vary from year to year (`acquire.assess` "flat months"), the
+  page's data caveat says that the median slope can be pulled toward zero.
+- Extreme-month thresholds use 1981–2010, or the first 20 years of the shorter records.
+
+### Smooth map rendering (web app)
+The map is drawn as a smooth field: per-square slopes are interpolated bilinearly between square
+centres, the colour runs continuously through the palette, and colour strength follows the share of the
+four nearest squares that pass the map-wide test. Land-only fields are clipped to the coastline (after
+extending the field by up to two squares so it reaches the coast), sea ice to the sea. This is display
+only: tooltips, significance dots, rankings and all statistics use the real 2° squares.
 
 ## Data-quality checks before any trend (acquisition layer)
 Before a regional series is analysed, `backend/trend_detective/acquire.py::assess` checks whether it
@@ -88,17 +140,23 @@ Root-zone soil wetness has no value over ocean or the Greenland and Antarctic ic
 source grid, so those squares stay blank; a square whose yearly means never vary would also be left
 blank rather than tested (none does in the 2026-11-14 cache).
 
-Per-cell test: Mann–Kendall with the Yue–Wang AR(1) correction on the 45 yearly means (not the plain
-Mann–Kendall), then BH over every square that has data (16,200 squares for T2M and PRECTOTCORR,
-fewer for GWETROOT).
+Per-cell test: Mann–Kendall with the Yue–Wang AR(1) correction on the yearly means (not the plain
+Mann–Kendall), with the tie term in Var(S) exactly as in `trend_stats.mann_kendall`, then BH over
+every tested square (16,200 squares for T2M and PRECTOTCORR, fewer for land-only fields). A square is
+not tested, and stays blank, when a year is missing, when its yearly means never vary, or when fewer
+than 10 of them are non-zero (sea-ice edge, occasional snow).
 
-## Robustness ("borderline") check in the web app
-Pre-declared and identical for every region and variable: the verdict rule is repeated (a) without the
-first two years, (b) without the last two years, (c) on yearly means of the anomalies. The headline
-verdict is never changed; if any of (a)–(c) gives a different level, the "How sure?" line says
-"Borderline" and names the check. Added after the independent `stats-validator` review (2026-11-15)
-found that some moderate verdicts depend on the end years and that the AR(1) correction may understate
-persistence for the Sahel.
+## Robustness: the headline is the most cautious of four calculations (web app)
+Pre-declared and identical for every region and variable. The verdict rule is computed four times:
+on the full record, (a) without the first two years, (b) without the last two years, (c) on yearly
+means of the anomalies (fewer, more independent points). **The headline verdict is the weakest of the
+four.** The statistics line names every calculation that differs from the full record, and the JSON
+keeps the full-record level (`verdict.full_record_level`). So a trend that rests on the end years, or
+that vanishes with yearly means because monthly AR(1) understates persistence, is never called strong.
+History: the checks were first reported next to an unchanged headline (2026-11-15, first
+`stats-validator` review); the second review the same day found headlines such as "strong evidence,
+very sure" next to checks saying "no clear trend" (northern Europe cloud cover, China haze, Brazil
+satellite rainfall), so the cap became the rule.
 
 Displayed ranges are rounded outwards (lower bound down, upper bound up) so a printed range is never
 narrower than the computed one; JSON files keep the unrounded values.

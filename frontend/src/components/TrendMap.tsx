@@ -6,7 +6,7 @@ import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?url';
 import type { MapLayer, Region } from '../data/types.gen';
 import { basemapUrl } from '../data/load';
 import type { PaletteName } from '../theme/palettes';
-import { cellRgb, isDarkBin } from '../theme/encoding';
+import { isDarkBin, swatches } from '../theme/encoding';
 import { cellIndex, formatLatLon, latToMercY, MERC_MAX_LAT, mercYToLat, pointInGeometry } from '../lib/geo';
 import { formatCell } from '../lib/format';
 import { cellVisible, type ShowFilter } from '../lib/filter';
@@ -21,8 +21,10 @@ export type RegionLabel = { line2?: string; muted?: boolean; prefix?: string };
 
 type Props = {
   layer: MapLayer | undefined;
-  /** Regions drawn on this map (outlines). */
+  /** Regions that can be hovered and clicked on this map. */
   regions: Region[];
+  /** 'all' draws every region's outline; 'active' only the hovered and selected ones (countries). */
+  outline?: 'all' | 'active';
   /** Regions drawn with a heavy outline (the current investigation, or both compared regions). */
   activeRegionIds?: string[];
   /** Region highlighted from outside (ledger hover). */
@@ -61,48 +63,143 @@ function cssVar(name: string): string {
   return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
 }
 
-/** Paint the grid into a square Web Mercator canvas (2 px per cell horizontally). */
-function paintGrid(layer: MapLayer, show: ShowFilter): HTMLCanvasElement {
+const CANVAS = 2048;
+type LandFC = { features: { geometry: { type: string; coordinates: unknown[] } }[] };
+let landPromise: Promise<LandFC> | null = null;
+const loadLand = () => (landPromise ??= fetch(basemapUrl('land')).then((r) => r.json() as Promise<LandFC>));
+
+/** Fill squares without data from their neighbours (display only; the land or sea mask hides the overshoot). */
+function grow(val: Float32Array, sig: Float32Array, ok: Uint8Array, nlat: number, nlon: number) {
+  const add: [number, number, number][] = [];
+  for (let r = 0; r < nlat; r++) {
+    for (let c = 0; c < nlon; c++) {
+      const i = r * nlon + c;
+      if (ok[i]) continue;
+      let n = 0;
+      let v = 0;
+      let s = 0;
+      for (let dr = -1; dr <= 1; dr++) {
+        const rr = r + dr;
+        if (rr < 0 || rr >= nlat) continue;
+        for (let dc = -1; dc <= 1; dc++) {
+          const j = rr * nlon + ((c + dc + nlon) % nlon);
+          if (ok[j]) {
+            n++;
+            v += val[j];
+            s += sig[j];
+          }
+        }
+      }
+      if (n) add.push([i, v / n, s / n]);
+    }
+  }
+  add.forEach(([i, v, s]) => {
+    ok[i] = 1;
+    val[i] = v;
+    sig[i] = s;
+  });
+}
+
+/**
+ * Paint the trend as a smooth field in a square Web Mercator canvas: values are interpolated
+ * between the centres of the grid squares (bilinear), colour runs continuously through the
+ * palette, and colour strength follows the share of neighbouring squares that pass the map-wide
+ * test. This is drawing only: tooltips, dots and every number still come from the real squares.
+ */
+function paintGrid(layer: MapLayer, show: ShowFilter, land: LandFC | null): HTMLCanvasElement {
   const g = layer.grid;
-  const W = g.nlon * 2;
-  const H = W;
+  const W = CANVAS;
+  const H = CANVAS;
   const canvas = document.createElement('canvas');
   canvas.width = W;
   canvas.height = H;
   const ctx = canvas.getContext('2d')!;
   const img = ctx.createImageData(W, H);
-  const palette = layer.palette as PaletteName;
   const n = g.nlat * g.nlon;
-  const rgba = new Uint8ClampedArray(n * 4);
+  const val = new Float32Array(n);
+  const sig = new Float32Array(n);
+  const ok = new Uint8Array(n);
   for (let i = 0; i < n; i++) {
     const v = layer.slope_per_decade[i];
     if (v === null || !cellVisible(v, layer.significant[i], show)) continue;
-    const c = cellRgb(v, layer.significant[i] === 1, layer.limit, palette);
-    rgba[i * 4] = c[0];
-    rgba[i * 4 + 1] = c[1];
-    rgba[i * 4 + 2] = c[2];
-    rgba[i * 4 + 3] = 255;
+    val[i] = v;
+    sig[i] = layer.significant[i];
+    ok[i] = 1;
   }
+  const masked = layer.mask !== 'all' && land !== null;
+  if (masked) {
+    grow(val, sig, ok, g.nlat, g.nlon);
+    grow(val, sig, ok, g.nlat, g.nlon);
+  }
+  const sw = swatches(layer.palette as PaletteName);
+  const nb = sw.full.length;
   const yMax = latToMercY(MERC_MAX_LAT);
-  const colOf = new Int32Array(W);
+  const c0 = new Int32Array(W);
+  const c1 = new Int32Array(W);
+  const tx = new Float32Array(W);
   for (let px = 0; px < W; px++) {
-    const lon = -180 + ((px + 0.5) / W) * 360;
-    colOf[px] = Math.min(g.nlon - 1, Math.max(0, Math.floor((lon - (g.lon0 - g.dlon / 2)) / g.dlon)));
+    const f = (-180 + ((px + 0.5) / W) * 360 - g.lon0) / g.dlon;
+    const b = Math.floor(f);
+    tx[px] = f - b;
+    c0[px] = ((b % g.nlon) + g.nlon) % g.nlon;
+    c1[px] = (c0[px] + 1) % g.nlon;
   }
+  const d = img.data;
   for (let py = 0; py < H; py++) {
     const lat = mercYToLat(yMax - ((py + 0.5) / H) * 2 * yMax);
-    const row = Math.floor((lat - (g.lat0 - g.dlat / 2)) / g.dlat);
-    if (row < 0 || row >= g.nlat) continue;
+    const f = Math.max(0, Math.min(g.nlat - 1, (lat - g.lat0) / g.dlat));
+    const r0 = Math.min(g.nlat - 1, Math.floor(f));
+    const r1 = Math.min(g.nlat - 1, r0 + 1);
+    const ty = f - r0;
+    const a0 = r0 * g.nlon;
+    const a1 = r1 * g.nlon;
     for (let px = 0; px < W; px++) {
-      const i = row * g.nlon + colOf[px];
+      const i00 = a0 + c0[px];
+      const i01 = a0 + c1[px];
+      const i10 = a1 + c0[px];
+      const i11 = a1 + c1[px];
+      const w00 = (1 - tx[px]) * (1 - ty) * ok[i00];
+      const w01 = tx[px] * (1 - ty) * ok[i01];
+      const w10 = (1 - tx[px]) * ty * ok[i10];
+      const w11 = tx[px] * ty * ok[i11];
+      const ws = w00 + w01 + w10 + w11;
+      if (ws < 0.5) continue;
+      const v = (w00 * val[i00] + w01 * val[i01] + w10 * val[i10] + w11 * val[i11]) / ws;
+      let s = (w00 * sig[i00] + w01 * sig[i01] + w10 * sig[i10] + w11 * sig[i11]) / ws;
+      s = s * s * (3 - 2 * s);
+      // a value at the centre of a legend bin gets exactly that bin's colour
+      const pos = Math.max(0, Math.min(nb - 1, ((v + layer.limit) / (2 * layer.limit)) * nb - 0.5));
+      const b0 = Math.min(nb - 2, Math.floor(pos));
+      const t = pos - b0;
       const o = (py * W + px) * 4;
-      img.data[o] = rgba[i * 4];
-      img.data[o + 1] = rgba[i * 4 + 1];
-      img.data[o + 2] = rgba[i * 4 + 2];
-      img.data[o + 3] = rgba[i * 4 + 3];
+      for (let k = 0; k < 3; k++) {
+        const full = sw.full[b0][k] + (sw.full[b0 + 1][k] - sw.full[b0][k]) * t;
+        const faded = sw.faded[b0][k] + (sw.faded[b0 + 1][k] - sw.faded[b0][k]) * t;
+        d[o + k] = faded + (full - faded) * s;
+      }
+      d[o + 3] = 255;
     }
   }
   ctx.putImageData(img, 0, 0);
+  if (masked) {
+    // keep the field on land only (or on the sea only) with the same coastline the map draws
+    ctx.globalCompositeOperation = layer.mask === 'land' ? 'destination-in' : 'destination-out';
+    ctx.beginPath();
+    land.features.forEach((ft) => {
+      const polys = (ft.geometry.type === 'Polygon' ? [ft.geometry.coordinates] : ft.geometry.coordinates) as number[][][][];
+      polys.forEach((rings) => rings.forEach((ring) => {
+        ring.forEach(([lon, lat], k) => {
+          const x = ((lon + 180) / 360) * W;
+          const y = ((yMax - latToMercY(lat)) / (2 * yMax)) * H;
+          if (k === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        });
+        ctx.closePath();
+      }));
+    });
+    ctx.fill('evenodd');
+    ctx.globalCompositeOperation = 'source-over';
+  }
   return canvas;
 }
 
@@ -126,10 +223,11 @@ function stipplePoints(layer: MapLayer, show: ShowFilter) {
   return { type: 'FeatureCollection' as const, features };
 }
 
-function regionsFC(regions: Region[], active: string[], highlight: string | null | undefined) {
+function regionsFC(regions: Region[], active: string[], highlight: string | null | undefined, outline: 'all' | 'active') {
+  const drawn = regions.filter((r) => r.geometry && (outline === 'all' || active.includes(r.id) || highlight === r.id));
   return {
     type: 'FeatureCollection' as const,
-    features: regions.map((r) => ({
+    features: drawn.map((r) => ({
       type: 'Feature' as const,
       properties: { id: r.id, active: active.includes(r.id) ? 1 : 0, hl: highlight === r.id ? 1 : 0 },
       geometry: r.geometry as unknown as { type: 'Polygon'; coordinates: number[][][] },
@@ -184,7 +282,7 @@ function baseStyle(): StyleSpecification {
 }
 
 export function TrendMap(props: Props) {
-  const { layer, regions, activeRegionIds = [], highlightRegionId, fit, labels, scrollZoom = true, suppressTooltip, show = 'all', attribution = true } = props;
+  const { layer, regions, outline = 'all', activeRegionIds = [], highlightRegionId, fit, labels, scrollZoom = true, suppressTooltip, show = 'all', attribution = true } = props;
   const box = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MlMap | null>(null);
   const markers = useRef<Marker[]>([]);
@@ -231,7 +329,8 @@ export function TrendMap(props: Props) {
     const canvas = map.getCanvas();
     canvas.setAttribute('tabindex', '0');
 
-    const regionAt = (lng: number, lat: number) => latest.current.regions.find((r) => pointInGeometry(lng, lat, r.geometry));
+    const regionAt = (lng: number, lat: number) => latest.current.regions.find((r) =>
+      r.geometry && lng >= r.bbox[0] && lng <= r.bbox[2] && lat >= r.bbox[1] && lat <= r.bbox[3] && pointInGeometry(lng, lat, r.geometry));
     const cellAt = (lng: number, lat: number): CellInfo | null => {
       const l = latest.current.layer;
       if (!l) return null;
@@ -335,18 +434,30 @@ export function TrendMap(props: Props) {
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !ready || !layer) return;
-    const canvas = paintGrid(layer, show);
-    const src = map.getSource('trend') as ImageSource | undefined;
-    if (src) src.updateImage({ image: canvas, coordinates: CORNERS });
-    else {
-      map.addSource('trend', { type: 'image', url: canvas.toDataURL('image/png'), coordinates: CORNERS });
-      // the grid fades in over the land outline instead of popping (plan B5)
-      map.addLayer({
-        id: 'trend', type: 'raster', source: 'trend',
-        paint: { 'raster-resampling': 'nearest', 'raster-fade-duration': 0, 'raster-opacity': 0, 'raster-opacity-transition': { duration: reducedMotion() ? 0 : 350, delay: 0 } },
-      }, 'borders');
-      requestAnimationFrame(() => map.setPaintProperty('trend', 'raster-opacity', 1));
-    }
+    let cancelled = false;
+    setHover(null); // a tooltip from the previous variable would show an old value with new units
+    // hatching means "land without data"; a sea-only field has no data on any land, so it is hidden
+    if (map.getLayer('land-hatch')) map.setLayoutProperty('land-hatch', 'visibility', layer.mask === 'ocean' ? 'none' : 'visible');
+    const draw = (land: LandFC | null) => {
+      if (cancelled || mapRef.current !== map) return;
+      const canvas = paintGrid(layer, show, land);
+      const src = map.getSource('trend') as ImageSource | undefined;
+      if (src) src.updateImage({ image: canvas, coordinates: CORNERS });
+      else {
+        map.addSource('trend', { type: 'image', url: canvas.toDataURL('image/png'), coordinates: CORNERS });
+        // the field fades in over the land outline instead of popping (plan B5)
+        map.addLayer({
+          id: 'trend', type: 'raster', source: 'trend',
+          paint: { 'raster-resampling': 'linear', 'raster-fade-duration': 0, 'raster-opacity': 0, 'raster-opacity-transition': { duration: reducedMotion() ? 0 : 350, delay: 0 } },
+        }, 'borders');
+        requestAnimationFrame(() => map.setPaintProperty('trend', 'raster-opacity', 1));
+      }
+    };
+    if (layer.mask === 'all') draw(null);
+    else loadLand().then(draw, () => draw(null));
+    return () => {
+      cancelled = true;
+    };
   }, [layer, ready, show]);
 
   // stipple dots: rebuilt only when the layer changes
@@ -360,9 +471,9 @@ export function TrendMap(props: Props) {
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !ready) return;
-    (map.getSource('regions') as GeoJSONSource).setData(regionsFC(regions, activeRegionIds, highlightRegionId));
+    (map.getSource('regions') as GeoJSONSource).setData(regionsFC(regions, activeRegionIds, highlightRegionId, outline));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [regionKey, activeKey, ready, highlightRegionId]);
+  }, [regionKey, activeKey, ready, highlightRegionId, outline]);
 
   // labels as HTML markers (no glyph server needed)
   useEffect(() => {

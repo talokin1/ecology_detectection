@@ -11,6 +11,8 @@ const routes = [
   '/case/01', '/case/02', '/case/03', '/case/04',
   '/region/sahel?var=precip', '/region/north_europe?var=soil',
   '/compare/ukraine/sahel?var=t2m',
+  '/?in=world', '/?in=stories', '/?var=sea_ice', '/?var=haze&panel=regions', '/?panel=quick&region=c_bra&var=haze', '/?var=snow_cover',
+  '/region/c_fra?var=sunlight', '/region/ar6_med?var=ozone', '/region/ukraine?var=evap',
   '/catalog', '/catalog?topic=water', '/methods', '/methods?s=fdr', '/about', '/about?s=data',
 ];
 
@@ -121,7 +123,7 @@ test('a hint opens its answer next to the map; hints can be hidden and brought b
 
 test('every panel closes with its button and with Escape, and the legend comes back (A1, A4)', async ({ page }) => {
   await returning(page);
-  await page.goto('/#/?var=t2m&panel=regions');
+  await page.goto('/#/?var=t2m&panel=regions&in=stories');
   const panel = page.getByRole('dialog', { name: 'Regions compared' });
   await expect(panel).toBeVisible();
   await page.keyboard.press('Escape');
@@ -138,7 +140,7 @@ test('every panel closes with its button and with Escape, and the legend comes b
 
 test('a row in "Regions compared" opens the quick look (A5, A6)', async ({ page }) => {
   await returning(page);
-  await page.goto('/#/?var=t2m&panel=regions');
+  await page.goto('/#/?var=t2m&panel=regions&in=stories');
   await page.locator('.ledger__row', { hasText: 'Sahel' }).click();
   await expect(page).toHaveURL(/panel=quick&region=sahel/);
   await expect(page.locator('.quick__headline')).toBeVisible({ timeout: 15000 });
@@ -150,7 +152,7 @@ test('a row in "Regions compared" opens the quick look (A5, A6)', async ({ page 
 test('the "Show" filter is in the URL and an empty result offers a reset (A3)', async ({ page }) => {
   await returning(page);
   await page.goto('/#/?var=t2m');
-  await page.locator('.fbar__desktop select').selectOption('clear_neg');
+  await page.locator('#show-desktop').selectOption('clear_neg');
   await expect(page).toHaveURL(/show=clear_neg/);
   await page.getByRole('button', { name: 'Reset' }).first().click();
   await expect(page).not.toHaveURL(/show=/);
@@ -195,7 +197,7 @@ test('open sea: the popup stays inside the map, hides the tooltip and closes wit
   const box = (await map.boundingBox())!;
   for (const [fx, fy] of [[0.45, 0.6], [0.97, 0.6]]) {
     await page.mouse.click(box.x + box.width * fx, box.y + box.height * fy);
-    const dialog = page.getByRole('dialog', { name: 'No detailed analysis for this place yet' });
+    const dialog = page.getByRole('dialog', { name: 'No region here' });
     await expect(dialog).toBeVisible();
     const d = (await dialog.boundingBox())!;
     const frame = (await page.locator('.explore').boundingBox())!;
@@ -256,3 +258,34 @@ test('a stale cached data file right after a deploy is refetched, not shown as a
   await expect(page.locator('.state h2')).toHaveCount(0);
   expect(calls).toBeGreaterThanOrEqual(2);
 });
+
+test('countries: clicking a country on the map opens its answer; the ranking lists countries', async ({ page }) => {
+  await returning(page);
+  await page.goto('/#/?var=t2m');
+  await page.locator('.explore__map .maplibregl-canvas').waitFor();
+  await page.waitForFunction(() => Boolean((document.querySelector('.trend-map__canvas') as HTMLElement & { __map?: { getSource: (s: string) => unknown } })?.__map?.getSource('trend')));
+  const pt = await page.evaluate(() => {
+    const el = document.querySelector('.trend-map__canvas') as HTMLElement & { __map: { project: (c: [number, number]) => { x: number; y: number } } };
+    const p = el.__map.project([2.5, 46.5]); // central France
+    const b = el.getBoundingClientRect();
+    return { x: b.left + p.x, y: b.top + p.y };
+  });
+  await page.mouse.click(pt.x, pt.y);
+  await expect(page).toHaveURL(/panel=quick&region=c_fra/);
+  await expect(page.getByRole('dialog', { name: 'France' })).toBeVisible();
+  await expect(page.locator('.quick__value')).toBeVisible({ timeout: 15000 });
+  await page.keyboard.press('Escape');
+  await page.getByRole('button', { name: 'Compare the prepared regions' }).click();
+  await expect(page.getByRole('dialog', { name: 'Countries ranked' })).toBeVisible();
+  expect(await page.locator('.ledger__row').count()).toBeGreaterThan(100);
+});
+
+test('world regions and stories are separate sets of places', async ({ page }) => {
+  await returning(page);
+  await page.goto('/#/?var=precip&in=world&panel=regions');
+  await expect(page.getByRole('dialog', { name: 'World regions ranked' })).toBeVisible();
+  expect(await page.locator('.ledger__row').count()).toBeGreaterThan(30);
+  await page.goto('/#/?var=precip&in=stories&panel=regions');
+  await expect(page.locator('.ledger__row')).toHaveCount(5);
+});
+

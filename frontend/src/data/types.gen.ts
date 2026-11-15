@@ -65,7 +65,7 @@ export interface Region {
    * @maxItems 2
    */
   centroid: [number, number];
-  geometry: {
+  geometry: null | {
     type: 'Polygon' | 'MultiPolygon';
     coordinates: unknown[];
   };
@@ -73,6 +73,18 @@ export interface Region {
    * Name as used mid-sentence, e.g. 'the Sahel'.
    */
   name_in_sentence: string;
+  /**
+   * country = a country; world = IPCC AR6 reference region; story = a prepared multi-country or sub-national region.
+   */
+  kind: 'country' | 'world' | 'story';
+  /**
+   * One of the prepared regions with native-resolution series and deeper checks.
+   */
+  story: boolean;
+  /**
+   * ISO 3166-1 alpha-3 (Natural Earth ADM0_A3) for countries.
+   */
+  iso: string | null;
 }
 
 export interface VariableRef {
@@ -92,6 +104,10 @@ export interface VariableRef {
   units_long: string;
   anomaly_units: string;
   map_title: string;
+  /**
+   * Shown on the map only (ocean variable): no regional analyses.
+   */
+  map_only: boolean;
 }
 /**
  * What negative and positive trends mean in plain words, e.g. cooling / warming.
@@ -214,6 +230,14 @@ export interface AnalysisResult {
     answer: string;
     decided_by: 'mk' | 'ols' | 'both';
     disagree_text: string | null;
+    /**
+     * How sure, in plain words (no statistics).
+     */
+    sure_plain: string;
+    /**
+     * Level from the full record alone; `level` is the most cautious of this and the stability checks.
+     */
+    full_record_level: 'strong' | 'moderate' | 'weak' | 'none' | 'insufficient';
   };
   years_to_detect: null | {
     value: number | null;
@@ -347,6 +371,10 @@ export interface Insight {
    * true = comes from a follow-up check that passed the FDR filter.
    */
   tested: boolean;
+  /**
+   * The numbers behind the sentence; shown under 'How do we know?'.
+   */
+  detail?: string;
 }
 
 export interface Provenance {
@@ -451,6 +479,10 @@ export interface MapLayer {
     min_text: string;
     max_text: string;
   };
+  /**
+   * Where the field is drawn: everywhere, land only, or sea only.
+   */
+  mask: 'all' | 'land' | 'ocean';
 }
 
 /**

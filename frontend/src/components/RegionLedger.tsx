@@ -1,10 +1,10 @@
-import type { Index, MapLayer, VariableRef } from '../data/types.gen';
+import type { Index, MapLayer, Region, VariableRef } from '../data/types.gen';
 import { colorFor, type PaletteName } from '../theme/palettes';
 import { EvidenceScale } from './VerdictCard';
 import { LEVEL_INDEX, S } from '../strings/en';
 
 function niceMax(v: number): number {
-  const steps = [0.05, 0.1, 0.2, 0.25, 0.4, 0.5, 0.8, 1, 1.5, 2, 2.5, 3, 4, 5];
+  const steps = [0.005, 0.01, 0.02, 0.05, 0.1, 0.2, 0.25, 0.4, 0.5, 0.8, 1, 1.5, 2, 2.5, 3, 4, 5, 8, 10, 15, 20, 30, 50];
   return steps.find((s) => s >= v) ?? v;
 }
 
@@ -15,16 +15,20 @@ const tick = (v: number) => (v === 0 ? '0' : `${v > 0 ? '+' : '−'}${Math.abs(v
  * signs fall on either side of zero. Positions use the numeric rate and 95% range from
  * index.json; all text comes from the JSON. Rows open the quick look (production UX plan A5).
  */
-export function RegionLedger({ index, variable, layer, activeIds, highlightId, onHover, onSelect }: {
-  index: Index; variable: VariableRef; layer?: MapLayer; activeIds: string[]; highlightId: string | null;
+export function RegionLedger({ index, regions, variable, layer, activeIds, highlightId, onHover, onSelect }: {
+  index: Index; regions: Region[]; variable: VariableRef; layer?: MapLayer; activeIds: string[]; highlightId: string | null;
   onHover: (id: string | null) => void; onSelect: (id: string) => void;
 }) {
-  const rows = index.regions
+  const rows = regions
     .map((r) => ({ r, v: index.verdicts[`${r.id}__${variable.id}`] }))
     .filter((x) => x.v)
     .sort((p, q) => q.v.rate_value - p.v.rate_value);
-  const m = niceMax(Math.max(...rows.flatMap(({ v }) => v.ci95.map(Math.abs))) * 1.05);
-  const pos = (x: number) => `${((x + m) / (2 * m)) * 100}%`;
+  if (rows.length === 0) return null;
+  // the axis follows the bulk of the rows, so one extreme region does not flatten the rest
+  const reach = rows.map(({ v }) => Math.max(...v.ci95.map(Math.abs))).sort((a, b) => a - b);
+  const m = niceMax(reach[Math.min(reach.length - 1, Math.floor(reach.length * 0.95))] * 1.05);
+  const clamp = (x: number) => Math.max(-m, Math.min(m, x));
+  const pos = (x: number) => `${((clamp(x) + m) / (2 * m)) * 100}%`;
   const pal = variable.palette as PaletteName;
 
   return (

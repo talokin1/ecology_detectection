@@ -9,6 +9,8 @@ type Props = {
   variable: VariableRef;
   catalogEntry?: CatalogVariable;
   show: ShowFilter;
+  mode: 'countries' | 'world' | 'stories';
+  onMode: (m: 'countries' | 'world' | 'stories') => void;
   regionsOpen: boolean;
   legendClosed: boolean;
   hintsDismissed: boolean;
@@ -33,6 +35,14 @@ export function FilterBar(p: Props) {
       </select>
     </label>
   );
+  const placeSelect = (
+    <label className="fbar__field">
+      <span className="fbar__label">{S.explore.places}</span>
+      <select className="fbar__select" value={p.mode} onChange={(e) => p.onMode(e.target.value as Props['mode'])}>
+        {(['countries', 'world', 'stories'] as const).map((m) => <option key={m} value={m}>{S.explore.placeModes[m]}</option>)}
+      </select>
+    </label>
+  );
   return (
     <div className="fbar" role="toolbar" aria-label="Map filters">
       <div className="fbar__group" data-tour="variable">
@@ -48,6 +58,7 @@ export function FilterBar(p: Props) {
         </InfoPopover>
       </div>
       <div className="fbar__group fbar__desktop">{showSelect('show-desktop')}</div>
+      <div className="fbar__group fbar__desktop" data-tour="places">{placeSelect}</div>
       <button type="button" className="fbar__btn fbar__mobile" aria-expanded={sheet} onClick={() => setSheet(true)}>{S.explore.filters}</button>
       <button type="button" className={`fbar__btn${p.regionsOpen ? ' is-on' : ''}`} aria-pressed={p.regionsOpen} aria-label={S.explore.regionsAria} onClick={p.onRegions} data-tour="regions">
         {S.explore.regions}
@@ -59,6 +70,7 @@ export function FilterBar(p: Props) {
       {sheet && (
         <Panel title={S.explore.filters} onClose={() => setSheet(false)} className="panel-side--sheet">
           {showSelect('show-mobile')}
+          {placeSelect}
         </Panel>
       )}
     </div>

@@ -45,35 +45,46 @@ export function CatalogPage() {
         <div className="filters__row"><span className="filters__label">{S.catalog.place}</span>{chips('place', place, cat.data.place_types)}</div>
       </div>
 
-      <h2 className="catalog__section">{S.catalog.readyTitle(ready.length)}</h2>
-      {ready.length === 0 && <p className="muted">{S.catalog.none}</p>}
-      <ul className="ready">
-        {ready.map((v) => (
-          <li key={v.id} className="ready__item">
-            <div>
+      <section className="catalog__block">
+        <header className="catalog__head">
+          <h2>{S.catalog.readyTitle}<span className="catalog__count">{ready.length}</span></h2>
+          <p>{S.catalog.readyLead}</p>
+        </header>
+        {ready.length === 0 && <p className="muted">{S.catalog.none}</p>}
+        <ul className="ready">
+          {ready.map((v) => (
+            <li key={v.id} className="ready__item">
+              <p className="ready__topic">{topicLabel[v.topic] ?? v.topic}</p>
               <h3 className="ready__name">{v.name}</h3>
               <p className="ready__def">{v.definition}</p>
               <p className="ready__why"><span className="muted">{S.catalog.whyTrends}:</span> {v.why_it_trends}</p>
-              <p className="ready__src">{v.source_short} · {v.period} · {topicLabel[v.topic] ?? v.topic}</p>
-            </div>
-            {v.app_variable_id && <Link className="btn btn--primary" to={`/?var=${v.app_variable_id}&case=none`}>{S.catalog.explore}</Link>}
-          </li>
-        ))}
-      </ul>
-
-      <h2 className="catalog__section">{S.catalog.nextTitle(next.length)}</h2>
-      <table className="catalog-next">
-        <thead><tr><th scope="col">Variable</th><th scope="col">{S.catalog.whyTrends}</th><th scope="col">Source</th></tr></thead>
-        <tbody>
-          {next.map((v) => (
-            <tr key={v.id}>
-              <td><span className="catalog-next__name">{v.name}</span><span className="catalog-next__def">{v.definition}</span></td>
-              <td>{v.why_it_trends}</td>
-              <td className="catalog-next__src">{v.source_short}<br />{v.period}</td>
-            </tr>
+              <p className="ready__src">{v.source_short} · {v.period.split(' (')[0]}</p>
+              {v.app_variable_id && <Link className="ready__go" to={`/?var=${v.app_variable_id}&case=none`}>{S.catalog.explore}</Link>}
+            </li>
           ))}
-        </tbody>
-      </table>
+        </ul>
+      </section>
+
+      {next.length > 0 && (
+        <section className="catalog__block catalog__block--next">
+          <header className="catalog__head">
+            <h2>{S.catalog.nextTitle}<span className="catalog__count">{next.length}</span></h2>
+            <p>{S.catalog.nextLead}</p>
+          </header>
+          <table className="catalog-next">
+            <thead><tr><th scope="col">Variable</th><th scope="col">{S.catalog.whyTrends}</th><th scope="col">Source</th></tr></thead>
+            <tbody>
+              {next.map((v) => (
+                <tr key={v.id}>
+                  <td><span className="catalog-next__name">{v.name}</span><span className="catalog-next__def">{v.definition}</span></td>
+                  <td>{v.why_it_trends}</td>
+                  <td className="catalog-next__src">{v.source_short}<br />{v.period}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </section>
+      )}
     </div>
   );
 }

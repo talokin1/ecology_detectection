@@ -21,9 +21,11 @@ extra_matrices:
   - regions: ["set:ar6"]
     variables: all
     exclude_variables: [sea_ice_fraction_power, ndvi_modis, no2_tropospheric_omi]
-  # Web-app regions as real borders (scripts/make_country_regions.py): only the app's variables.
-  - regions: ["set:countries"]
-    variables: [air_temperature_power, precipitation_power, root_zone_soil_wetness_power]
+  # Web-app story regions (real borders from scripts/make_country_regions.py, plus the Sahel box):
+  # every POWER variable the app shows. Sea ice is an ocean variable; GRACE, NDVI and NO2 need a login.
+  - regions: ["set:countries", "sahel"]
+    variables: all
+    exclude_variables: [sea_ice_fraction_power, ndvi_modis, no2_tropospheric_omi, terrestrial_water_storage_grace]
 
 # Method inputs that are not catalog variables (daily data for extreme indices, plan v2 S2).
 # `how` is only used to aggregate the daily series to months for the data-quality check

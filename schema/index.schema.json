@@ -117,7 +117,10 @@
         "bbox",
         "centroid",
         "geometry",
-        "name_in_sentence"
+        "name_in_sentence",
+        "kind",
+        "story",
+        "iso"
       ],
       "properties": {
         "id": {
@@ -148,27 +151,54 @@
           "description": "[lon, lat], a point inside the region"
         },
         "geometry": {
-          "type": "object",
-          "required": [
-            "type",
-            "coordinates"
-          ],
-          "properties": {
-            "type": {
-              "enum": [
-                "Polygon",
-                "MultiPolygon"
-              ]
+          "oneOf": [
+            {
+              "type": "null",
+              "description": "Countries: the outline comes from basemap/countries.geojson (by iso), parts inside bbox."
             },
-            "coordinates": {
-              "type": "array"
+            {
+              "type": "object",
+              "required": [
+                "type",
+                "coordinates"
+              ],
+              "properties": {
+                "type": {
+                  "enum": [
+                    "Polygon",
+                    "MultiPolygon"
+                  ]
+                },
+                "coordinates": {
+                  "type": "array"
+                }
+              },
+              "additionalProperties": false
             }
-          },
-          "additionalProperties": false
+          ]
         },
         "name_in_sentence": {
           "type": "string",
           "description": "Name as used mid-sentence, e.g. 'the Sahel'."
+        },
+        "kind": {
+          "enum": [
+            "country",
+            "world",
+            "story"
+          ],
+          "description": "country = a country; world = IPCC AR6 reference region; story = a prepared multi-country or sub-national region."
+        },
+        "story": {
+          "type": "boolean",
+          "description": "One of the prepared regions with native-resolution series and deeper checks."
+        },
+        "iso": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "ISO 3166-1 alpha-3 (Natural Earth ADM0_A3) for countries."
         }
       },
       "additionalProperties": false
@@ -191,7 +221,8 @@
         "period",
         "units_long",
         "anomaly_units",
-        "map_title"
+        "map_title",
+        "map_only"
       ],
       "properties": {
         "id": {
@@ -241,6 +272,10 @@
         },
         "map_title": {
           "type": "string"
+        },
+        "map_only": {
+          "type": "boolean",
+          "description": "Shown on the map only (ocean variable): no regional analyses."
         }
       },
       "additionalProperties": false

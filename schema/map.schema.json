@@ -20,7 +20,8 @@
     "caption",
     "provenance",
     "value_decimals",
-    "legend"
+    "legend",
+    "mask"
   ],
   "properties": {
     "schema_version": {
@@ -164,6 +165,14 @@
         }
       },
       "additionalProperties": false
+    },
+    "mask": {
+      "enum": [
+        "all",
+        "land",
+        "ocean"
+      ],
+      "description": "Where the field is drawn: everywhere, land only, or sea only."
     }
   },
   "additionalProperties": false

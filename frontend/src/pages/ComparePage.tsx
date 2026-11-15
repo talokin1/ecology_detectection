@@ -95,13 +95,13 @@ function CompareBody({ index, ra, rb, variable, A, B, cmp, layer, theCase }: {
           <label>
             <span className="muted"><i className="sw sw--line-c" style={{ background: REGION_COLORS[0] }} /> A</span>
             <select value={ra.id} onChange={(e) => e.target.value !== rb.id && go(e.target.value, rb.id, variable.id)}>
-              {index.regions.map((r) => <option key={r.id} value={r.id} disabled={r.id === rb.id}>{r.name}</option>)}
+              {index.regions.filter((r) => r.story).map((r) => <option key={r.id} value={r.id} disabled={r.id === rb.id}>{r.name}</option>)}
             </select>
           </label>
           <label>
             <span className="muted"><i className="sw sw--line-c" style={{ background: REGION_COLORS[1] }} /> B</span>
             <select value={rb.id} onChange={(e) => e.target.value !== ra.id && go(ra.id, e.target.value, variable.id)}>
-              {index.regions.map((r) => <option key={r.id} value={r.id} disabled={r.id === ra.id}>{r.name}</option>)}
+              {index.regions.filter((r) => r.story).map((r) => <option key={r.id} value={r.id} disabled={r.id === ra.id}>{r.name}</option>)}
             </select>
           </label>
         </div>

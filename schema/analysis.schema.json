@@ -372,7 +372,9 @@
         "methods_disagree",
         "answer",
         "decided_by",
-        "disagree_text"
+        "disagree_text",
+        "sure_plain",
+        "full_record_level"
       ],
       "properties": {
         "level": {
@@ -412,6 +414,14 @@
             "string",
             "null"
           ]
+        },
+        "sure_plain": {
+          "type": "string",
+          "description": "How sure, in plain words (no statistics)."
+        },
+        "full_record_level": {
+          "$ref": "common.schema.json#/$defs/Level",
+          "description": "Level from the full record alone; `level` is the most cautious of this and the stability checks."
         }
       },
       "additionalProperties": false
@@ -900,6 +910,10 @@
         "tested": {
           "type": "boolean",
           "description": "true = comes from a follow-up check that passed the FDR filter."
+        },
+        "detail": {
+          "type": "string",
+          "description": "The numbers behind the sentence; shown under 'How do we know?'."
         }
       },
       "additionalProperties": false

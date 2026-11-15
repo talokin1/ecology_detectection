@@ -69,7 +69,7 @@ export function Panel({ title, kicker, onClose, children, className = '', tour }
 }
 
 // ---------------------------------------------------------------- popover (info / help)
-export function InfoPopover({ label, children, size = 'sm', icon = 'info' }: { label: string; children: ReactNode; size?: 'sm' | 'md'; icon?: 'info' | 'help' }) {
+export function InfoPopover({ label, children, size = 'sm', icon = 'info', text }: { label: string; children: ReactNode; size?: 'sm' | 'md'; icon?: 'info' | 'help'; text?: string }) {
   const [open, setOpen] = useState(false);
   const wrap = useRef<HTMLSpanElement>(null);
   const id = useId();
@@ -82,9 +82,13 @@ export function InfoPopover({ label, children, size = 'sm', icon = 'info' }: { l
   }, [open]);
   return (
     <span className="popover" ref={wrap}>
-      <button type="button" className={`icon-btn icon-btn--${size}${icon === 'help' ? ' icon-btn--help' : ''}`} aria-label={label} aria-expanded={open} aria-controls={id} onClick={() => setOpen((o) => !o)}>
-        {icon === 'help' ? <span aria-hidden="true">?</span> : <InfoIcon size={size === 'sm' ? 15 : 17} />}
-      </button>
+      {text ? (
+        <button type="button" className="link-btn" aria-label={label} aria-expanded={open} aria-controls={id} onClick={() => setOpen((o) => !o)}>{text}</button>
+      ) : (
+        <button type="button" className={`icon-btn icon-btn--${size}${icon === 'help' ? ' icon-btn--help' : ''}`} aria-label={label} aria-expanded={open} aria-controls={id} onClick={() => setOpen((o) => !o)}>
+          {icon === 'help' ? <span aria-hidden="true">?</span> : <InfoIcon size={size === 'sm' ? 15 : 17} />}
+        </button>
+      )}
       {open && (
         <span id={id} role="note" className="popover__card">
           <span className="popover__body">{children}</span>
