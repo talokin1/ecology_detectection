@@ -360,8 +360,10 @@ variables:
     topic: temperature
     why_it_trends: Independent satellite cross-check of reanalysis warming.
     source: ges_disc
-    access: {reader: none}  # no reader yet: not offered in the app
-    dataset: {short_name: AIRS3STM, version: "7.0", variable: SurfAirTemp_A}
+    # global 2-deg map grid only (backend/trend_detective/airs.py, scripts/fetch_airs.py); regional series
+    # come from the grid like countries do; no box reader
+    access: {reader: none, grid: grids/airs_SurfAirTemp_2deg.nc}
+    dataset: {short_name: AIRS3STM, version: "7.0", variable: "SurfAirTemp (mean of SurfAirTemp_A and SurfAirTemp_D)", doi: 10.5067/UBENJB9D3T2H}
     units: K
     display_units: degC
     convert: "x - 273.15"
@@ -371,7 +373,7 @@ variables:
     percent_change_meaningful: false
     biomes: [any, arctic]
     dataset_verified: true
-    variable_verified: false
+    variable_verified: true  # 2026-11-15: DAP4 subset of 2026-10 opened; K, 218-309, fill -9999
 
   - id: water_vapor_airs
     name: Total water vapour (AIRS)
@@ -380,15 +382,15 @@ variables:
     topic: water
     why_it_trends: Warmer air holds about 7% more moisture per °C.
     source: ges_disc
-    access: {reader: none}  # no reader yet: not offered in the app
-    dataset: {short_name: AIRS3STM, version: "7.0", variable: TotH2OVap_A}
+    access: {reader: none, grid: grids/airs_TotH2OVap_2deg.nc}  # map grid only, see surface_air_temperature_airs
+    dataset: {short_name: AIRS3STM, version: "7.0", variable: "TotH2OVap (mean of TotH2OVap_A and TotH2OVap_D)", doi: 10.5067/UBENJB9D3T2H}
     units: kg/m^2
     temporal: [monthly]
     period: 2002-09-present
     percent_change_meaningful: true
     biomes: [any, ocean, tropics]
     dataset_verified: true
-    variable_verified: false
+    variable_verified: true  # 2026-11-15: DAP4 subset of 2026-10 opened; kg/m2, 0.2-59, fill -9999
 
   # ---------------------------------------------------------------- land / hydrology
   - id: soil_moisture_gldas

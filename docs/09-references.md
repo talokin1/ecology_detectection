@@ -20,7 +20,7 @@ Add every dataset, tool, library, image and font actually used. Mark `used: yes`
 | CERES SYN1deg (as served by NASA POWER 10.0.0, store `power_syn1deg_monthly_temporal_utc`) | see POWER | https://ceres.larc.nasa.gov/ | Web app: sunlight at the ground (ALLSKY_SFC_SW_DWN), cloud cover (CLOUD_AMT), haze (AOD_55_ADJ), 2001-2025; accessed through POWER on 2026-11-14/15 | |
 | MODIS | see catalog | https://modis.gsfc.nasa.gov/ | NDVI, land surface temperature, snow cover | |
 | OMI | see catalog | https://aura.gsfc.nasa.gov/omi.html | NO2, ozone | |
-| AIRS | see catalog | https://airs.jpl.nasa.gov/ | Surface air temperature, water vapour | |
+| Aqua/AIRS L3 Monthly Standard Physical Retrieval (AIRS-only) 1° x 1° V7.0 (GES DISC) | AIRS3STM 7.0 | https://doi.org/10.5067/UBENJB9D3T2H | Global 2° map grids of surface air temperature and total water vapour (day/night mean of the ascending and descending orbits), 2002-09 onward, from DAP4 OPeNDAP subsets; accessed 2026-11-15; `backend/trend_detective/airs.py`, `scripts/fetch_airs.py` | |
 
 ## Required citation texts (copy into the submission and the site footer)
 - **NASA POWER** (required by https://power.larc.nasa.gov/docs/referencing/, checked 2026-11-14: include both texts).

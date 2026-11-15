@@ -1105,6 +1105,42 @@
       "variable": "NO2_trop"
     },
     {
+      "accessed": "2026-11-15T14:24:50Z",
+      "bbox": null,
+      "bytes": 10707169,
+      "first": "2002-09",
+      "git_commit": "2790668",
+      "has_provenance": true,
+      "kind": "grid",
+      "land_only": false,
+      "last": "2026-10",
+      "path": "grids/airs_SurfAirTemp_2deg.nc",
+      "region_id": null,
+      "region_name": null,
+      "rows": 290,
+      "sha256": "8114b16d90e418926228fd9299cd999f448dac30d730c0601c034c672fc4bdf8",
+      "source": "airs",
+      "variable": "SurfAirTemp"
+    },
+    {
+      "accessed": "2026-11-15T14:24:55Z",
+      "bbox": null,
+      "bytes": 14137067,
+      "first": "2002-09",
+      "git_commit": "2790668",
+      "has_provenance": true,
+      "kind": "grid",
+      "land_only": false,
+      "last": "2026-10",
+      "path": "grids/airs_TotH2OVap_2deg.nc",
+      "region_id": null,
+      "region_name": null,
+      "rows": 290,
+      "sha256": "71d5ad669a4c0c2ff3517cfcdc5af71bc29a21af99f24a13766620490ef9e9c9",
+      "source": "airs",
+      "variable": "TotH2OVap"
+    },
+    {
       "accessed": "2026-11-14T18:06:03Z",
       "bbox": null,
       "bytes": 5823965,
@@ -16911,6 +16947,6 @@
     }
   ],
   "freeze_date": "2026-11-15",
-  "n_files": 738,
-  "total_bytes": 221521801
+  "n_files": 740,
+  "total_bytes": 246366037
 }
