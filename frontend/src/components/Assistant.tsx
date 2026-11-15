@@ -87,15 +87,19 @@ export function Assistant({ context }: { context: Context }) {
     void send(text);
   };
 
-  if (!open) {
-    return (
-      <button type="button" className="ai-fab btn btn--primary" onClick={() => setOpen(true)} aria-haspopup="dialog">
-        <span className="ai-badge" aria-hidden="true">AI</span> {S.assistant.open}
-      </button>
-    );
-  }
+  // The opener lives in the top bar (never over the map); the drawer is a fixed overlay.
+  const opener = (
+    <button type="button" className="btn btn--quiet ai-open" onClick={() => setOpen((o) => !o)}
+      aria-haspopup="dialog" aria-expanded={open} aria-label={S.assistant.open} title={S.assistant.open}>
+      <span className="ai-badge" aria-hidden="true">AI</span>
+      <span className="ai-open__text" aria-hidden="true">{S.assistant.openShort}</span>
+    </button>
+  );
+  if (!open) return opener;
 
   return (
+    <>
+    {opener}
     <aside className="ai-drawer" role="dialog" aria-label={S.assistant.title}>
       <header className="ai-drawer__head">
         <div>
@@ -142,6 +146,7 @@ export function Assistant({ context }: { context: Context }) {
       </form>
       <p className="ai-drawer__note">{S.assistant.note}</p>
     </aside>
+    </>
   );
 }
 

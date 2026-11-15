@@ -288,6 +288,7 @@ export const S = {
   },
   assistant: {
     open: 'Ask the assistant',
+    openShort: 'Ask',
     title: 'Trend Detective assistant',
     close: 'Close the assistant',
     about: (what: string) => `Knows the result on screen: ${what}`,

@@ -65,6 +65,7 @@ export function Shell() {
         </nav>
         <div className="topbar__spacer" />
         <Search />
+        {assistantEnabled && <Assistant context={context} />}
         <Menu label={S.shell.menu} items={[
           { label: S.share, onSelect: async () => { if (await copyLink()) say(S.shell.copied); } },
           { label: theme === 'dark' ? S.theme.light : S.theme.dark, onSelect: () => setTheme(theme === 'dark' ? 'light' : 'dark') },
@@ -75,7 +76,6 @@ export function Shell() {
       <main className="main">
         <Outlet />
       </main>
-      {assistantEnabled && <Assistant context={context} />}
       <div className="toast" role="status" aria-live="polite">{toast}</div>
     </Ctx.Provider>
   );

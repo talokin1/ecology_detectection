@@ -76,7 +76,8 @@ test('noise budget: the default Explore view stays quiet and the map fills the p
   const n = await noise(page);
   expect(n.items).toBeLessThanOrEqual(30);
   expect(n.words).toBeLessThanOrEqual(80);
-  expect(n.controls).toBeLessThanOrEqual(18);
+  // 18 + 1 for the AI assistant button in the top bar (ADR-009); it is absent when no assistant URL is set.
+  expect(n.controls).toBeLessThanOrEqual(19);
   const map = (await page.locator('.explore').boundingBox())!;
   const top = (await page.locator('.topbar').boundingBox())!;
   expect((map.width * map.height) / (1440 * (900 - top.height))).toBeGreaterThanOrEqual(0.85);
