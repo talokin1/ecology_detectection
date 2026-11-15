@@ -98,7 +98,7 @@ export function LegendChip({ layer, onClose, caption }: { layer: MapLayer; onClo
         <button type="button" className="icon-btn icon-btn--sm" aria-expanded={open} aria-label={S.legend.expand} onClick={() => setOpen((o) => !o)}><InfoIcon size={15} /></button>
         <button type="button" className="icon-btn icon-btn--sm" aria-label={S.legend.close} onClick={onClose}><CloseIcon size={14} /></button>
       </div>
-      <div className="lchip__units">{layer.units_label}</div>
+      <div className="lchip__units">{layer.season !== 'year' || layer.relative ? lg.title : layer.units_label}</div>
       {open && (
         <div className="lchip__more">
           <div className="legend__rows">
@@ -113,7 +113,7 @@ export function LegendChip({ layer, onClose, caption }: { layer: MapLayer; onClo
             <li><i className="legend__swatch legend__swatch--nodata" />{S.map.keyNoData}.</li>
             <li>{S.map.keySmooth}</li>
           </ul>
-          <p className="legend__caption">{caption ? `${caption} ` : ''}{S.legend.projection} {S.legend.credit}</p>
+          <p className="legend__caption">{caption ? `${caption} ` : ''}{layer.caption} {S.legend.credit}</p>
         </div>
       )}
     </div>

@@ -146,6 +146,70 @@ every tested square (16,200 squares for T2M and PRECTOTCORR, fewer for land-only
 not tested, and stays blank, when a year is missing, when its yearly means never vary, or when fewer
 than 10 of them are non-zero (sea-ice edge, occasional snow).
 
+### Map views: seasons and "compared with the world" (web app, ADR-011)
+Each variable has the whole year and four three-month seasons (Dec–Feb, Mar–May, Jun–Aug, Sep–Nov) as
+precomputed layers, and eight of the twelve variables have each of these again as the change compared
+with the world. Precipitation (MERRA-2), snow cover, snow depth and sea ice have no such layer: their
+world average is not a sound reference (ADR-011, decision 2; `python scripts/area_stats.py --var precip
+--world` shows the MERRA-2 world mean falling only over the oceans).
+- **Season:** one value per year, the mean of the three months; December counts towards the following
+  year, so the first winter of a record is left out (same convention as the seasonal checks of a
+  region). The per-square test and the BH step are unchanged.
+- **Compared with the world:** for each year the world average of that year is subtracted from every
+  square, and the difference series is tested. The world average is the cos(latitude)-weighted mean of
+  every square with a complete record (all squares for global fields, land squares for land-only
+  fields). Differences are in the variable's units, not in percent. A negative value means "changing more slowly than the world (or
+  the other way)", not "decreasing"; the layer's legend title and caption say so and print the world's
+  own trend. Sen's slope of a difference is not exactly the difference of two Sen slopes, so the three
+  printed numbers need not add up to the last digit.
+
+## A region compared with the world (`vs_world`, web app, ADR-011)
+For every regional analysis the monthly series "region minus world average" is deseasonalised and put
+through the full headline rule: weaker of Mann–Kendall (Yue–Wang) and OLS (n_eff), then the most
+cautious of the four robustness calculations. The page reports a difference only when that series has
+at least "evidence" of a trend; otherwise "not clearly different". Wording never runs ahead of the
+tests: "faster"/"more slowly" also needs an established trend of the region or of the world (otherwise
+"moving apart"), and ratio-scale variables say "a larger/smaller change" and add both trends as a
+percent of their own means, because the order can reverse in percent. Seasonal rows test one value per
+year of the difference with Mann–Kendall only, and the four seasons form one BH family (q = 0.05); this
+is lighter than the headline rule and the page says so.
+For air temperature the world average includes the oceans, which warm more slowly than land, so most
+land regions sit above it; the page states this next to the comparison.
+
+## Your own area (web app, ADR-011)
+A visitor can mark any longitude/latitude box and get its trend. Rules, fixed in advance:
+- the box value is the mean of the 2° squares it overlaps, each weighted by the share of the square
+  inside the box times cos(latitude); squares without a complete record are left out, and the panel
+  reports the share of the box (by weight) that had data;
+- one value per year (whole year, or the season the map shows), then the yearly rule
+  `make_app_data.yearly_values_trend`: Sen's slope, ranges from Mann–Kendall with the Yue–Wang
+  correction, OLS with the lag-1 effective sample size, verdict = the weaker of the two levels (the
+  same thresholds as in the table above); fewer than 10 years gives "not enough data";
+- the comparison with the world, or with a second box, tests the year-by-year difference.
+It is computed in the browser by a port of `trend_stats.py` (`frontend/src/lib/stats.ts`), which is
+compared on every build with reference values written by `python scripts/area_stats.py --fixture`
+(21 series, 7 boxes from the NetCDF grids). The yearly grids the browser reads
+(`frontend/public/data/series/*.bin`) store, for each square, a float32 mean, a float32 step size
+(1/32000 of the square's largest departure from its mean) and int16 counts; the rounding error is half
+a step. Any box shown on the site can
+be reproduced with `python scripts/area_stats.py --var <id> --box W S E N [--season <s>]`.
+This is a quick check: one value per year and no stability checks. Its false-alarm rate depends on how
+alike neighbouring years are (`python scripts/area_stats.py --false-alarms`, 1,500 trend-free AR(1)
+series per cell, share called "evidence" or "strong"; 5% would be exact):
+
+| φ (year-to-year memory) | 45 years | 25 years | 10 years |
+|---|---|---|---|
+| 0.0 | 3.7% | 3.2% | 2.7% |
+| 0.3 | 6.8% | 7.4% | 6.9% |
+| 0.6 | 8.1% | 10.0% | 14.7% |
+| 0.8 | 12.2% | 15.3% | 20.1% |
+
+So the yearly rule is conservative without memory and liberal with strong memory (soil wetness, sea
+ice). The same per-square test feeds the maps, where the BH step across squares comes on top. The
+"near 5%" result in the Monte-Carlo section below is for monthly series of 10 years or more, not for
+this yearly rule. And a box drawn around a patch that stood out on the map is not a fair test of that
+patch (the choice used the data); the panel says so under every clear-looking result.
+
 ## Robustness: the headline is the most cautious of four calculations (web app)
 Pre-declared and identical for every region and variable. The verdict rule is computed four times:
 on the full record, (a) without the first two years, (b) without the last two years, (c) on yearly

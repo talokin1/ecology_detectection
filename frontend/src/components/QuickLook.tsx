@@ -16,8 +16,8 @@ const signed = (v: number) => `${v > 0 ? '+' : v < 0 ? '−' : ''}${Math.abs(v)}
  * with trend, the answer sentence, and the way to the full analysis or a comparison. This one
  * panel covers the whole challenge scope (variable, region, series, rate, significance).
  */
-export function QuickLook({ index, region, variable, theCase, onClose }: {
-  index: Index; region: Region; variable: VariableRef; theCase?: Case; onClose: () => void;
+export function QuickLook({ index, region, variable, theCase, note, onClose }: {
+  index: Index; region: Region; variable: VariableRef; theCase?: Case; note?: string; onClose: () => void;
 }) {
   const a = useData(() => api.analysis(region.id, variable.id), `${region.id}__${variable.id}`);
   const peers = index.regions.filter((r) => r.story && r.id !== region.id);
@@ -70,6 +70,7 @@ export function QuickLook({ index, region, variable, theCase, onClose }: {
             ariaLabel={`${variable.long_name} in ${region.name}, yearly: ${a.data.verdict.headline}. ${a.data.trend.display.annotation}.`} />
           <p className="quick__answer">{theCase?.answer ?? a.data.verdict.answer}</p>
           <p className="quick__sure"><strong>{S.quick.howSure}</strong> {a.data.verdict.sure_plain}</p>
+          {note && <p className="help">{note}</p>}
           <div className="quick__actions">
             <Link className="btn btn--primary" to={full}>{S.quick.full}</Link>
           </div>

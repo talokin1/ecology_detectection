@@ -9,6 +9,8 @@ import { RegionLedger } from '../components/RegionLedger';
 import { FilterBar } from '../components/FilterBar';
 import { HintChip } from '../components/HintChip';
 import { QuickLook } from '../components/QuickLook';
+import { AreaPanel } from '../components/AreaPanel';
+import { boxParam, isSeason, parseBox, type Box, type Season } from '../lib/area';
 import { Panel } from '../components/Panel';
 import { Tour } from '../components/Tour';
 import { CloseIcon } from '../components/Icons';
@@ -27,7 +29,7 @@ export type PlaceMode = 'countries' | 'world' | 'stories';
 const MODES: PlaceMode[] = ['countries', 'world', 'stories'];
 const inMode = (r: Region, m: PlaceMode) => (m === 'stories' ? r.story : m === 'world' ? r.kind === 'world' : r.kind === 'country');
 const homeMode = (r: Region): PlaceMode => (r.kind === 'world' ? 'world' : r.kind === 'country' ? 'countries' : 'stories');
-const area = (r: Region) => (r.bbox[2] - r.bbox[0]) * (r.bbox[3] - r.bbox[1]);
+const bboxArea = (r: Region) => (r.bbox[2] - r.bbox[0]) * (r.bbox[3] - r.bbox[1]);
 
 const store = {
   get: (k: string) => { try { return localStorage.getItem(k); } catch { return null; } },
@@ -58,10 +60,18 @@ function Explore({ index }: { index: Index }) {
     : asked && MODES.includes(asked) ? asked
     : theCase?.compare_region_id ? 'stories' : 'countries';
   // smallest first, so a region inside a larger one stays clickable
-  const places = useMemo(() => (variable.map_only ? [] : index.regions.filter((r) => inMode(r, mode)).sort((a, b) => area(a) - area(b))),
+  const places = useMemo(() => (variable.map_only ? [] : index.regions.filter((r) => inMode(r, mode)).sort((a, b) => bboxArea(a) - bboxArea(b))),
     [index.regions, mode, variable.map_only]);
 
-  const layer = useData(() => api.map(variable.id), variable.id);
+  const seasonParam = params.get('s');
+  const season: Season = isSeason(seasonParam) ? seasonParam : 'year';
+  const relative = params.get('vs') === 'world' && variable.world_reference;
+  const otherView = season !== 'year' || relative;
+  const area = parseBox(params.get('area'));
+  const area2 = area ? parseBox(params.get('area2')) : null;
+  const [drawing, setDrawing] = useState<null | 'a' | 'b'>(null);
+
+  const layer = useData(() => api.map(variable.id, season, relative), `${variable.id}/${season}/${relative}`);
   const catalog = useData(api.catalog, 'catalog');
   const catalogEntry = catalog.data?.variables.find((c) => c.id === variable.catalog_id);
 
@@ -104,7 +114,21 @@ function Explore({ index }: { index: Index }) {
     if (c.compare_region_id) update({ var: c.variable_id, panel: 'regions', q: c.id, region: null, in: 'stories' });
     else openRegion(c.region_id, c);
   };
-  const closePanel = () => update({ panel: null, region: null, q: null });
+  const closePanel = () => update({ panel: null, region: null, q: null, area: null, area2: null });
+  const startDrawing = (which: 'a' | 'b') => {
+    setDrawing(which);
+    if (which === 'a') update({ panel: null, region: null, q: null, area: null, area2: null });
+  };
+  const onDrawn = (box: Box) => {
+    update(drawing === 'b' ? { area2: boxParam(box) } : { area: boxParam(box), area2: null, panel: 'area', region: null, q: null });
+    setDrawing(null);
+  };
+  useEffect(() => {
+    if (!drawing) return;
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setDrawing(null);
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [drawing]);
 
   const startTour = () => {
     store.set(TOUR_SEEN, '1');
@@ -130,9 +154,11 @@ function Explore({ index }: { index: Index }) {
     const ids = new Set([...activeIds, ...(hl ? [hl] : [])]);
     return Object.fromEntries(index.regions.filter((r) => ids.has(r.id)).map((r) => {
       const v = index.verdicts[`${r.id}__${variable.id}`];
-      return [r.id, v ? { line2: `${v.rate_text} · ${v.level_word.toLowerCase()}`, muted: (LEVEL_INDEX[v.level] ?? 0) < 2 } : {}];
+      return [r.id, v ? { line2: `${otherView ? S.explore.allYear : ''}${v.rate_text} · ${v.level_word.toLowerCase()}`, muted: (LEVEL_INDEX[v.level] ?? 0) < 2 } : {}];
     }));
-  }, [index, variable.id, hl, activeIds.join(',')]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [index, variable.id, hl, activeIds.join(','), otherView]); // eslint-disable-line react-hooks/exhaustive-deps
+  const areas = useMemo(() => [...(area ? [{ id: 'a', box: area }] : []), ...(area2 ? [{ id: 'b', box: area2 }] : [])],
+    [params.get('area'), params.get('area2')]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const visible = layer.data ? countVisible(layer.data, show) : 1;
 
@@ -176,6 +202,9 @@ function Explore({ index }: { index: Index }) {
             labels={labels}
             show={show}
             attribution={false}
+            areas={areas}
+            drawing={drawing !== null}
+            onDrawn={onDrawn}
             suppressTooltip={!!popup}
             onHoverRegion={setHl}
             onRegionClick={(id) => openRegion(id)}
@@ -189,18 +218,21 @@ function Explore({ index }: { index: Index }) {
       <div className="explore__top" data-map-overlay>
         <FilterBar index={index} variable={variable} catalogEntry={catalogEntry} show={show}
           mode={mode} onMode={(m) => update({ in: m === 'countries' ? null : m, region: null, q: null, ...(panel === 'quick' ? { panel: null } : {}) })}
-          regionsOpen={panel === 'regions'} legendClosed={!legendOpen} hintsDismissed={hintsOff} nonDefault={show !== 'all'}
+          season={season} relative={relative} words={layer.data?.words ?? variable.words} drawing={drawing !== null} areaOpen={panel === 'area' && !!area}
+          onSeason={(s) => update({ s: s === 'year' ? null : s })} onRelative={(on) => update({ vs: on ? 'world' : null })}
+          onDraw={() => (drawing ? setDrawing(null) : startDrawing('a'))}
+          regionsOpen={panel === 'regions'} legendClosed={!legendOpen} hintsDismissed={hintsOff} nonDefault={show !== 'all' || otherView}
           onVariable={(id) => update({ var: id, ...(theCase && theCase.variable_id !== id ? { q: null } : {}) })}
           onShow={(s) => update({ show: s === 'all' ? null : s })}
           onRegions={() => (panel === 'regions' ? closePanel() : update({ panel: 'regions', region: null }))}
           onLegend={() => setLegendOpen(true)}
           onIdeas={() => { setHintsOff(false); store.set(HINTS_OFF, null); }}
-          onReset={() => update({ show: null })} />
+          onReset={() => update({ show: null, s: null, vs: null })} />
       </div>
 
       <div className="explore__bottom" data-map-overlay>
         {legendOpen && layer.data && <LegendChip layer={layer.data} onClose={() => setLegendOpen(false)} />}
-        {!hintsOff && hint && tour === null && !panel && (
+        {!hintsOff && hint && tour === null && !panel && !drawing && (
           <HintChip hint={hint} onTry={() => tryHint(hint)} onNext={() => setHintIdx((i) => i + 1)}
             onDismiss={() => { setHintsOff(true); store.set(HINTS_OFF, '1'); }}
             offerTour={!tourSeen} onTour={startTour} />
@@ -214,14 +246,26 @@ function Explore({ index }: { index: Index }) {
         </div>
       )}
       {layer.error && <div className="explore__error"><ErrorState error={layer.error} /></div>}
-      {layer.loading && layer.data && layer.data.variable_id !== variable.id && (
+      {layer.loading && layer.data && !drawing && (
         <div className="explore__busy" role="status"><span className="spinner" aria-hidden="true" />{S.loading}</div>
+      )}
+      {drawing && (
+        <div className="explore__busy explore__draw" role="status">
+          <span>{drawing === 'b' ? S.area.drawSecondHint : S.area.drawHint}</span>
+          <button type="button" className="btn btn--quiet" onClick={() => setDrawing(null)}>{S.area.cancel}</button>
+        </div>
       )}
 
       {panel === 'quick' && region && (
         <QuickLook key={`${region.id}-${variable.id}`} index={index} region={region} variable={variable}
           theCase={theCase && theCase.region_id === region.id && theCase.variable_id === variable.id ? theCase : undefined}
+          note={otherView ? S.quick.wholeYearNote : undefined}
           onClose={closePanel} />
+      )}
+      {panel === 'area' && area && layer.data && (
+        <AreaPanel variable={variable} season={season} decimals={layer.data.value_decimals - 1} mask={layer.data.mask} worldRef={variable.world_reference} box={area} box2={area2}
+          onBox={(b) => update({ area: boxParam(b) })} onBox2={(b) => update({ area2: b ? boxParam(b) : null })}
+          onDraw={() => startDrawing('a')} onDrawSecond={() => startDrawing('b')} onClose={closePanel} />
       )}
       {panel === 'regions' && (
         <Panel title={S.regionsPanel.titles[mode]} kicker={`${variable.name} · ${variable.rate_units}`} onClose={closePanel} tour="regionspanel" className="regions">
@@ -231,7 +275,7 @@ function Explore({ index }: { index: Index }) {
               <p>{comparisonCase.question}</p>
             </div>
           )}
-          <p className="help">{S.regionsPanel.lead}</p>
+          <p className="help">{S.regionsPanel.lead}{otherView ? ` ${S.regionsPanel.wholeYear}` : ''}</p>
           {variable.map_only && <p className="help">{S.regionsPanel.mapOnly}</p>}
           <RegionLedger index={index} regions={places} variable={variable} layer={layer.data} activeIds={activeIds} highlightId={hl} onHover={setHl} onSelect={(id) => openRegion(id)} />
           {comparisonCase && (
