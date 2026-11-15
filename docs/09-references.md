@@ -17,6 +17,7 @@ Add every dataset, tool, library, image and font actually used. Mark `used: yes`
 | MERRA-2 | see catalog | https://gmao.gsfc.nasa.gov/reanalysis/MERRA-2/ | Temperature, precipitation, aerosols | |
 | GLDAS Noah | see catalog | https://ldas.gsfc.nasa.gov/gldas | Soil moisture, evapotranspiration, runoff, SWE | |
 | GPM IMERG | see catalog | https://gpm.nasa.gov/data/imerg | Precipitation | |
+| CERES SYN1deg (as served by NASA POWER 10.0.0, store `power_syn1deg_monthly_temporal_utc`) | see POWER | https://ceres.larc.nasa.gov/ | Web app: sunlight at the ground (ALLSKY_SFC_SW_DWN), cloud cover (CLOUD_AMT), haze (AOD_55_ADJ), 2001-2025; accessed through POWER on 2026-11-14/15 | |
 | MODIS | see catalog | https://modis.gsfc.nasa.gov/ | NDVI, land surface temperature, snow cover | |
 | OMI | see catalog | https://aura.gsfc.nasa.gov/omi.html | NO2, ozone | |
 | AIRS | see catalog | https://airs.jpl.nasa.gov/ | Surface air temperature, water vapour | |

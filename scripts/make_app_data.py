@@ -35,20 +35,25 @@ from __future__ import annotations
 
 import argparse
 import datetime as dt
+import hashlib
 import io
 import json
 import math
+import os
 import sys
+from concurrent.futures import ProcessPoolExecutor
 from contextlib import redirect_stdout
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
+import shapely
 import xarray as xr
 import yaml
 from scipy import stats
 from shapely import contains_xy
-from shapely.geometry import shape
+from shapely.geometry import Polygon, mapping, shape
+from shapely.ops import unary_union
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / ".claude" / "skills" / "trend-stats" / "scripts"))
@@ -70,9 +75,16 @@ GRIDS = ROOT / "data" / "cache" / "grids"
 SCHEMA_VERSION = "0.1.0"
 Y0 = 1981
 Y1 = 2025  # recomputed in main(): last calendar year complete in every input
-BASELINE = ("1981-01-01", "2010-12-31")
+
+
+def baseline_years() -> tuple[int, int]:
+    """Years that define "normal" for extreme-month thresholds: 1981-2010 for the long records,
+    the first 20 years for records that start later (satellite era)."""
+    return (1981, 2010) if Y0 <= 1981 else (Y0, Y0 + 19)
+
 DAILY = {"tmax": "T2M_MAX", "tmin": "T2M_MIN", "precip": "PRECTOTCORR"}
 FDR_MAP_Q = 0.05
+MAP_MIN_NONZERO_YEARS = 10  # a map square with fewer non-zero yearly means is not tested
 FDR_INSIGHT_Q = 0.05  # same q as the maps (review P0-5: filter and 95% whiskers must agree)
 MONTH_NAMES = ["January", "February", "March", "April", "May", "June", "July", "August",
                "September", "October", "November", "December"]
@@ -82,57 +94,165 @@ LEVEL_RANK = {"insufficient": -1, "none": 0, "weak": 1, "moderate": 2, "strong":
 MINUS = "−"
 
 # --------------------------------------------------------------------------- variables
+# One entry per variable the app shows. Texts are templates: "<region> is <up|down>",
+# "Most of the <noun> happens in ...", "<subject> got about X <adj>".
+#   scale      source units -> app units (fraction -> %, W/m2 -> MJ/m2/day)
+#   start      first year of the record (later for satellite-era products)
+#   mask       where the map is drawn: "land" (land-only product), "ocean" (sea ice), "all"
+#   map_only   no regional analyses: sea ice (every region is land) and, for now, snow, whose
+#              monthly anomalies are zero all summer, which pulls a median slope to zero (needs a
+#              snow-season method first). The map uses yearly means and is not affected.
+# Not offered: CERES cloud amount. Its 60S-60N mean steps down in 2006 and again in 2022
+# (about -1.5 points each), the signature of changes in the observing system, not of climate.
+#   extreme    which tail of monthly anomalies is counted as an "extreme month" (None = not counted)
+def _v(catalog_id, name, long_name, parameter, grid, units, rate_units, *, palette, words, adj, up, down,
+       noun, noun_down, subject, units_long, map_title, raw_label, decimals, percent, topic, mask="all",
+       scale=1.0, start=1981, extreme=None, source="NASA POWER (MERRA-2)", map_only=False,
+       zero_is_missing=False, season_verbs=None):
+    rd, td, sd = decimals
+    unit = rate_units.replace(" per decade", "")
+    return {
+        "catalog_id": catalog_id, "name": name, "long_name": long_name, "parameter": parameter,
+        "units": units, "rate_units": rate_units, "axis_label": f"Difference from normal ({unit})",
+        "total_unit": unit, "anomaly_units": unit, "units_long": units_long, "map_title": map_title,
+        "raw_label": raw_label, "palette": palette, "words": words, "adj": adj, "up": up, "down": down,
+        "noun": noun, "noun_down": noun_down, "subject": subject,
+        "rate_decimals": rd, "total_decimals": td, "series_decimals": sd, "percent": percent,
+        "topic": topic, "land_only": mask == "land", "mask": mask, "scale": scale, "start": start,
+        "grid": grid, "grid_var": parameter, "extreme": extreme, "source": source, "map_only": map_only,
+        "zero_is_missing": zero_is_missing, "season_verbs": season_verbs,
+    }
+
+
+def _ex(kind, tail, label, adj):
+    return {"kind": kind, "tail": tail, "label": label, "adj": adj}
+
+
 VARIABLES = {
-    "t2m": {
-        "catalog_id": "air_temperature_power", "name": "Air temperature",
-        "long_name": "Air temperature near the surface", "parameter": "T2M",
-        "units": "°C", "rate_units": "°C per decade", "axis_label": "Difference from normal (°C)",
-        "total_unit": "°C", "anomaly_units": "°C",
-        "units_long": "in °C, about 2 m above the ground",
-        "map_title": "Where is the air getting warmer or cooler?",
-        "raw_label": "Monthly mean temperature (°C)", "palette": "RdBu",
-        "words": {"neg": "cooling", "pos": "warming"},
-        "up": "getting warmer", "down": "getting cooler", "noun": "warming", "noun_down": "cooling",
-        "rate_decimals": 2, "total_decimals": 1, "series_decimals": 2, "percent": False,
-        "topic": "temperature", "land_only": False,
-        "scale": 1.0, "grid": "merra2_T2M_2deg.nc", "grid_var": "T2M",
-        "extreme": {"kind": "hot_months", "tail": "upper", "label": "Very hot months",
-                    "threshold_text": "hotter than 9 in 10 months of 1981–2010"},
-    },
-    "precip": {
-        "catalog_id": "precipitation_power", "name": "Precipitation",
-        "long_name": "Precipitation (rain and snow)", "parameter": "PRECTOTCORR",
-        "units": "mm/day", "rate_units": "mm/day per decade", "axis_label": "Difference from normal (mm/day)",
-        "total_unit": "mm/day", "anomaly_units": "mm/day",
-        "units_long": "rain and snow, in millimetres of water per day",
-        "map_title": "Where is it getting wetter or drier?",
-        "raw_label": "Monthly precipitation (mm/day)", "palette": "BrBG",
-        "words": {"neg": "drier", "pos": "wetter"},
-        "up": "getting wetter", "down": "getting drier", "noun": "wetting", "noun_down": "drying",
-        "rate_decimals": 2, "total_decimals": 2, "series_decimals": 2, "percent": True,
-        "topic": "water", "land_only": False,
-        "scale": 1.0, "grid": "merra2_PRECTOTCORR_2deg.nc", "grid_var": "PRECTOTCORR",
-        "extreme": {"kind": "dry_months", "tail": "lower", "label": "Very dry months",
-                    "threshold_text": "drier than 9 in 10 months of 1981–2010"},
-    },
-    "soil": {
-        "catalog_id": "root_zone_soil_wetness_power", "name": "Soil wetness",
-        "long_name": "Root-zone soil wetness", "parameter": "GWETROOT",
-        "units": "%", "rate_units": "percentage points per decade",
-        "axis_label": "Difference from normal (percentage points)",
-        "total_unit": "percentage points", "anomaly_units": "percentage points",
-        "units_long": "in percent of saturation (0% = bone dry, 100% = soaked)",
-        "map_title": "Where is the soil getting drier or wetter?",
-        "raw_label": "Root-zone soil wetness (% of saturation)", "palette": "BrBG",
-        "words": {"neg": "drier", "pos": "wetter"},
-        "up": "getting wetter", "down": "getting drier", "noun": "wetting", "noun_down": "drying",
-        "rate_decimals": 1, "total_decimals": 1, "series_decimals": 1, "percent": False,
-        "topic": "water", "land_only": True,
-        "scale": 100.0, "grid": "merra2_GWETROOT_2deg.nc", "grid_var": "GWETROOT",  # fraction 0-1 -> %
-        "extreme": {"kind": "dry_months", "tail": "lower", "label": "Very dry months",
-                    "threshold_text": "drier than 9 in 10 months of 1981–2010"},
-    },
+    "t2m": _v(
+        "air_temperature_power", "Air temperature", "Air temperature near the surface", "T2M",
+        "merra2_T2M_2deg.nc", "°C", "°C per decade", palette="RdBu",
+        words={"neg": "cooling", "pos": "warming"}, adj={"neg": "cooler", "pos": "warmer"},
+        up="getting warmer", down="getting cooler", noun="warming", noun_down="cooling", subject="it",
+        units_long="in °C, about 2 m above the ground", map_title="Where is the air getting warmer or cooler?",
+        raw_label="Monthly mean temperature (°C)", decimals=(2, 1, 2), percent=False, topic="temperature",
+        extreme=_ex("hot_months", "upper", "Very hot months", "hotter"),
+        season_verbs={"warming": ("warming", "warm fastest"), "cooling": ("cooling", "cool fastest")}),
+    "precip": _v(
+        "precipitation_power", "Precipitation", "Precipitation (rain and snow)", "PRECTOTCORR",
+        "merra2_PRECTOTCORR_2deg.nc", "mm/day", "mm/day per decade", palette="BrBG",
+        words={"neg": "drier", "pos": "wetter"}, adj={"neg": "drier", "pos": "wetter"},
+        up="getting wetter", down="getting drier", noun="wetting", noun_down="drying", subject="it",
+        units_long="rain and snow, in millimetres of water per day",
+        map_title="Where is it getting wetter or drier?", raw_label="Monthly precipitation (mm/day)",
+        decimals=(2, 2, 2), percent=True, topic="water",
+        extreme=_ex("dry_months", "lower", "Very dry months", "drier"),
+        season_verbs={"wetting": ("getting wetter", "get wetter fastest"),
+                      "drying": ("drying out", "dry out fastest")}),
+    "soil": _v(
+        "root_zone_soil_wetness_power", "Soil wetness", "Root-zone soil wetness", "GWETROOT",
+        "merra2_GWETROOT_2deg.nc", "%", "percentage points per decade", palette="BrBG",
+        words={"neg": "drier", "pos": "wetter"}, adj={"neg": "drier", "pos": "wetter"},
+        up="getting wetter", down="getting drier", noun="wetting", noun_down="drying", subject="the soil",
+        units_long="in percent of saturation (0% = bone dry, 100% = soaked)",
+        map_title="Where is the soil getting drier or wetter?",
+        raw_label="Root-zone soil wetness (% of saturation)", decimals=(1, 1, 1), percent=False,
+        topic="water", mask="land", scale=100.0,  # fraction 0-1 -> %
+        extreme=_ex("dry_months", "lower", "Very dry months", "drier"),
+        season_verbs={"wetting": ("getting wetter", "get wetter fastest"),
+                      "drying": ("drying out", "dry out fastest")}),
+    "rain_sat": _v(
+        "precipitation_imerg", "Rain from space", "Precipitation measured from space (GPM IMERG)",
+        "IMERG_PRECTOT", "imerg_IMERG_PRECTOT_2deg.nc", "mm/day", "mm/day per decade", palette="BrBG",
+        words={"neg": "drier", "pos": "wetter"}, adj={"neg": "drier", "pos": "wetter"},
+        up="getting wetter", down="getting drier", noun="wetting", noun_down="drying", subject="it",
+        units_long="rain and snow seen by satellites, in millimetres of water per day",
+        map_title="Where do satellites see more or less rain?", raw_label="Monthly precipitation (mm/day)",
+        decimals=(2, 2, 2), percent=True, topic="water", start=1998,
+        source="NASA GPM IMERG (via POWER)",
+        extreme=_ex("dry_months", "lower", "Very dry months", "drier"),
+        season_verbs={"wetting": ("getting wetter", "get wetter fastest"),
+                      "drying": ("drying out", "dry out fastest")}),
+    "evap": _v(
+        "evaporation_land_power", "Evaporation", "Evaporation from land", "EVLAND",
+        "merra2_EVLAND_2deg.nc", "mm/day", "mm/day per decade", palette="BrBG",
+        words={"neg": "less", "pos": "more"}, adj={"neg": "lower", "pos": "higher"},
+        up="evaporating more water", down="evaporating less water",
+        noun="rise in evaporation", noun_down="drop in evaporation", subject="evaporation",
+        units_long="water leaving the land surface, in millimetres per day",
+        map_title="Where does the land give up more or less water?",
+        raw_label="Monthly evaporation from land (mm/day)", decimals=(2, 2, 2), percent=True,
+        topic="water", mask="land"),
+    "vapour": _v(
+        "water_vapour_power", "Water vapour", "Water vapour in the air", "TQV",
+        "merra2_TQV_2deg.nc", "kg/m²", "kg/m² per decade", palette="BrBG",
+        words={"neg": "drier air", "pos": "moister air"}, adj={"neg": "lower", "pos": "higher"},
+        up="holding more water vapour", down="holding less water vapour",
+        noun="rise in water vapour", noun_down="drop in water vapour", subject="water vapour in the air",
+        units_long="all the water vapour above a square metre of ground, in kilograms",
+        map_title="Where does the air hold more or less water?",
+        raw_label="Monthly water vapour (kg/m²)", decimals=(2, 2, 2), percent=True, topic="water",
+        extreme=_ex("humid_months", "upper", "Very humid months", "more humid")),
+    "snow_cover": _v(
+        "snow_cover_fraction_power", "Snow cover", "Share of the land covered by snow", "FRSNO",
+        "merra2_FRSNO_2deg.nc", "%", "percentage points per decade", palette="BrBG",
+        words={"neg": "less snow", "pos": "more snow"}, adj={"neg": "smaller", "pos": "larger"},
+        up="gaining snow cover", down="losing snow cover",
+        noun="gain in snow cover", noun_down="loss of snow cover", subject="snow cover",
+        units_long="in percent of the land covered by snow", map_title="Where is snow cover shrinking or growing?",
+        raw_label="Monthly snow cover (% of land)", decimals=(1, 1, 1), percent=False, topic="snow_ice",
+        mask="land", scale=100.0, map_only=True),
+    "snow_depth": _v(
+        "snow_depth_power", "Snow depth", "Depth of snow on the ground", "SNODP",
+        "merra2_SNODP_2deg.nc", "cm", "cm per decade", palette="BrBG",
+        words={"neg": "thinner snow", "pos": "deeper snow"}, adj={"neg": "thinner", "pos": "deeper"},
+        up="seeing deeper snow", down="seeing thinner snow",
+        noun="deepening of the snow", noun_down="thinning of the snow", subject="the snow",
+        units_long="in centimetres, averaged over the whole year and the whole area",
+        map_title="Where is the snow getting thinner or deeper?", raw_label="Monthly snow depth (cm)",
+        decimals=(2, 1, 2), percent=False, topic="snow_ice", mask="land", map_only=True),
+    "sea_ice": _v(
+        "sea_ice_fraction_power", "Sea ice", "Share of the sea covered by ice", "FRSEAICE",
+        "merra2_FRSEAICE_2deg.nc", "%", "percentage points per decade", palette="BrBG",
+        words={"neg": "less ice", "pos": "more ice"}, adj={"neg": "smaller", "pos": "larger"},
+        up="gaining sea ice", down="losing sea ice", noun="gain in sea ice", noun_down="loss of sea ice",
+        subject="sea ice", units_long="in percent of the sea surface covered by ice",
+        map_title="Where is sea ice shrinking or growing?", raw_label="Monthly sea-ice cover (%)",
+        decimals=(1, 1, 1), percent=False, topic="snow_ice", mask="ocean", scale=100.0, map_only=True),
+    "sunlight": _v(
+        "solar_radiation_power", "Sunlight", "Sunlight reaching the ground", "ALLSKY_SFC_SW_DWN",
+        "syn1deg_ALLSKY_SFC_SW_DWN_2deg.nc", "MJ/m²/day", "MJ/m²/day per decade", palette="PuOr",
+        words={"neg": "dimmer", "pos": "brighter"}, adj={"neg": "weaker", "pos": "stronger"},
+        up="getting more sunlight", down="getting less sunlight",
+        noun="brightening", noun_down="dimming", subject="sunlight",
+        units_long="energy from the Sun reaching the ground each day, after clouds and haze",
+        map_title="Where is the ground getting more or less sunlight?",
+        raw_label="Monthly sunlight at the ground (MJ/m²/day)", decimals=(2, 2, 2), percent=True,
+        topic="sunlight", scale=0.0864, start=2001, source="NASA CERES SYN1deg (via POWER)",
+        extreme=_ex("sunny_months", "upper", "Very sunny months", "sunnier")),
+    "haze": _v(
+        "aerosol_optical_depth_power", "Haze", "Haze in the air (aerosol optical depth)", "AOD_55_ADJ",
+        "syn1deg_AOD_55_ADJ_2deg.nc", "AOD", "AOD per decade", palette="PuOr",
+        words={"neg": "less haze", "pos": "more haze"}, adj={"neg": "thinner", "pos": "thicker"},
+        up="getting hazier", down="getting less hazy",
+        noun="increase in haze", noun_down="decrease in haze", subject="haze",
+        units_long="how much dust, smoke and pollution particles dim the light (0 = perfectly clear)",
+        map_title="Where is the air getting hazier or cleaner?", raw_label="Monthly haze (aerosol optical depth)",
+        decimals=(3, 3, 3), percent=True, topic="air", start=2001,
+        source="NASA CERES SYN1deg (via POWER)", zero_is_missing=True,
+        extreme=_ex("hazy_months", "upper", "Very hazy months", "hazier")),
+    "ozone": _v(
+        "total_ozone_power", "Ozone layer", "Ozone layer (total ozone)", "TO3",
+        "merra2_TO3_2deg.nc", "DU", "DU per decade", palette="PuOr",
+        words={"neg": "thinner", "pos": "thicker"}, adj={"neg": "thinner", "pos": "thicker"},
+        up="getting a thicker ozone layer", down="getting a thinner ozone layer",
+        noun="thickening of the ozone layer", noun_down="thinning of the ozone layer",
+        subject="the ozone layer", units_long="in Dobson units; about 300 is typical",
+        map_title="Where is the ozone layer getting thinner or thicker?",
+        raw_label="Monthly total ozone (Dobson units)", decimals=(1, 1, 1), percent=True, topic="air",
+        extreme=_ex("thin_ozone_months", "lower", "Months with very thin ozone", "thinner")),
 }
+CORE = ("t2m", "precip", "soil")  # variables with daily inputs and the climate_stats deeper checks
 
 CASES = [
     {"id": "01", "slug": "grandmas-drought", "title": "Grandma's drought",
@@ -291,6 +411,8 @@ class Grid:
         self.lat = ds["lat"].values.astype(float)
         self.lon = ds["lon"].values.astype(float)
         self.values = da.transpose("time", "lat", "lon").values.astype(float) * spec["scale"]
+        if spec["zero_is_missing"]:  # aerosol optical depth 0.000 = no retrieval (low sun, snow or ice)
+            self.values[self.values == 0] = np.nan
         ds.close()
         self.LON, self.LAT = np.meshgrid(self.lon, self.lat)
         sidecar = self.path.with_name(self.path.name + ".provenance.json")
@@ -319,6 +441,7 @@ def map_layer(grid: Grid, var: str) -> tuple[dict, dict]:
 
     valid = np.isfinite(Y).all(axis=1)
     valid[valid] = np.std(Y[valid], axis=1) > 0
+    valid[valid] = (Y[valid] != 0).sum(axis=1) >= MAP_MIN_NONZERO_YEARS
     slope = np.full(Y.shape[0], np.nan)
     pval = np.full(Y.shape[0], np.nan)
     i, j = np.triu_indices(n, 1)
@@ -336,7 +459,12 @@ def map_layer(grid: Grid, var: str) -> tuple[dict, dict]:
         a = detr - detr.mean(axis=1, keepdims=True)
         r1 = np.clip((a[:, :-1] * a[:, 1:]).sum(1) / (a * a).sum(1), 0, None)
         eta = 1 + 2 * ((1 - kk / n)[None] * r1[:, None] ** kk[None]).sum(1)
-        z = (s - np.sign(s)) / np.sqrt(var0 * eta)
+        ties = np.zeros(sel.size)  # tie term of Var(S), as in trend_stats.mann_kendall
+        ys = np.sort(y, axis=1)
+        for q in np.flatnonzero((np.diff(ys, axis=1) == 0).any(axis=1)):
+            c = np.unique(ys[q], return_counts=True)[1]
+            ties[q] = float((c * (c - 1) * (2 * c + 5)).sum()) / 18.0
+        z = (s - np.sign(s)) / np.sqrt((var0 - ties) * eta)
         slope[sel] = sen * 10
         pval[sel] = 2 * stats.norm.sf(np.abs(z))
     sig = np.zeros(Y.shape[0], dtype=bool)
@@ -346,7 +474,8 @@ def map_layer(grid: Grid, var: str) -> tuple[dict, dict]:
     spec = VARIABLES[var]
     finite = np.abs(slope[np.isfinite(slope)])
     raw_lim = float(np.percentile(finite, 98))
-    nice = [0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.4, 0.5, 0.6, 0.8, 1.0, 1.2, 1.5, 2.0, 2.5, 3.0, 4.0, 5.0, 6.0]
+    nice = [0.005, 0.01, 0.02, 0.03, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.4, 0.5, 0.6, 0.8, 1.0, 1.2, 1.5, 2.0,
+            2.5, 3.0, 4.0, 5.0, 6.0, 8.0, 10.0, 15.0, 20.0, 30.0, 50.0, 100.0]
     limit = next((v for v in nice if v >= raw_lim), nice[-1])
     d = spec["rate_decimals"] + 1
     bins = 11
@@ -376,7 +505,8 @@ def map_layer(grid: Grid, var: str) -> tuple[dict, dict]:
         "units_label": spec["rate_units"],
         "words": spec["words"],
         "fdr_q": FDR_MAP_Q,
-        "caption": (f"NASA POWER {spec['parameter']} (MERRA-2) · {Y0}–{Y1} · Sen's slope of yearly means in "
+        "mask": spec["mask"],
+        "caption": (f"{spec['source']} {spec['parameter']} · {Y0}–{Y1} · Sen's slope of yearly means in "
                     f"each {dlat:g}° square. Strong colour: passes the map-wide test for false alarms "
                     f"(Mann-Kendall with memory correction, q = {FDR_MAP_Q}). This map enlarges areas near "
                     "the poles."),
@@ -396,20 +526,36 @@ def provenance_from(prov: dict, spec: dict, what: str) -> dict:
                        "per-square Sen's slope and Mann-Kendall (Yue-Wang), BH FDR across squares "
                        "(trend_stats.py)"]
     else:
+        if what == "country":
+            processing = processing[:2] + [
+                "country value = mean of the 2° map squares that overlap the country, weighted by the "
+                "overlapping area (mainland and islands within about 1,000 km)"]
         processing += [f"monthly series {Y0}-01 to {Y1}-12 (complete years)",
                        "anomalies from the calendar-month normal; Sen's slope, Mann-Kendall (Yue-Wang), "
                        "OLS with effective sample size (trend_stats.py)"]
+    if "CERES" in spec["source"]:
+        about = "Data: NASA CERES SYN1deg, built from satellite measurements, about 100 km squares"
+    elif "IMERG" in spec["source"]:
+        about = ("Data: NASA GPM IMERG, rainfall estimated from satellites, about 10 km squares; the "
+                 "satellites changed in 2014 (TRMM to GPM)")
+    else:
+        about = "Data: MERRA-2 reanalysis, a weather model corrected by observations, about 50 km squares"
+    if what == "map":
+        about += " (the map averages them into 2° squares)"
+    elif what == "country":
+        about += " (averaged into 2° squares; coastal squares include some sea)"
     return {
-        "dataset": f"{prov.get('source', 'NASA POWER')} · {spec['parameter']}",
+        "dataset": f"{spec['source']} · {spec['parameter']}",
         "version": prov.get("version"),
         "doi": prov.get("doi"),
         "landing_page": prov.get("landing_page") or "https://power.larc.nasa.gov/",
         "accessed": accessed,
         "processing": processing,
         "synthetic": False,
-        "caveat": ("Data: MERRA-2 reanalysis, a weather model corrected by observations, about 50 km squares"
-                   + (" (the map averages them into 2° squares)" if what == "map" else "")
-                   + f". The trend is a straight line through {Y0}–{Y1}; it shows what changed, not why."),
+        "caveat": (about + f". The trend is a straight line through {Y0}–{Y1}; it shows what changed, not why."
+                   + (f" The record is {Y1 - Y0 + 1} years long, shorter than the 30 years usually used to "
+                      "describe a climate." if Y1 - Y0 + 1 < 30 else "")
+                   + (" " + prov["_caution"] if prov.get("_caution") else "")),
     }
 
 
@@ -419,24 +565,6 @@ def region_mask(cells: dict, geom) -> np.ndarray:
     if m.sum() < 3:  # small region: take the squares whose centre is within about one square
         m = contains_xy(geom.buffer(1.5), cells["LON"], cells["LAT"])
     return m
-
-
-def load_series(var: str, region_id: str) -> pd.Series:
-    """Monthly regional series from the cache, in app units, restricted to Y0..Y1."""
-    spec = VARIABLES[var]
-    s = acquire.get_series(spec["catalog_id"], region_id)
-    if not s.attrs.get("from_cache", True):
-        raise RuntimeError(f"{spec['catalog_id']} / {region_id} did not come from the cache")
-    attrs = dict(s.attrs)
-    s = s.reindex(month_index(Y0, Y1)) * spec["scale"]
-    s.attrs = attrs
-    return s
-
-
-def regional_series(var: str, region_id: str):
-    s = load_series(var, region_id)
-    dates = s.index.values.astype("datetime64[M]").astype("datetime64[D]")
-    return dates, s.to_numpy(dtype=float), s.attrs
 
 
 def seasonal_series(dates, anom, months_wanted):
@@ -463,8 +591,7 @@ def annual_trend(years, values):
 
 LEVEL_WORD = {"strong": "Strong evidence", "moderate": "Evidence", "weak": "A hint",
               "none": "No clear trend yet", "insufficient": "Not enough data"}
-SEASON_VERB = {"warming": ("warming", "warm fastest"), "cooling": ("cooling", "cool fastest"),
-               "drying": ("drying out", "dry out fastest"), "wetting": ("getting wetter", "get wetter fastest")}
+GENERIC_SEASON_VERB = ("changing", "change fastest")
 
 
 def range_text(lo: float, hi: float, d: int, prefix: str = "95% range ", suffix: str = "") -> str:
@@ -507,29 +634,34 @@ def yearly_level(dates, raw) -> str:
 def robustness(dates, raw, level: str) -> dict:
     """Pre-declared sensitivity checks, the same for every region and variable: the verdict rule
     repeated without the first two years, without the last two years, and on yearly means.
-    The headline verdict is never changed; a different outcome is reported next to it."""
+    The headline verdict is the most cautious of the full-record result and these three; when they
+    differ, the line under the verdict says which calculation gave what."""
     if level == "insufficient":
-        return {"checks": [], "text": None}
+        return {"checks": [], "text": None, "level": level}
     years = dates.astype("datetime64[Y]").astype(int) + 1970
     checks = []
     for label, sel in ((f"leaving out {Y0}–{Y0 + 1}", years >= Y0 + 2),
                        (f"leaving out {Y1 - 1}–{Y1}", years <= Y1 - 2)):
         checks.append((label, monthly_level(dates[sel], raw[sel])))
     checks.append(("using one average per year", yearly_level(dates, raw)))
+    final = level
+    for _, lv in checks:
+        final = weaker(final, lv)
     differ = [(lbl, lv) for lbl, lv in checks if lv != level]
     if not differ:
-        return {"checks": checks, "text": "Same verdict without the first or last two years and with yearly averages."}
+        return {"checks": checks, "level": final,
+                "text": "Same verdict without the first or last two years and with yearly averages."}
     parts = [f"{lbl}: {LEVEL_WORD[lv].lower()}" for lbl, lv in differ]
-    return {"checks": checks, "text": "Borderline: " + "; ".join(parts) + "."}
+    return {"checks": checks, "level": final,
+            "text": (f"Stability checks: full record: {LEVEL_WORD[level].lower()}; " + "; ".join(parts)
+                     + ". We report the most cautious.")}
 
 
-def analyse(var, region, cells):
+def analyse(var, region, cells, raw, prov):
+    """Full analysis of one monthly series (already in app units, complete for Y0..Y1)."""
     spec = VARIABLES[var]
     name_s = sentence_name(region)
-    dates, raw, attrs = regional_series(var, region["preset"])
-    if not np.isfinite(raw).all():
-        raise ValueError(f"{var} / {region['id']}: {int((~np.isfinite(raw)).sum())} missing months in "
-                         f"{Y0}-{Y1}; the app's annual and seasonal statistics need a complete record")
+    dates = month_index(Y0, Y1).values.astype("datetime64[M]").astype("datetime64[D]")
     res = ts.analyze_series(dates, raw, units=spec["rate_units"], variable_name=spec["long_name"])
     anom, _ = ts.deseasonalize(dates, raw)
     t = ts.decimal_years(dates)
@@ -543,7 +675,9 @@ def analyse(var, region, cells):
 
     mk_level = level_from_cis(ci90, ci95, ci99)
     ols_level = level_from_p(res["ols"]["p"])
-    level = weaker(mk_level, ols_level) if record_years >= 10 else "insufficient"
+    full_level = weaker(mk_level, ols_level) if record_years >= 10 else "insufficient"
+    robust = robustness(dates, raw, full_level)
+    level = robust["level"]  # the most cautious of: full record, without first/last two years, yearly means
     disagree = mk_level != ols_level
     decided_by = "both" if not disagree else ("mk" if weaker(mk_level, ols_level) == mk_level else "ols")
     direction = "up" if per_dec > 0 else "down" if per_dec < 0 else "flat"
@@ -587,9 +721,21 @@ def analyse(var, region, cells):
         answer = "The record is too short or too patchy to judge a trend."
     how_sure = (f"Mann-Kendall test with a correction for month-to-month memory: {p_text(mk['p'])} · "
                 f"{res['n']} months · second test (regression): {p_text(res['ols']['p'])}")
-    robust = robustness(dates, raw, level)
     if robust["text"]:
         how_sure += " · " + robust["text"]
+    # the same verdict in plain words; the statistics stay one click away
+    sure_plain = {
+        "strong": "Very sure. A drift this large would be very rare if nothing were really changing.",
+        "moderate": "Fairly sure. A drift like this would be unusual if nothing were changing.",
+        "weak": "Not sure. There is a hint, but it could still be ordinary ups and downs.",
+        "none": "No clear signal. The change so far is within normal year-to-year swings.",
+        "insufficient": "Cannot say. The record is too short or too patchy.",
+    }[level]
+    if level != full_level:
+        sure_plain += (" The full record alone looks stronger, but that does not hold up in our stability "
+                       "checks, so we stay cautious.")
+    if disagree:
+        sure_plain += " Our two tests disagree, so we report the more cautious verdict."
     disagree_text = (f"Mann-Kendall: {LEVEL_WORD[mk_level].lower()} ({p_text(mk['p'])}). Regression: "
                      f"{LEVEL_WORD[ols_level].lower()} ({p_text(res['ols']['p'])}). We report the weaker."
                      if disagree else None)
@@ -653,19 +799,24 @@ def analyse(var, region, cells):
 
     # --- extremes (S7)
     ex = spec["extreme"]
-    base = (dates >= np.datetime64(BASELINE[0])) & (dates <= np.datetime64(BASELINE[1]))
-    thr = np.percentile(anom[base], 90 if ex["tail"] == "upper" else 10)
-    hit = anom > thr if ex["tail"] == "upper" else anom < thr
-    counts = np.array([int(hit[(dates >= np.datetime64(f"{y}-01-01")) & (dates < np.datetime64(f"{y + 1}-01-01"))].sum())
-                       for y in yrs])
-    ex_r = annual_trend(yrs, counts.astype(float))
-    family.append(("extremes", ex["kind"], ex_r["mk"]["p"]))
-    early, late = float(counts[:10].mean()), float(counts[-10:].mean())
-    extremes = {"kind": ex["kind"], "label": ex["label"], "threshold_text": ex["threshold_text"],
-                "years": yrs.tolist(), "counts": counts.tolist(),
-                "sen_per_decade": round(ex_r["sen_slope_per_decade"], 2), "p": round(ex_r["mk"]["p"], 4),
-                "early": {"label": f"{Y0}–{Y0 + 9}", "mean_per_year": round(early, 1), "years": [Y0, Y0 + 9]},
-                "late": {"label": f"{Y1 - 9}–{Y1}", "mean_per_year": round(late, 1), "years": [Y1 - 9, Y1]}}
+    extremes = None
+    if ex:
+        b0, b1 = baseline_years()
+        threshold_text = f"{ex['adj']} than 9 in 10 months of {b0}–{b1}"
+        base = (dates >= np.datetime64(f"{b0}-01-01")) & (dates <= np.datetime64(f"{b1}-12-31"))
+        thr = np.percentile(anom[base], 90 if ex["tail"] == "upper" else 10)
+        hit = anom > thr if ex["tail"] == "upper" else anom < thr
+        counts = np.array([int(hit[(dates >= np.datetime64(f"{y}-01-01"))
+                                   & (dates < np.datetime64(f"{y + 1}-01-01"))].sum()) for y in yrs])
+        ex_r = annual_trend(yrs, counts.astype(float))
+        family.append(("extremes", ex["kind"], ex_r["mk"]["p"]))
+        early, late = float(counts[:10].mean()), float(counts[-10:].mean())
+        extremes = {"kind": ex["kind"], "label": ex["label"], "threshold_text": threshold_text,
+                    "years": yrs.tolist(), "counts": counts.tolist(),
+                    "sen_per_decade": round(ex_r["sen_slope_per_decade"], 2), "p": round(ex_r["mk"]["p"], 4),
+                    "early": {"label": f"{Y0}–{Y0 + 9}", "mean_per_year": round(early, 1), "years": [Y0, Y0 + 9]},
+                    "late": {"label": f"{Y1 - 9}–{Y1}", "mean_per_year": round(late, 1),
+                             "years": [Y1 - 9, Y1]}}
 
     # --- FDR across the follow-up checks (M11)
     pv = np.array([p for _, _, p in family])
@@ -677,14 +828,16 @@ def analyse(var, region, cells):
     for m in monthly:
         m["q"] = round(qmap[("month", m["month"])], 4)
         m["passes_fdr"] = m["q"] <= FDR_INSIGHT_Q
-    extremes["q"] = round(qmap[("extremes", ex["kind"])], 4)
-    extremes["passes_fdr"] = extremes["q"] <= FDR_INSIGHT_Q
-    extremes["display"] = {
-        "subtitle": f"Months per year that were {ex['threshold_text']}.",
-        "trend_text": (f"From about {extremes['early']['mean_per_year']:g} a year in {extremes['early']['label']} "
-                       f"to about {extremes['late']['mean_per_year']:g} a year in {extremes['late']['label']}."
-                       if extremes["passes_fdr"] else "The change in this count could still be chance."),
-    }
+    if extremes:
+        extremes["q"] = round(qmap[("extremes", ex["kind"])], 4)
+        extremes["passes_fdr"] = extremes["q"] <= FDR_INSIGHT_Q
+        extremes["display"] = {
+            "subtitle": f"Months per year that were {extremes['threshold_text']}.",
+            "trend_text": (f"From about {extremes['early']['mean_per_year']:g} a year in "
+                           f"{extremes['early']['label']} to about {extremes['late']['mean_per_year']:g} a year "
+                           f"in {extremes['late']['label']}."
+                           if extremes["passes_fdr"] else "The change in this count could still be chance."),
+        }
 
     # --- spatial sign split (S9)
     w = np.cos(np.deg2rad(cells["LAT"])) * region["mask"] * np.isfinite(cells["slope"])
@@ -738,8 +891,9 @@ def analyse(var, region, cells):
                     "n_eff": round(res["ols"]["n_eff"], 1), "r1": round(res["ols"]["r1"], 3), "level": ols_level},
         },
         "verdict": {"level": level, "direction": direction, "headline": headline, "sentence": sentence,
-                    "answer": answer, "how_sure": how_sure, "methods_disagree": disagree,
-                    "decided_by": decided_by, "disagree_text": disagree_text},
+                    "answer": answer, "how_sure": how_sure, "sure_plain": sure_plain, "methods_disagree": disagree,
+                    "decided_by": decided_by, "disagree_text": disagree_text,
+                    "full_record_level": full_level},
         "years_to_detect": ytd,
         "emergence": {"year": emergence, "ratio_now": None if ratio_now is None else round(ratio_now, 2),
                       "swing": round(swing, sd_ + 1),
@@ -754,8 +908,10 @@ def analyse(var, region, cells):
         "insights": [],
         "insights_audit": {"tested": len(family), "passed": int(sig.sum()), "shown": 0, "q": FDR_INSIGHT_Q, "text": ""},
         "deeper_checks": None,
-        "provenance": provenance_from(attrs.get("provenance", {}), spec, "region"),
-        "_internal": {"family": family, "qmap": qmap, "spec": spec, "region": region, "prov": attrs.get("provenance", {}),
+        "provenance": provenance_from(prov, spec, "country" if region.get("weights") is not None else "region"),
+        "_internal": {"family": family, "qmap": qmap, "spec": spec, "prov": prov,
+                      "region": {"id": region["id"], "name": region["name"], "kind": region["kind"]},
+                      "what": "country" if region.get("weights") is not None else "region",
                       "total": total, "pct": pct_total, "unit": unit},
     }
 
@@ -764,8 +920,7 @@ def analyse(var, region, cells):
 def change_phrase(a: dict) -> str:
     """'about 19% drier' / 'about 4.4 percentage points drier' / 'about 2.6 °C warmer'."""
     i, spec = a["_internal"], a["_internal"]["spec"]
-    adj = spec["words"]["pos"] if i["total"] > 0 else spec["words"]["neg"]
-    adj = {"warming": "warmer", "cooling": "cooler"}.get(adj, adj)
+    adj = spec["adj"]["pos"] if i["total"] > 0 else spec["adj"]["neg"]
     if i["pct"] is not None:
         return f"about {fmt(abs(i['pct']), 0, sign=False)}% {adj}"
     return f"about {fmt(abs(i['total']), spec['total_decimals'], sign=False)} {i['unit']} {adj}"
@@ -779,14 +934,14 @@ def build_insights(a: dict, regions: dict) -> None:
     noun = spec["noun"] if v["direction"] == "up" else spec["noun_down"]
 
     if LEVEL_RANK[level] >= 2:
+        text = f"Since {Y0} {spec['subject']} got {change_phrase(a)}."
         if spec["percent"] and tr["percent_change"] is not None:
-            text = (f"Since {Y0} it got {change_phrase(a)} "
-                    f"({tr['display']['total_value']} {tr['display']['total_unit']}; {tr['display']['percent_range']}).")
+            detail = (f"Total change {tr['display']['total_value']} {tr['display']['total_unit']} "
+                      f"({tr['display']['total_range']}); as a share of the average: {tr['display']['percent_range']}.")
         else:
-            subject = "it" if a["variable_id"] == "t2m" else "the soil"
-            text = f"Since {Y0} {subject} got {change_phrase(a)} ({tr['display']['total_range']})."
-        ins.append({"kind": "total_change", "text": text, "evidence_level": level, "tested": False,
-                    "methods_anchor": "trend-test", "numbers": {"total": tr["total_change"]}})
+            detail = f"Total change {tr['display']['total_value']} {tr['display']['total_unit']} ({tr['display']['total_range']})."
+        ins.append({"kind": "total_change", "text": text, "detail": detail, "evidence_level": level,
+                    "tested": False, "methods_anchor": "trend-test", "numbers": {"total": tr["total_change"]}})
     if a["emergence"]["year"]:
         ins.append({"kind": "signal_noise",
                     "text": (f"Since about {a['emergence']['year']} the change has been bigger than a normal "
@@ -800,29 +955,33 @@ def build_insights(a: dict, regions: dict) -> None:
         ss = sorted(a["seasons"], key=lambda s_: s_["sen_per_decade"] * sgn, reverse=True)
         fast, slow = ss[0], ss[-1]
         apart = fast["ci95"][0] > slow["ci95"][1] or fast["ci95"][1] < slow["ci95"][0]
-        verb, verb_fast = SEASON_VERB[noun]
+        verb, verb_fast = (spec["season_verbs"] or {}).get(noun, GENERIC_SEASON_VERB)
         same_sign = np.sign(fast["sen_per_decade"]) == np.sign(slow["sen_per_decade"])
         units = spec["rate_units"]
         if fast["passes_fdr"] and apart and slow["passes_fdr"] and same_sign:
             r = abs(fast["sen_per_decade"]) / max(abs(slow["sen_per_decade"]), 1e-9)
             tw = times_word(r) or "faster than"
             ins.append({"kind": "season", "text": f"{fast['label']}s are {verb} {tw} {slow['label'].lower()}s.",
+                        "detail": (f"{fast['label']}: {fast['display']} {units} ({fast['ci_text']}). "
+                                   f"{slow['label']}: {slow['display']} {units} ({slow['ci_text']})."),
                         "evidence_level": "moderate", "tested": True, "methods_anchor": "seasons",
                         "numbers": {"fast": fast["sen_per_decade"], "slow": slow["sen_per_decade"]}, "q": fast["q"]})
         elif fast["passes_fdr"] and apart:
             ins.append({"kind": "season",
-                        "text": (f"{fast['label']}s {verb_fast} ({fast['display']} {units}); "
-                                 f"{slow['label'].lower()}s show no clear change."),
+                        "text": f"{fast['label']}s {verb_fast}; {slow['label'].lower()}s show no clear change.",
+                        "detail": (f"{fast['label']}: {fast['display']} {units} ({fast['ci_text']}). "
+                                   f"{slow['label']}: {slow['display']} {units} ({slow['ci_text']})."),
                         "evidence_level": "moderate", "tested": True, "methods_anchor": "seasons",
                         "numbers": {"fast": fast["sen_per_decade"], "slow": slow["sen_per_decade"]}, "q": fast["q"]})
         else:
             others = [s_["sen_per_decade"] for s_ in ss[1:]]
             o_lo, o_hi = min(others), max(others)
             ins.append({"kind": "season_unresolved",
-                        "text": (f"{fast['label']} shows the fastest {noun} ({fast['display']} {units}; the other "
-                                 f"seasons {fmt(o_lo, spec['rate_decimals'])} to {fmt(o_hi, spec['rate_decimals'])}), "
-                                 f"but the ranges still overlap, so we cannot yet say {fast['label'].lower()} "
-                                 "is truly different."),
+                        "text": (f"{fast['label']} shows the fastest {noun}, but the seasons are still too "
+                                 "close to tell apart."),
+                        "detail": (f"{fast['label']}: {fast['display']} {units}; the other seasons "
+                                   f"{fmt(o_lo, spec['rate_decimals'])} to {fmt(o_hi, spec['rate_decimals'])}. "
+                                   "Their 95% ranges overlap."),
                         "evidence_level": "descriptive", "tested": False, "methods_anchor": "seasons",
                         "numbers": {"fast": fast["sen_per_decade"]}})
     # months (M1)
@@ -837,10 +996,13 @@ def build_insights(a: dict, regions: dict) -> None:
                     "numbers": {"months": [m["month"] for m in top]}, "q": min(m["q"] for m in top)})
     # extremes (S7)
     ex = a["extremes"]
-    if ex["passes_fdr"]:
+    if ex and ex["passes_fdr"]:
+        more = ex["late"]["mean_per_year"] > ex["early"]["mean_per_year"]
         ins.append({"kind": "extremes",
-                    "text": (f"{ex['label']}: about {ex['early']['mean_per_year']:g} a year in {ex['early']['label']}, "
-                             f"about {ex['late']['mean_per_year']:g} a year in {ex['late']['label']}."),
+                    "text": f"{ex['label']} have become {'more' if more else 'less'} common.",
+                    "detail": (f"About {ex['early']['mean_per_year']:g} a year in {ex['early']['label']}, about "
+                               f"{ex['late']['mean_per_year']:g} a year in {ex['late']['label']}. Counted: months "
+                               f"{ex['threshold_text']}."),
                     "evidence_level": "moderate", "tested": True, "methods_anchor": "extremes",
                     "numbers": {"early": ex["early"]["mean_per_year"], "late": ex["late"]["mean_per_year"]},
                     "q": ex["q"]})
@@ -866,19 +1028,18 @@ def build_insights(a: dict, regions: dict) -> None:
     a["insights"] = ins
     au = a["insights_audit"]
     au["shown"] = sum(1 for i in ins if i["tested"])
+    checks = "12 months, 4 seasons, extreme months" if a["extremes"] else "12 months and 4 seasons"
+    lead = f"Besides the main test, we ran {au['tested']} follow-up checks ({checks})."
     if au["passed"] and au["shown"] == 0 and LEVEL_RANK[level] < 2:
-        au["text"] = (f"Besides the main test, we ran {au['tested']} follow-up checks (12 months, 4 seasons, "
-                      f"extreme months). {au['passed']} held up after correcting for running many tests at once "
+        au["text"] = (f"{lead} {au['passed']} held up after correcting for running many tests at once "
                       f"(q = {au['q']}), but we do not report them as findings while the main trend itself is not "
                       "clear.")
     elif au["passed"]:
-        au["text"] = (f"Besides the main test, we ran {au['tested']} follow-up checks (12 months, 4 seasons, "
-                      f"extreme months). {au['passed']} held up after correcting for running many tests at once "
+        au["text"] = (f"{lead} {au['passed']} held up after correcting for running many tests at once "
                       f"(false discovery rate q = {au['q']}); most of them repeat the main trend month by month. "
                       "Findings marked “follow-up check” come from these checks.")
     else:
-        au["text"] = (f"Besides the main test, we ran {au['tested']} follow-up checks (12 months, 4 seasons, "
-                      "extreme months). None held up after correcting for running many tests at once "
+        au["text"] = (f"{lead} None held up after correcting for running many tests at once "
                       f"(q = {au['q']}). That is a result too: no month or season stands out.")
 
 
@@ -969,7 +1130,7 @@ def compare(a: dict, b: dict, var: str) -> dict:
                            "upper": rnd([max(pivot + lo * (x - tm), pivot + hi * (x - tm)) for x in xs], sd_ + 2)},
                 "label": f"Gap: {na} minus {nb} ({spec['anomaly_units']})",
             },
-            "provenance": provenance_from(a["_internal"]["prov"], spec, "region")}
+            "provenance": provenance_from(a["_internal"]["prov"], spec, a["_internal"]["what"])}
 
 
 # --------------------------------------------------------------------------- deeper checks (climate_stats)
@@ -1027,6 +1188,10 @@ STATUS_TEXT = {"clear": "Clear change", "not_clear": "No clear change", "unavail
 def cs_values(s: pd.Series, daily: bool) -> list[dict]:
     fmt_ = "%Y-%m-%d" if daily else "%Y-%m"
     return [{"date": d.strftime(fmt_), "value": None if not np.isfinite(v) else float(v)} for d, v in s.items()]
+
+
+def doc_hash(doc: dict) -> str:
+    return hashlib.sha256(json.dumps(doc, sort_keys=True, separators=(",", ":")).encode("utf-8")).hexdigest()
 
 
 def stats_document(region: dict, bootstrap: int) -> dict | None:
@@ -1308,88 +1473,265 @@ def catalog(variables_ready: dict) -> dict:
             "variables": out, "synthetic": False}
 
 
-# --------------------------------------------------------------------------- main
-def regions_with_data() -> dict:
-    """App regions (data/regions/regions.geojson) that have every app variable in the cache."""
-    regions_fc = json.loads((ROOT / "data/regions/regions.geojson").read_text(encoding="utf-8"))
+# --------------------------------------------------------------------------- regions
+# Three kinds of region, all with real data:
+#   story    the five prepared regions (native ~50 km series from the cache, plus deeper checks)
+#   country  countries of the world; value = area-weighted mean of the 2° map squares they overlap
+#   world    the IPCC AR6 land reference regions (native series from the cache)
+BASEMAP_COUNTRIES = ROOT / "frontend" / "public" / "basemap" / "countries.geojson"
+COUNTRY_MIN_KM2 = 20_000          # smaller countries cover well under one 2° square
+COUNTRY_CLUSTER_DEG = 9.0         # keep parts within about 1,000 km of the mainland (chain rule)
+COUNTRY_SKIP = {"ATA", "UKR", "SOL", "CYN", "KAS"}  # Antarctica; Ukraine is a story region; disputed areas
+COUNTRY_NAMES = {
+    "United States of America": "United States", "Dem. Rep. Congo": "DR Congo",
+    "Central African Rep.": "Central African Republic", "Dominican Rep.": "Dominican Republic",
+    "Eq. Guinea": "Equatorial Guinea", "S. Sudan": "South Sudan", "W. Sahara": "Western Sahara",
+    "Bosnia and Herz.": "Bosnia and Herzegovina", "Solomon Is.": "Solomon Islands",
+    "Falkland Is.": "Falkland Islands", "Congo": "Republic of the Congo", "eSwatini": "Eswatini",
+    "Czechia": "Czechia", "N. Cyprus": "Northern Cyprus", "Fr. S. Antarctic Lands": "French Southern Lands",
+}
+THE = {"United States", "United Kingdom", "Netherlands", "Philippines", "United Arab Emirates",
+       "Central African Republic", "Dominican Republic", "Republic of the Congo", "Bahamas", "Gambia",
+       "Solomon Islands", "Falkland Islands", "Maldives"}
+
+
+def story_regions() -> dict:
+    """The prepared regions in data/regions/regions.geojson that have a preset with cached data."""
+    fc = json.loads((ROOT / "data/regions/regions.geojson").read_text(encoding="utf-8"))
     presets = acquire.list_regions()
-    regions = {}
-    for f in regions_fc["features"]:
+    out = {}
+    for f in fc["features"]:
         p = dict(f["properties"])
         p["preset"] = p.get("preset") or p["id"]
         if p["preset"] not in presets:
-            print(f"skip region {p['id']}: no preset {p['preset']!r} in the region catalog, so no cached data")
+            print(f"skip region {p['id']}: no preset {p['preset']!r} in the region catalog")
             continue
-        try:
-            for spec in VARIABLES.values():
-                acquire.get_series(spec["catalog_id"], p["preset"])
-        except Exception as exc:  # noqa: BLE001 - report and leave the region out, never invent data
-            print(f"skip region {p['id']}: {type(exc).__name__}: {exc}")
+        out[p["id"]] = {**p, "geometry": f["geometry"], "kind": "country" if p["id"] == "ukraine" else "story",
+                        "story": True, "iso": "UKR" if p["id"] == "ukraine" else None, "weights": None,
+                        "name_in_sentence": NAME_IN_SENTENCE.get(p["id"], p["name"])}
+    return out
+
+
+def world_regions() -> dict:
+    """IPCC AR6 land reference regions that the data build covers (acquire.region_set)."""
+    presets = acquire.list_regions()
+    out = {}
+    for rid in acquire.region_set("ar6"):
+        e = presets[rid]
+        geom = None
+        for ring in e["polygons"]:
+            poly = Polygon(ring).buffer(0)
+            geom = poly if geom is None else geom.symmetric_difference(poly)
+        if geom.bounds[2] - geom.bounds[0] > 300:  # crosses the antimeridian: not drawable as one outline
+            print(f"skip world region {rid}: crosses the antimeridian")
             continue
-        regions[p["id"]] = {**p, "geometry": f["geometry"]}
-    return regions
+        name = e["name"].split(" (IPCC")[0].strip()
+        c = geom.representative_point()
+        m = mapping(geom)
+        out[rid] = {"id": rid, "preset": rid, "name": name, "place_type": "world region",
+                    "bbox": [round(v, 2) for v in geom.bounds], "centroid": [round(c.x, 2), round(c.y, 2)],
+                    "geometry": {"type": m["type"], "coordinates": json.loads(json.dumps(m["coordinates"]))},
+                    "kind": "world", "story": False, "iso": None, "weights": None,
+                    "name_in_sentence": f"the {name} region"}
+    return out
 
 
-def common_last_year(regions: dict, grids: dict) -> int:
-    years = [last_complete_year(g.time[np.isfinite(g.values).any(axis=(1, 2))]) for g in grids.values()]
-    for r in regions.values():
-        for spec in VARIABLES.values():
-            s = acquire.get_series(spec["catalog_id"], r["preset"]).dropna()
-            years.append(last_complete_year(pd.DatetimeIndex(s.index)))
-    return min(years)
+def country_regions(lat: np.ndarray, lon: np.ndarray) -> dict:
+    """Countries from the committed basemap, with the weights of the 2° squares they overlap."""
+    fc = json.loads(BASEMAP_COUNTRIES.read_text(encoding="utf-8"))
+    dlat, dlon = float(lat[1] - lat[0]), float(lon[1] - lon[0])
+    out = {}
+    for f in fc["features"]:
+        iso, name = f["properties"]["iso"], f["properties"]["name"]
+        if iso in COUNTRY_SKIP or not iso or iso.startswith("-"):
+            continue
+        geom = shape(f["geometry"]).buffer(0)
+        parts = sorted(geom.geoms if geom.geom_type == "MultiPolygon" else [geom], key=lambda g: -g.area)
+        if not parts:
+            continue
+        cluster, rest = [parts[0]], parts[1:]
+        grew = True
+        while grew and rest:
+            grew = False
+            hull = unary_union(cluster)
+            for g in list(rest):
+                if g.distance(hull) <= COUNTRY_CLUSTER_DEG:
+                    cluster.append(g)
+                    rest.remove(g)
+                    grew = True
+        main = unary_union(cluster)
+        km2 = sum(g.area * math.cos(math.radians(g.representative_point().y)) * 111.32 ** 2 for g in cluster)
+        if km2 < COUNTRY_MIN_KM2:
+            continue
+        w, s, e, n = main.bounds
+        rows = np.flatnonzero((lat + dlat / 2 > s) & (lat - dlat / 2 < n))
+        cols = np.flatnonzero((lon + dlon / 2 > w) & (lon - dlon / 2 < e))
+        rr, cc = np.meshgrid(rows, cols, indexing="ij")
+        rr, cc = rr.ravel(), cc.ravel()
+        boxes = shapely.box(lon[cc] - dlon / 2, lat[rr] - dlat / 2, lon[cc] + dlon / 2, lat[rr] + dlat / 2)
+        frac = shapely.area(shapely.intersection(main, boxes)) / (dlat * dlon)
+        keep = frac > 1e-4
+        weights = frac[keep] * np.cos(np.deg2rad(lat[rr[keep]]))
+        if weights.sum() <= 0:
+            continue
+        name = COUNTRY_NAMES.get(name, name)
+        c = cluster[0].representative_point()
+        rid = f"c_{iso.lower()}"
+        mask = np.zeros((lat.size, lon.size), dtype=bool)
+        mask[rr[keep], cc[keep]] = True
+        out[rid] = {"id": rid, "preset": None, "name": name, "place_type": "country",
+                    "bbox": [round(w, 2), round(s, 2), round(e, 2), round(n, 2)],
+                    "centroid": [round(c.x, 2), round(c.y, 2)], "geometry": None, "kind": "country",
+                    "story": False, "iso": iso, "weights": (rr[keep], cc[keep], weights), "mask": mask,
+                    "name_in_sentence": f"the {name}" if name in THE else name}
+    return dict(sorted(out.items(), key=lambda kv: kv[1]["name"]))
 
 
+def series_from_cache(var: str, preset: str) -> tuple[np.ndarray, dict]:
+    spec = VARIABLES[var]
+    s = acquire.get_series(spec["catalog_id"], preset)
+    if not s.attrs.get("from_cache", True):
+        raise RuntimeError(f"{spec['catalog_id']} / {preset} did not come from the cache")
+    raw = s.reindex(month_index(Y0, Y1)).to_numpy(dtype=float) * spec["scale"]
+    if spec["zero_is_missing"]:
+        raw[raw == 0] = np.nan
+    return raw, s.attrs.get("provenance", {})
+
+
+def series_from_grid(grid: Grid, region: dict) -> np.ndarray:
+    """Area-weighted monthly mean of the 2° squares a country overlaps; a month needs data in
+    squares holding at least half of the country's weight."""
+    rr, cc, w = region["weights"]
+    sel = (grid.time.year >= Y0) & (grid.time.year <= Y1)
+    block = grid.values[sel][:, rr, cc]
+    ok = np.isfinite(block)
+    num = np.where(ok, block, 0.0) @ w
+    den = ok @ w
+    return np.where(den >= 0.5 * w.sum(), num / np.where(den > 0, den, 1.0), np.nan)
+
+
+def usable(raw: np.ndarray) -> str | None:
+    """None if the series can carry a trend analysis, else the reason it is left out."""
+    if raw.size != (Y1 - Y0 + 1) * 12 or not np.isfinite(raw).all():
+        return "missing months"
+    if np.std(raw) == 0:
+        return "no variation"
+    # e.g. snow: at least three calendar months must hold something in at least half of the years
+    by_month = raw.reshape(-1, 12)
+    if int(((by_month != 0).mean(axis=0) >= 0.5).sum()) < 3:
+        return "too little of it here (zero in most months)"
+    return None
+
+
+def _analyse_task(task):
+    global Y0, Y1
+    var, y0, y1, region, cells, raw, prov = task
+    Y0, Y1 = y0, y1
+    return (region["id"], var), analyse(var, region, cells, raw, prov)
+
+
+# --------------------------------------------------------------------------- main
 def remove_stale(folder: Path, written: set[str]) -> None:
+    n = 0
     for f in folder.glob("*.json"):
         if f.name not in written:
             f.unlink()
-            print(f"removed stale {folder.name}/{f.name}")
+            n += 1
+    if n:
+        print(f"removed {n} stale file(s) from {folder.name}/")
 
 
-def main(runs: int, bootstrap: int) -> None:
-    global Y1
+def main(runs: int, bootstrap: int, workers: int) -> None:
+    global Y0, Y1
     sys.stdout.reconfigure(encoding="utf-8")
-    regions = regions_with_data()
-    grids = {var: Grid(var) for var in VARIABLES}
-    Y1 = common_last_year(regions, grids)
-    print(f"period {Y0}-01 to {Y1}-12 (last calendar year complete in every input)")
+    stories = story_regions()
+    worlds = world_regions()
+    first = Grid(next(iter(VARIABLES)))
+    countries = country_regions(first.lat, first.lon)
+    regions = {**stories, **countries, **worlds}
+    print(f"regions: {len(stories)} story, {len(countries)} countries, {len(worlds)} world regions")
 
-    cells = {}
+    periods, results, skipped = {}, {}, []
     written_maps = set()
-    for var in VARIABLES:
-        layer, cells[var] = map_layer(grids[var], var)
-        write_json(OUT / "map" / f"{var}.json", layer)
-        written_maps.add(f"{var}.json")
-        print(f"map {var}: limit {layer['limit']}, cells {sum(v is not None for v in layer['slope_per_decade'])}, "
-              f"significant {sum(layer['significant'])}")
-    any_cells = next(iter(cells.values()))
-    for r in regions.values():
-        r["mask"] = region_mask(any_cells, shape(r["geometry"]))
+    with ProcessPoolExecutor(max_workers=workers) as pool:
+        for var, spec in VARIABLES.items():
+            grid = first if var == next(iter(VARIABLES)) else Grid(var)
+            Y0 = spec["start"]
+            Y1 = last_complete_year(grid.time[np.isfinite(grid.values).any(axis=(1, 2))])
+            periods[var] = (Y0, Y1)
+            layer, cells = map_layer(grid, var)
+            write_json(OUT / "map" / f"{var}.json", layer)
+            written_maps.add(f"{var}.json")
+            print(f"map {var}: {Y0}–{Y1}, limit {layer['limit']}, "
+                  f"cells {sum(v is not None for v in layer['slope_per_decade'])}, significant {sum(layer['significant'])}")
+            if spec["map_only"]:
+                continue
+            slim_cells = {"slope": cells["slope"], "sig": cells["sig"], "LAT": cells["LAT"]}
+            tasks = []
+            for r in regions.values():
+                if "mask" not in r:
+                    r["mask"] = region_mask(cells, shape(r["geometry"]))
+                try:
+                    if r["weights"] is not None:
+                        raw, prov = series_from_grid(grid, r), grid.provenance
+                    else:
+                        raw, prov = series_from_cache(var, r["preset"])
+                except Exception as exc:  # noqa: BLE001 - leave the pair out and say so; never invent data
+                    skipped.append((r["id"], var, f"{type(exc).__name__}: {exc}"))
+                    continue
+                why = usable(raw)
+                if why:
+                    skipped.append((r["id"], var, why))
+                    continue
+                notes = acquire.assess(pd.Series(raw, index=month_index(Y0, Y1))).get("notes") or []
+                if notes:
+                    prov = {**prov, "_caution": " ".join(str(x) for x in notes)}
+                slim = {"id": r["id"], "name": r["name"], "kind": r["kind"], "mask": r["mask"],
+                        "weights": True if r["weights"] is not None else None}
+                tasks.append((var, Y0, Y1, slim, slim_cells, raw, prov))
+            for key, a in pool.map(_analyse_task, tasks, chunksize=4):
+                results[key] = a
+            print(f"  {var}: {len(tasks)} regional analyses")
+            del grid
+    print(f"left out {len(skipped)} region/variable pairs without usable data, e.g. "
+          + "; ".join(f"{r}/{v}: {w}" for r, v, w in skipped[:6]))
 
-    results = {}
-    for rid, region in regions.items():
-        for var in VARIABLES:
-            results[(rid, var)] = analyse(var, region, cells[var])
-    attach_neighbours(results, regions)
-    for a in results.values():
+    story_results = {k: a for k, a in results.items() if k[0] in stories}
+    attach_neighbours(story_results, stories)
+    for (rid, var), a in results.items():
+        Y0, Y1 = periods[var]
         build_insights(a, regions)
 
-    # deeper checks: the team's climate_stats pipeline, one document (one BH family) per region
-    for rid, region in regions.items():
+    # deeper checks: the team's climate_stats pipeline, one document (one BH family) per story region
+    Y0, Y1 = periods[CORE[0]]
+    for rid, region in stories.items():
         doc = stats_document(region, bootstrap)
-        out = climate_analyze(doc)
-        write_json(OUT / "stats" / f"{rid}.json", out)
-        for var in VARIABLES:
-            dc = deeper_checks(var, out, rid)
-            results[(rid, var)]["deeper_checks"] = dc
-        print(f"stats {rid}: {out['insights_audit']['tested']} tests, {out['insights_audit']['significant']} pass BH")
+        digest = doc_hash(doc)
+        path = OUT / "stats" / f"{rid}.json"
+        out = json.loads(path.read_text(encoding="utf-8")) if path.exists() else None
+        if out and out.get("metadata", {}).get("input_sha256") == digest:
+            note = "reused (same inputs and settings)"
+        else:
+            doc["metadata"]["input_sha256"] = digest
+            out = climate_analyze(doc)
+            write_json(path, out)
+            note = "computed"
+        for var in CORE:
+            if (rid, var) in results:
+                results[(rid, var)]["deeper_checks"] = deeper_checks(var, out, rid)
+        print(f"stats {rid}: {out['insights_audit']['tested']} tests, "
+              f"{out['insights_audit']['significant']} pass BH, {note}")
 
-    compares = {}
-    ids = list(regions)
-    written_cmp = set()
-    for var in VARIABLES:
+    compares, written_cmp = {}, set()
+    ids = list(stories)
+    for var, spec in VARIABLES.items():
+        if spec["map_only"]:
+            continue
+        Y0, Y1 = periods[var]
         for i, ra in enumerate(ids):
             for rb in ids[i + 1:]:
+                if (ra, var) not in results or (rb, var) not in results:
+                    continue
                 c = compare(results[(ra, var)], results[(rb, var)], var)
                 compares[frozenset((ra, rb, var))] = c
                 name = f"{ra}__{rb}__{var}.json"
@@ -1398,9 +1740,10 @@ def main(runs: int, bootstrap: int) -> None:
 
     cases = []
     for c in CASES:
-        if c["region_id"] not in regions or c.get("compare_region_id", c["region_id"]) not in regions:
+        if c["region_id"] not in stories or c.get("compare_region_id", c["region_id"]) not in stories:
             print(f"skip case {c['id']}: region without data")
             continue
+        Y0, Y1 = periods[c["variable_id"]]
         ans, head, lvl = case_answer(c, results, compares)
         teaser = c["teaser"].replace("{years}", str(Y1 - Y0 + 1))
         cases.append({**c, "teaser": teaser, "answer": ans, "headline": head, "level": lvl})
@@ -1408,16 +1751,16 @@ def main(runs: int, bootstrap: int) -> None:
     written_an = set()
     for (rid, var), a in results.items():
         internal = a.pop("_internal")
-        dc = a["deeper_checks"]
-        print(f"{rid:13s} {var:6s} {a['verdict']['level']:9s} {a['trend']['display']['rate']:36s} "
-              f"insights={len(a['insights'])} passed={a['insights_audit']['passed']} "
-              f"deeper={dc['clear']}/{dc['available']}")
         name = f"{rid}__{var}.json"
         write_json(OUT / "analysis" / name, a)
         written_an.add(name)
         a["_internal"] = internal
+        if rid in stories:
+            dc = a["deeper_checks"]
+            print(f"{rid:13s} {var:10s} {a['verdict']['level']:9s} {a['trend']['display']['rate']:38s} "
+                  f"insights={len(a['insights'])} deeper={'-' if not dc else str(dc['clear']) + '/' + str(dc['available'])}")
     for folder, names in ((OUT / "analysis", written_an), (OUT / "compare", written_cmp),
-                          (OUT / "map", written_maps), (OUT / "stats", {f"{r}.json" for r in regions})):
+                          (OUT / "map", written_maps), (OUT / "stats", {f"{r}.json" for r in stories})):
         remove_stale(folder, names)
 
     index = {
@@ -1425,14 +1768,14 @@ def main(runs: int, bootstrap: int) -> None:
         "generated": dt.date.today().isoformat(),
         "default_case": "02",  # D7: air temperature reads fastest on a bare map
         "cases": cases,
-        "regions": [{**{k: r[k] for k in ("id", "name", "place_type", "bbox", "centroid", "geometry")},
-                     "name_in_sentence": sentence_name(r)} for r in regions.values()],
+        "regions": [{k: r[k] for k in ("id", "name", "place_type", "bbox", "centroid", "geometry",
+                                       "name_in_sentence", "kind", "story", "iso")} for r in regions.values()],
         "variables": [{"id": k, "catalog_id": v["catalog_id"], "name": v["name"], "long_name": v["long_name"],
                        "units": v["units"], "units_long": v["units_long"], "rate_units": v["rate_units"],
                        "anomaly_units": v["anomaly_units"], "map_title": v["map_title"], "palette": v["palette"],
                        "words": v["words"], "topic": v["topic"], "land_only": v["land_only"],
-                       "source": "NASA POWER (MERRA-2)", "parameter": v["parameter"],
-                       "period": f"{Y0}–{Y1}"} for k, v in VARIABLES.items()],
+                       "source": v["source"], "parameter": v["parameter"], "map_only": v["map_only"],
+                       "period": f"{periods[k][0]}–{periods[k][1]}"} for k, v in VARIABLES.items()],
         "verdicts": {f"{rid}__{var}": {
             "level": a["verdict"]["level"], "level_word": LEVEL_WORD[a["verdict"]["level"]],
             "direction": a["verdict"]["direction"], "headline": a["verdict"]["headline"],
@@ -1444,7 +1787,7 @@ def main(runs: int, bootstrap: int) -> None:
     write_json(OUT / "index.json", index)
     write_json(OUT / "catalog.json", catalog(VARIABLES))
     write_json(OUT / "validation.json", validation_table(runs))
-    print("done")
+    print(f"done: {len(written_maps)} maps, {len(written_an)} analyses, {len(written_cmp)} comparisons")
 
 
 if __name__ == "__main__":
@@ -1452,5 +1795,7 @@ if __name__ == "__main__":
     ap.add_argument("--runs", type=int, default=300, help="Monte-Carlo runs for validation.json")
     ap.add_argument("--bootstrap", type=int, default=999,
                     help="resampling replicates for the climate_stats deeper checks (pipeline default 999)")
+    ap.add_argument("--workers", type=int, default=max(1, (os.cpu_count() or 2) - 1),
+                    help="processes for the regional analyses")
     args = ap.parse_args()
-    main(args.runs, args.bootstrap)
+    main(args.runs, args.bootstrap, args.workers)

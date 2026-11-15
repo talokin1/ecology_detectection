@@ -103,14 +103,22 @@ export function Breadcrumb({ index, region, variable, extra }: { index: Index; r
       {region ? (
         <label className="crumbs__field">
           <select aria-label={S.case.region} value={region.id} onChange={(e) => navigate(`/region/${e.target.value}?var=${variable.id}`)}>
-            {index.regions.map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}
+            <optgroup label={S.explore.placeModes.stories}>
+              {index.regions.filter((r) => r.story).map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}
+            </optgroup>
+            <optgroup label={S.explore.placeModes.countries}>
+              {index.regions.filter((r) => r.kind === 'country' && !r.story).map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}
+            </optgroup>
+            <optgroup label={S.explore.placeModes.world}>
+              {index.regions.filter((r) => r.kind === 'world').map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}
+            </optgroup>
           </select>
         </label>
       ) : <span>{extra}</span>}
       <span aria-hidden="true">/</span>
       <label className="crumbs__field">
         <select aria-label={S.case.variable} value={variable.id} onChange={(e) => navigate(region ? `/region/${region.id}?var=${e.target.value}` : `/?var=${e.target.value}`)}>
-          {index.variables.map((v) => <option key={v.id} value={v.id}>{v.name}</option>)}
+          {index.variables.filter((v) => !v.map_only || !region).map((v) => <option key={v.id} value={v.id}>{v.name}</option>)}
         </select>
       </label>
       <InfoPopover label={S.explore.about(variable.name)}>
@@ -192,9 +200,8 @@ function CaseBody({ index, a, region, variable, theCase, layer }: {
         </section>
         <section className="sec">
           <Kicker>{S.case.sections.sure}</Kicker>
-          <p className="vdetails__sure"><strong>{S.verdict.howSure}</strong> {a.verdict.how_sure}</p>
-          {a.verdict.disagree_text && <p className="vdetails__disagree">{a.verdict.disagree_text}</p>}
-          <Disclosure title="Details" summary={`${t.total_label}: ${t.total} (${t.total_range})`}>
+          <p className="vdetails__sure vdetails__sure--plain"><strong>{S.verdict.howSure}</strong> {a.verdict.sure_plain}</p>
+          <Disclosure title={S.case.statsDetails} summary={`${t.total_label}: ${t.total}`}>
             <VerdictDetails a={a} />
           </Disclosure>
         </section>

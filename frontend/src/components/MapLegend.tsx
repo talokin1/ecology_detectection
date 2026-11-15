@@ -76,6 +76,12 @@ export function MapLegend({ layer, variant = 'panel', caption }: { layer: MapLay
  * The info button expands the full explanation; the cross hides the legend (a "Legend" button in
  * the filter bar brings it back).
  */
+/** The palette as one continuous ramp (the map interpolates between the legend bins). */
+function ramp(colors: [number, number, number][]): string {
+  const n = colors.length;
+  return `linear-gradient(to right, ${colors.map((c, i) => `${rgbCss(c)} ${(((i + 0.5) / n) * 100).toFixed(1)}%`).join(', ')})`;
+}
+
 export function LegendChip({ layer, onClose, caption }: { layer: MapLayer; onClose: () => void; caption?: string }) {
   const [open, setOpen] = useState(false);
   const sw = swatches(layer.palette as PaletteName);
@@ -85,9 +91,7 @@ export function LegendChip({ layer, onClose, caption }: { layer: MapLayer; onClo
       <div className="lchip__row">
         <span className="lchip__word">{layer.words.neg}</span>
         <div className="lchip__bars" aria-hidden="true">
-          <div className="legend__bar" style={{ gridTemplateColumns: `repeat(${sw.full.length}, 1fr)` }}>
-            {sw.full.map((c, i) => <span key={i} style={{ background: rgbCss(c) }} />)}
-          </div>
+          <div className="legend__bar legend__bar--smooth" style={{ background: ramp(sw.full) }} />
           <div className="lchip__ticks"><span>{lg.min_text}</span><span>0</span><span>{lg.max_text}</span></div>
         </div>
         <span className="lchip__word">{layer.words.pos}</span>
@@ -99,14 +103,15 @@ export function LegendChip({ layer, onClose, caption }: { layer: MapLayer; onClo
         <div className="lchip__more">
           <div className="legend__rows">
             <span className="legend__rowlabel">{S.map.strong}</span>
-            <div className="legend__bar" style={{ gridTemplateColumns: `repeat(${sw.full.length}, 1fr)` }}>{sw.full.map((c, i) => <span key={i} style={{ background: rgbCss(c) }} />)}</div>
+            <div className="legend__bar legend__bar--smooth" style={{ background: ramp(sw.full) }} />
             <span className="legend__rowlabel">{S.map.faded}</span>
-            <div className="legend__bar legend__bar--faded" style={{ gridTemplateColumns: `repeat(${sw.full.length}, 1fr)` }}>{sw.faded.map((c, i) => <span key={i} style={{ background: rgbCss(c) }} />)}</div>
+            <div className="legend__bar legend__bar--smooth legend__bar--faded" style={{ background: ramp(sw.faded) }} />
           </div>
           <ul className="legend__keys">
             <li>{S.map.keyStrong} (q = {layer.fdr_q}).</li>
             <li>{S.map.keyFaded}.</li>
             <li><i className="legend__swatch legend__swatch--nodata" />{S.map.keyNoData}.</li>
+            <li>{S.map.keySmooth}</li>
           </ul>
           <p className="legend__caption">{caption ? `${caption} ` : ''}{S.legend.projection} {S.legend.credit}</p>
         </div>

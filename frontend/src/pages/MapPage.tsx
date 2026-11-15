@@ -2,7 +2,7 @@ import { lazy, Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState }
 import { Link, useSearchParams } from 'react-router-dom';
 import { api } from '../data/load';
 import { useData } from '../data/useData';
-import type { Case, Index } from '../data/types.gen';
+import type { Case, Index, Region } from '../data/types.gen';
 import type { CellInfo } from '../components/TrendMap';
 import { LegendChip } from '../components/MapLegend';
 import { RegionLedger } from '../components/RegionLedger';
@@ -21,6 +21,13 @@ import { LEVEL_INDEX, S } from '../strings/en';
 const TrendMap = lazy(() => import('../components/TrendMap').then((m) => ({ default: m.TrendMap })));
 
 type Popup = { cell: CellInfo; x: number; y: number };
+
+/** Which set of places the map offers: countries, IPCC world regions, or our prepared stories. */
+export type PlaceMode = 'countries' | 'world' | 'stories';
+const MODES: PlaceMode[] = ['countries', 'world', 'stories'];
+const inMode = (r: Region, m: PlaceMode) => (m === 'stories' ? r.story : m === 'world' ? r.kind === 'world' : r.kind === 'country');
+const homeMode = (r: Region): PlaceMode => (r.kind === 'world' ? 'world' : r.kind === 'country' ? 'countries' : 'stories');
+const area = (r: Region) => (r.bbox[2] - r.bbox[0]) * (r.bbox[3] - r.bbox[1]);
 
 const store = {
   get: (k: string) => { try { return localStorage.getItem(k); } catch { return null; } },
@@ -46,6 +53,13 @@ function Explore({ index }: { index: Index }) {
   const theCase = index.cases.find((c) => c.id === params.get('q'));
   const showParam = params.get('show');
   const show: ShowFilter = isShowFilter(showParam) ? showParam : 'all';
+  const asked = params.get('in') as PlaceMode | null;
+  const mode: PlaceMode = region && !(asked && MODES.includes(asked) && inMode(region, asked)) ? homeMode(region)
+    : asked && MODES.includes(asked) ? asked
+    : theCase?.compare_region_id ? 'stories' : 'countries';
+  // smallest first, so a region inside a larger one stays clickable
+  const places = useMemo(() => (variable.map_only ? [] : index.regions.filter((r) => inMode(r, mode)).sort((a, b) => area(a) - area(b))),
+    [index.regions, mode, variable.map_only]);
 
   const layer = useData(() => api.map(variable.id), variable.id);
   const catalog = useData(api.catalog, 'catalog');
@@ -85,9 +99,9 @@ function Explore({ index }: { index: Index }) {
   const hints = useMemo(() => [...index.cases].sort((a, b) => Number(b.variable_id === variable.id) - Number(a.variable_id === variable.id)), [index.cases, variable.id]);
   const hint = hints[hintIdx % hints.length];
 
-  const openRegion = (id: string, q?: Case) => update({ panel: 'quick', region: id, q: q?.id ?? null, ...(q ? { var: q.variable_id } : {}) });
+  const openRegion = (id: string, q?: Case) => update({ panel: 'quick', region: id, q: q?.id ?? null, in: null, ...(q ? { var: q.variable_id } : {}) });
   const tryHint = (c: Case) => {
-    if (c.compare_region_id) update({ var: c.variable_id, panel: 'regions', q: c.id, region: null });
+    if (c.compare_region_id) update({ var: c.variable_id, panel: 'regions', q: c.id, region: null, in: 'stories' });
     else openRegion(c.region_id, c);
   };
   const closePanel = () => update({ panel: null, region: null, q: null });
@@ -97,7 +111,7 @@ function Explore({ index }: { index: Index }) {
     setTourSeen(true);
     setLegendOpen(true);
     setTour(0);
-    update({ panel: null, region: null, q: null, show: null, tour: null }); // one update: React Router does not queue them
+    update({ panel: null, region: null, q: null, show: null, tour: null, in: null }); // one update: React Router does not queue them
   };
   const goTourStep = (i: number) => {
     setTour(i);
@@ -105,7 +119,7 @@ function Explore({ index }: { index: Index }) {
     if (i <= 1) update({ panel: null, region: null, q: null });
     if (i === 1) setLegendOpen(true);
     if (i === 2) openRegion(defaultCase.region_id, defaultCase);
-    if (i === 3 && comparison) update({ var: comparison.variable_id, panel: 'regions', q: comparison.id, region: null });
+    if (i === 3 && comparison) update({ var: comparison.variable_id, panel: 'regions', q: comparison.id, region: null, in: 'stories' });
   };
 
   const activeIds = panel === 'quick' && region ? [region.id]
@@ -143,7 +157,7 @@ function Explore({ index }: { index: Index }) {
     return () => window.removeEventListener('keydown', onKey);
   }, [popup]);
   const nearest = popup
-    ? index.regions.map((r) => ({ r, km: distanceKm([popup.cell.lon, popup.cell.lat], r.centroid as [number, number]) })).sort((p, q) => p.km - q.km)[0]
+    ? places.map((r) => ({ r, km: distanceKm([popup.cell.lon, popup.cell.lat], r.centroid as [number, number]) })).sort((p, q) => p.km - q.km)[0]
     : undefined;
 
   const comparisonCase = theCase?.compare_region_id && theCase.variable_id === variable.id ? theCase : undefined;
@@ -154,7 +168,8 @@ function Explore({ index }: { index: Index }) {
         <Suspense fallback={<Loading />}>
           <TrendMap
             layer={layer.data}
-            regions={index.regions}
+            regions={places}
+            outline={mode === 'countries' ? 'active' : 'all'}
             activeRegionIds={activeIds}
             highlightRegionId={hl}
             fit="world"
@@ -173,6 +188,7 @@ function Explore({ index }: { index: Index }) {
 
       <div className="explore__top" data-map-overlay>
         <FilterBar index={index} variable={variable} catalogEntry={catalogEntry} show={show}
+          mode={mode} onMode={(m) => update({ in: m === 'countries' ? null : m, region: null, q: null, ...(panel === 'quick' ? { panel: null } : {}) })}
           regionsOpen={panel === 'regions'} legendClosed={!legendOpen} hintsDismissed={hintsOff} nonDefault={show !== 'all'}
           onVariable={(id) => update({ var: id, ...(theCase && theCase.variable_id !== id ? { q: null } : {}) })}
           onShow={(s) => update({ show: s === 'all' ? null : s })}
@@ -208,7 +224,7 @@ function Explore({ index }: { index: Index }) {
           onClose={closePanel} />
       )}
       {panel === 'regions' && (
-        <Panel title={S.regionsPanel.title} kicker={`${variable.name} · ${variable.rate_units}`} onClose={closePanel} tour="regionspanel" className="regions">
+        <Panel title={S.regionsPanel.titles[mode]} kicker={`${variable.name} · ${variable.rate_units}`} onClose={closePanel} tour="regionspanel" className="regions">
           {comparisonCase && (
             <div className="quick__question">
               <span className="quick__qlabel">{S.quick.question}</span>
@@ -216,7 +232,8 @@ function Explore({ index }: { index: Index }) {
             </div>
           )}
           <p className="help">{S.regionsPanel.lead}</p>
-          <RegionLedger index={index} variable={variable} layer={layer.data} activeIds={activeIds} highlightId={hl} onHover={setHl} onSelect={(id) => openRegion(id)} />
+          {variable.map_only && <p className="help">{S.regionsPanel.mapOnly}</p>}
+          <RegionLedger index={index} regions={places} variable={variable} layer={layer.data} activeIds={activeIds} highlightId={hl} onHover={setHl} onSelect={(id) => openRegion(id)} />
           {comparisonCase && (
             <div className="regions__answer">
               <p>{comparisonCase.answer}</p>
@@ -226,7 +243,7 @@ function Explore({ index }: { index: Index }) {
         </Panel>
       )}
 
-      {popup && nearest && (
+      {popup && (nearest || variable.map_only) && (
         <div ref={popupRef} className="notopen" role="dialog" aria-modal="false" aria-labelledby="notopen-title"
           style={popupPos ? { left: popupPos.left, top: popupPos.top } : { visibility: 'hidden' }}>
           <button type="button" className="icon-btn icon-btn--sm notopen__close" aria-label={S.map.close} onClick={closePopup}><CloseIcon size={14} /></button>
@@ -237,8 +254,12 @@ function Explore({ index }: { index: Index }) {
               {popup.cell.significant ? S.map.passes : S.map.notEnough}.
             </p>
           )}
-          <p>{S.map.notOpenBody}</p>
-          <button type="button" className="btn btn--primary" onClick={() => openRegion(nearest.r.id)}>{S.map.openNearest(nearest.r.name)}</button>
+          {nearest && (
+            <>
+              <p>{S.map.notOpenBody}</p>
+              <button type="button" className="btn btn--primary" onClick={() => openRegion(nearest.r.id)}>{S.map.openNearest(nearest.r.name)}</button>
+            </>
+          )}
         </div>
       )}
 

@@ -20,7 +20,8 @@ export function QuickLook({ index, region, variable, theCase, onClose }: {
   index: Index; region: Region; variable: VariableRef; theCase?: Case; onClose: () => void;
 }) {
   const a = useData(() => api.analysis(region.id, variable.id), `${region.id}__${variable.id}`);
-  const [other, setOther] = useState(() => index.regions.find((r) => r.id !== region.id)?.id ?? '');
+  const peers = index.regions.filter((r) => r.story && r.id !== region.id);
+  const [other, setOther] = useState(() => peers[0]?.id ?? '');
   const pal = variable.palette as PaletteName;
   const chart = useMemo(() => {
     if (!a.data) return null;
@@ -68,19 +69,21 @@ export function QuickLook({ index, region, variable, theCase, onClose }: {
             footer={`${variable.long_name}, ${region.name}. ${a.data.provenance.dataset}. Trend Detective.`}
             ariaLabel={`${variable.long_name} in ${region.name}, yearly: ${a.data.verdict.headline}. ${a.data.trend.display.annotation}.`} />
           <p className="quick__answer">{theCase?.answer ?? a.data.verdict.answer}</p>
-          <p className="quick__sure"><strong>{S.quick.howSure}</strong> {a.data.verdict.how_sure}</p>
+          <p className="quick__sure"><strong>{S.quick.howSure}</strong> {a.data.verdict.sure_plain}</p>
           <div className="quick__actions">
             <Link className="btn btn--primary" to={full}>{S.quick.full}</Link>
           </div>
-          <form className="quick__compare" onSubmit={(e) => e.preventDefault()}>
-            <label>
-              <span className="fbar__label">{S.quick.compare}</span>
-              <select className="fbar__select" value={other} onChange={(e) => setOther(e.target.value)}>
-                {index.regions.filter((r) => r.id !== region.id).map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}
-              </select>
-            </label>
-            <Link className="btn" to={`/compare/${region.id}/${other}?var=${variable.id}`}>{S.quick.compareGo}</Link>
-          </form>
+          {region.story && peers.length > 0 && (
+            <form className="quick__compare" onSubmit={(e) => e.preventDefault()}>
+              <label>
+                <span className="fbar__label">{S.quick.compare}</span>
+                <select className="fbar__select" value={other} onChange={(e) => setOther(e.target.value)}>
+                  {peers.map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}
+                </select>
+              </label>
+              <Link className="btn" to={`/compare/${region.id}/${other}?var=${variable.id}`}>{S.quick.compareGo}</Link>
+            </form>
+          )}
         </>
       )}
     </Panel>

@@ -38,10 +38,24 @@ describe('data contract', () => {
     });
   }
 
-  it('every case and region has its analysis file', () => {
+  it('every verdict in the index has its analysis file, and every story region has the core variables', () => {
     const index = read(path.join(dataDir, 'index.json'));
     const have = new Set(readdirSync(path.join(dataDir, 'analysis')));
-    for (const r of index.regions) for (const va of index.variables) expect(have.has(`${r.id}__${va.id}.json`)).toBe(true);
+    for (const key of Object.keys(index.verdicts)) expect(have.has(`${key}.json`), key).toBe(true);
+    expect(have.size).toBe(Object.keys(index.verdicts).length);
+    for (const r of index.regions.filter((x: { story: boolean }) => x.story)) {
+      for (const va of ['t2m', 'precip', 'soil']) expect(have.has(`${r.id}__${va}.json`), `${r.id}/${va}`).toBe(true);
+    }
+    for (const c of index.cases) expect(have.has(`${c.region_id}__${c.variable_id}.json`)).toBe(true);
+  });
+
+  it('countries carry an ISO code instead of an outline; other regions carry their outline', () => {
+    const index = read(path.join(dataDir, 'index.json'));
+    for (const r of index.regions) {
+      if (r.geometry === null) expect(r.iso, r.id).toMatch(/^[A-Z]{3}$/);
+      else expect(r.geometry.coordinates.length, r.id).toBeGreaterThan(0);
+    }
+    expect(index.regions.filter((r: { kind: string }) => r.kind === 'country').length).toBeGreaterThan(100);
   });
 
   it('map arrays have one value per grid cell', () => {

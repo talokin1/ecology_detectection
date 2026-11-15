@@ -264,7 +264,6 @@
   .catalog-next thead { display: none; }
   .catalog-next tr { display: grid; padding: 10px 0; border-bottom: 1px solid var(--line); }
   .catalog-next td { border: 0; padding: 2px 0; }
-  .ready__item { grid-template-columns: 1fr; gap: 10px; }
   .filters__row { grid-template-columns: 1fr; }
   .glossary div { grid-template-columns: 1fr; gap: 2px; }
   .steps { grid-template-columns: 1fr; }
@@ -284,3 +283,9 @@
 .dcheck__value--muted, .dcheck__range, .dcheck__q, .dcheck__detail { color: var(--text-2); }
 .dcheck__detail { font-size: var(--fs-small); margin: 2px 0 0; }
 .dcheck--unavailable .dcheck__label { color: var(--text-2); font-weight: 500; }
+
+/* text button that opens a popover ("How do we know?") */
+.link-btn { background: none; border: 0; padding: 0; font: inherit; color: var(--text-2); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+.link-btn:hover { color: var(--text); }
+.vdetails__sure--plain { font-size: var(--fs-lead); color: var(--text); max-width: 60ch; }
+.legend__bar--smooth { display: block; height: 10px; border-radius: 2px; }
