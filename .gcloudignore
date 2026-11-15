@@ -1,0 +1,42 @@
+# Files uploaded by `gcloud builds submit` for the assistant image (docs/11-assistant.md).
+# gcloud cannot whitelist inside re-included folders, so this is a deny list on top of .gitignore
+# (which already excludes .env, .netrc, node_modules, caches). Check with:
+#   gcloud meta list-files-for-upload .
+#!include:.gitignore
+.git/
+.github/
+.claude/
+.env*
+*.pem
+data/
+team-context/
+research/
+notebooks/
+examples/
+schema/
+scripts/
+.venv/
+.pytest_cache/
+.ruff_cache/
+backend/tests/
+backend/README.md
+backend/trend_detective/*.py
+!backend/trend_detective/__init__.py
+backend/trend_detective/climate_stats/
+docs/*
+!docs/10-methods.md
+frontend/*
+!frontend/public/
+frontend/public/*
+!frontend/public/data/
+frontend/public/data/*
+!frontend/public/data/index.json
+!frontend/public/data/catalog.json
+!frontend/public/data/analysis/
+*.md
+!docs/10-methods.md
+*.txt
+!requirements-assistant.txt
+*.toml
+CLAUDE.md
+HANDOFF.md

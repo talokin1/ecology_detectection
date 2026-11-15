@@ -37,7 +37,7 @@ Status: **draft** — confirm stack choices via ADRs before building.
 | Trend-map builder | Per-pixel Sen's slope + modified MK + FDR → raster/tiles | Python + xarray, offline script |
 | API | Thin REST layer with response caching | FastAPI + uvicorn |
 | Frontend | Wizard, map, chart, verdict, case files | React + Vite + TypeScript, MapLibre GL, Plotly or ECharts |
-| SI partner | Question/region type → catalog variables; explanation of computed stats | LLM API, server-side, prompt grounded on catalog + computed JSON; outputs labelled as SI |
+| SI partner | Question/region type → catalog variables; explanation of computed stats | Google Gemini (`gemini-3.8-flash`) on Vertex AI, called from a FastAPI service on Cloud Run (`backend/trend_detective/assistant/`, ADR-009); prompt grounded server-side on the app's JSON + Methods page; outputs labelled as SI |
 | Hosting | Public, no-login, stable for judging period | Frontend: Vercel/Netlify/GitHub Pages; API: Render/Fly/HF Spaces |
 
 ## Trend analysis contract (`/trend` response)

@@ -71,7 +71,8 @@ Add every dataset, tool, library, image and font actually used. Mark `used: yes`
 | numpy, scipy, pandas | BSD | Statistics, data handling | |
 | xarray, netCDF4 | Apache/MIT | Gridded data | |
 | earthaccess, harmony-py | MIT | NASA data access | |
-| FastAPI | MIT | API | |
+| FastAPI, uvicorn | MIT / BSD-3-Clause | AI assistant service (`backend/trend_detective/assistant/`) | yes |
+| google-genai (Google Gen AI SDK) | Apache-2.0 | Calls Google Gemini (`gemini-3.8-flash`) on Vertex AI for the in-app AI assistant (ADR-009) | yes |
 | React 18, React Router 6 | MIT | Web app UI and routing | yes |
 | Vite, TypeScript | MIT / Apache-2.0 | Build | yes |
 | MapLibre GL JS 6 | BSD-3-Clause | Trend maps | yes |

@@ -53,7 +53,7 @@ function CaseView({ index, regionId, variableId, theCase }: { index: Index; regi
   const layer = useData(() => api.map(variableId), variableId);
 
   useScreenContext(
-    variable && region ? { variable: variable.name, region: region.name, period: variable.period, source: variable.source } : null,
+    variable && region ? { variable: variable.name, region: region.name, period: variable.period, source: variable.source, variableId, regionId } : null,
     [variableId, regionId],
   );
 

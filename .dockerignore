@@ -1,0 +1,20 @@
+# Upload only what the assistant image needs (gcloud builds submit).
+*
+!requirements-assistant.txt
+!deploy/
+!deploy/**
+!backend/
+!backend/trend_detective/
+!backend/trend_detective/__init__.py
+!backend/trend_detective/assistant/
+!backend/trend_detective/assistant/**
+!frontend/
+!frontend/public/
+!frontend/public/data/
+!frontend/public/data/index.json
+!frontend/public/data/catalog.json
+!frontend/public/data/analysis/
+!frontend/public/data/analysis/**
+!docs/
+!docs/10-methods.md
+**/__pycache__/

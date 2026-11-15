@@ -1,0 +1,7 @@
+# SI (AI) assistant service only (backend/trend_detective/assistant; ADR-009). Deployed on Cloud Run.
+# Calls Google Gemini through Vertex AI with the service account (no API key).
+google-genai==3.3.0
+fastapi==0.163.1
+uvicorn==0.54.0
+# Tests (backend/tests/test_assistant.py) use FastAPI's TestClient.
+httpx

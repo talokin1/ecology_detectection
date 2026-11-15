@@ -76,7 +76,7 @@ function Explore({ index }: { index: Index }) {
   const popupRef = useRef<HTMLDivElement>(null);
   const [popupPos, setPopupPos] = useState<{ left: number; top: number } | null>(null);
 
-  useScreenContext({ variable: variable.name, region: region?.name ?? 'World', period: variable.period, source: variable.source }, [variable.id, region?.id]);
+  useScreenContext({ variable: variable.name, region: region?.name ?? 'World', period: variable.period, source: variable.source, variableId: variable.id, regionId: region?.id }, [variable.id, region?.id]);
 
   /** Update the URL state (replace, so Back leaves the page rather than undoing panels). */
   const update = (patch: Record<string, string | null>) => {

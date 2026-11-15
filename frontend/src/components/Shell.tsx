@@ -4,9 +4,13 @@ import { copyLink } from '../lib/exporters';
 import { setTheme, useTheme } from '../state/theme';
 import { Menu } from './Panel';
 import { Search } from './Search';
+import { Assistant, assistantEnabled } from './Assistant';
 import { S } from '../strings/en';
 
-export type Context = { variable?: string; region?: string; period?: string; source?: string } | null;
+/** What is on screen. The ids (when an analysis is open) let the AI assistant explain it. */
+export type Context = {
+  variable?: string; region?: string; period?: string; source?: string; variableId?: string; regionId?: string;
+} | null;
 const Ctx = createContext<(c: Context) => void>(() => {});
 
 /** Pages announce what is on screen; it becomes the document title (plan B6). */
@@ -71,6 +75,7 @@ export function Shell() {
       <main className="main">
         <Outlet />
       </main>
+      {assistantEnabled && <Assistant context={context} />}
       <div className="toast" role="status" aria-live="polite">{toast}</div>
     </Ctx.Provider>
   );
