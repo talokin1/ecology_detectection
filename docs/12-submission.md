@@ -171,7 +171,7 @@ English narration or burned-in English subtitles; no minors; no NASA logos; ≤ 
 | Final project link public, loads logged out on another network (R-32) | 🟡 app public; test from another network; confirm repo public |
 | ≥ 1 NASA dataset in the NASA Data field (R-33) | ✅ section 7 |
 | References complete (R-34) | 🟡 section 8; fill `used` cells in `09-references.md` |
-| SI usage described; SI media watermarked; no NASA branding (R-35, R-38) | 🟡 section 6; check the video |
+| SI usage described; SI media watermarked; no NASA branding (R-35, R-38) | 🟡 section 6 (the only place: the app's About page no longer carries it, by the Lead's decision 2026-11-15); check the video |
 | Both checkboxes ticked, "Submit for Judging", confirmation screenshot (R-37) | ⬜ [TEAM] |
 | Before Sunday 23:59 local time of the Local Event (R-37) | ⬜ [TEAM] |
 
