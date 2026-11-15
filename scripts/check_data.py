@@ -18,7 +18,8 @@ from referencing import Registry, Resource
 ROOT = Path(__file__).resolve().parents[1]
 SCHEMA = ROOT / "schema"
 RULES = [("index.json", "index"), ("catalog.json", "catalog"), ("validation.json", "validation"),
-         ("map/*.json", "map"), ("frames/*.json", "frames"), ("analysis/*.json", "analysis"), ("compare/*.json", "compare"),
+         ("map/*.json", "map"), ("frames/*.json", "frames"), ("analysis/*.json", "analysis"),
+         ("compare/*.json", "compare"),
          ("stats/*.json", "climate-output"), ("series/index.json", "series-index")]
 SEASON_VIEWS = [""] + [f"__{s}" for s in ("djf", "mam", "jja", "son")]
 
