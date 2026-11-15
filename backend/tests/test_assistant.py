@@ -190,8 +190,73 @@ def test_static_prompt_prefix_is_shared_across_screens(grounding):
     a = system_instruction(grounding, "ukraine", "t2m")
     b = system_instruction(grounding, "south_ukraine", "soil")
     c = system_instruction(grounding, None, None)
-    head = a[: a.index("== ON SCREEN ==")]
+    head = a[: a.index("== ON_SCREEN ==")]
     assert b.startswith(head) and c.startswith(head) and len(head) > 30_000
+    # The final check follows the on-screen block, so it is the last thing the model reads.
+    assert a.rstrip().endswith("</final_check>") and a.index("== ON_SCREEN ==") < a.index("<final_check>")
+
+
+def test_prompt_makes_hypothesis_testing_the_main_job(grounding):
+    from trend_detective.assistant.prompt import system_instruction
+
+    p = system_instruction(grounding, "ukraine", "t2m")
+    for label in (
+        "Your idea as a question:",
+        "What physics suggests:",
+        "What the data can show:",
+        "Testable here?:",
+    ):
+        assert label in p
+    assert "hypothesis lab" in p and "Never work out the scenario's result" in " ".join(p.split())
+    assert "== OTHER_DATASETS" in p
+
+
+def test_hypothesis_lab_uses_the_lookup_tools(grounding):
+    from trend_detective.assistant.prompt import RULES
+    from trend_detective.assistant.tools import DECLARATIONS
+
+    lab = RULES[RULES.index("<hypothesis_lab>") : RULES.index("</hypothesis_lab>")]
+    assert "map_cell" in lab and "get_series" in lab
+    tools = RULES[RULES.index("<tools>") : RULES.index("</tools>")]
+    assert all(d["name"] in tools for d in DECLARATIONS)
+
+
+def test_other_datasets_are_only_those_outside_the_app(grounding):
+    import json
+
+    names = {d["name"] for d in json.loads(grounding.other_datasets_block())}
+    app_names = {v["name"] for v in grounding.catalog["variables"] if v.get("app_variable_id")}
+    assert names and not (names & app_names)
+
+
+def test_visitor_scenario_numbers_are_not_flagged(grounding):
+    c, _ = client_for(
+        grounding,
+        {"answer": "In your scenario of 20 times faster warming, 37 °C summers...", "suggestions": []},
+    )
+    r = c.post(
+        "/v1/chat",
+        json={
+            "message": "What if it warmed 20 times faster here?",
+            "region_id": "ukraine",
+            "variable_id": "t2m",
+            "history": [{"role": "assistant", "text": "Summers reach 37 °C."}],
+        },
+    )
+    # "20" came from the visitor; "37" only from an earlier assistant turn, so it is still flagged.
+    assert r.json()["unverified_numbers"] == ["37"]
+
+
+def test_temperature_and_thinking_settings(monkeypatch):
+    from trend_detective.assistant.llm import temperature, thinking_level
+
+    assert temperature() == 1.0 and thinking_level() == "LOW"
+    monkeypatch.setenv("ASSISTANT_TEMPERATURE", "0.7")
+    monkeypatch.setenv("ASSISTANT_THINKING", "medium")
+    assert temperature() == 0.7 and thinking_level() == "MEDIUM"
+    monkeypatch.setenv("ASSISTANT_THINKING", "max")
+    with pytest.raises(ValueError):
+        thinking_level()
 
 
 def test_usage_is_logged_with_cost(grounding, capsys):

@@ -74,11 +74,13 @@ class GeminiModel:
         def config(with_tools: bool):
             return types.GenerateContentConfig(
                 system_instruction=system,
-                temperature=0.2,
+                temperature=temperature(),
                 max_output_tokens=int(os.environ.get("ASSISTANT_MAX_OUTPUT_TOKENS", "2048")),
                 response_mime_type="application/json",
                 response_json_schema=REPLY_SCHEMA,
-                thinking_config=types.ThinkingConfig(thinking_level=types.ThinkingLevel.LOW),
+                thinking_config=types.ThinkingConfig(
+                    thinking_level=getattr(types.ThinkingLevel, thinking_level())
+                ),
                 tools=tools if with_tools else None,
                 automatic_function_calling=types.AutomaticFunctionCallingConfig(disable=True),
             )
@@ -113,6 +115,21 @@ class GeminiModel:
         out["usage"] = usage
         out["tool_calls"] = calls
         return out
+
+
+def temperature() -> float:
+    """Google recommends the default 1.0 for Gemini 3 models: lower values can cause looping or
+    weaker reasoning. Grounding and the number check, not a low temperature, keep answers honest."""
+    return float(os.environ.get("ASSISTANT_TEMPERATURE", "1.0"))
+
+
+def thinking_level() -> str:
+    """LOW keeps answers fast and cheap; MEDIUM may reason better about hypotheses (thinking
+    tokens are billed as output)."""
+    level = os.environ.get("ASSISTANT_THINKING", "low").strip().upper()
+    if level not in {"MINIMAL", "LOW", "MEDIUM", "HIGH"}:
+        raise ValueError(f"ASSISTANT_THINKING must be minimal, low, medium or high, not {level!r}")
+    return level
 
 
 def usage_counts(meta) -> dict:

@@ -25,6 +25,14 @@ UI: `frontend/src/components/Assistant.tsx`.
 Replies list the lookups under `looked_up` (label and link); the log line lists `tools`
 (`!` marks a rejected call). `ASSISTANT_MAX_TOOL_ROUNDS` (default 4) caps the loop.
 
+## What it does
+Main job: a **hypothesis lab** (ADR-009 amendment 2). A visitor's "what if" idea gets four labelled
+parts: *Your idea as a question*, *What physics suggests* (words only), *What the data can show*
+(variables, places, detectability, past years as natural experiments via the tools) and *Testable here?*. It also
+explains the result on screen, suggests variable + region pairs and answers methods questions.
+It never simulates or computes a scenario outcome. The prompt is
+`backend/trend_detective/assistant/prompt.py` (`RULES`, `FINAL_CHECK`).
+
 ## API
 `POST /v1/chat`
 
@@ -48,6 +56,8 @@ Reply: `answer`, `suggestions[]` (ids, names, verdict, `href`), `unverified_numb
 | `ASSISTANT_PER_DAY` | `300` | Questions per instance per day (in-memory; resets when an instance restarts, so it limits abuse but is not a hard spending cap) |
 | `PRICE_INPUT_PER_M`, `PRICE_CACHED_PER_M`, `PRICE_OUTPUT_PER_M` | `0.75`, `0.075`, `3.75` | USD per 1M tokens used only for the `est_usd` field in the logs |
 | `ASSISTANT_MAX_OUTPUT_TOKENS` | `2048` | Reply length cap |
+| `ASSISTANT_TEMPERATURE` | `1.0` | Sampling temperature (Google recommends the default 1.0 for Gemini 3) |
+| `ASSISTANT_THINKING` | `low` | Thinking level: `minimal`, `low`, `medium` or `high` (thinking tokens are billed as output) |
 | `ASSISTANT_DATA_DIR`, `ASSISTANT_METHODS` | repo paths | Set by the Dockerfile |
 
 No API key is used: authentication is Application Default Credentials.
@@ -98,7 +108,7 @@ gcloud logging read 'resource.type="cloud_run_revision" AND resource.labels.serv
 - First 7 live questions: 11.5k–16.8k input tokens, 110–430 output tokens, $0.009–0.014 each at
   the introductory price ($0.75 / $3.75 per 1M input / output tokens until 2026-12-31; reported to
   double from 2027-01-01).
-- The static part of the prompt (~10k tokens) comes first, so Gemini's implicit cache can bill it at
+- The static part of the prompt (~10k tokens; ~12k since the hypothesis-lab prompt) comes first, so Gemini's implicit cache can bill it at
   the cached rate; one hit gave 8.1k cached tokens and $0.0035 (−61%). Hits are best-effort.
 - Cloud Run time (~2–7 s per answer) stays inside the monthly free tier at demo volumes.
 - Ceiling: 2 instances × `ASSISTANT_PER_DAY=300` ≈ 600 answers ≈ $8/day now, ≈ $17/day in 2027.

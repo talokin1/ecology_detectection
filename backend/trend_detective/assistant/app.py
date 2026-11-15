@@ -243,9 +243,12 @@ def create_app(grounding: Grounding | None = None, model: Model | None = None) -
         looked_up_facts = json.dumps(
             [{"args": c.get("args"), "result": c.get("result")} for c in calls], ensure_ascii=False
         )
+        # The visitor's own numbers (a hypothesis such as "20 times hotter") are scenario settings
+        # the answer may echo; they are not flagged, and they never enter the prompt's grounding.
+        visitor_text = "\n".join([*(t.text for t in body.history if t.role == "user"), body.message])
         flagged = unverified_numbers(
             answer + " " + " ".join(s.why for s in suggestions),
-            grd.facts_text(rid, vid) + "\n" + looked_up_facts,
+            grd.facts_text(rid, vid, visitor_text) + "\n" + looked_up_facts,
         )
         usage = raw.get("usage") or {}
         # One structured line per answer (Cloud Logging parses JSON on stdout): cost and quality.

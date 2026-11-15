@@ -78,6 +78,7 @@ class Grounding:
                     "topic": v.get("topic"),
                     "land_only": v.get("land_only"),
                     "map_only": v.get("map_only"),
+                    "resolution": cat.get("resolution"),
                     "definition": cat.get("definition"),
                     "why_it_trends": cat.get("why_it_trends"),
                     "place_types": cat.get("place_types"),
@@ -88,6 +89,22 @@ class Grounding:
     def regions_block(self) -> str:
         rows = [
             {"id": r["id"], "name": r["name"], "type": r.get("place_type")} for r in self.index["regions"]
+        ]
+        return json.dumps(rows, ensure_ascii=False, separators=(",", ":"))
+
+    def other_datasets_block(self) -> str:
+        """Catalog datasets the app does not analyse: the model may name them as the data a
+        hypothesis would need, never quote results from them."""
+        rows = [
+            {
+                "name": v.get("name"),
+                "source": v.get("source"),
+                "resolution": v.get("resolution") or None,
+                "period": v.get("period"),
+                "definition": v.get("definition"),
+            }
+            for v in self.catalog.get("variables", [])
+            if not v.get("app_variable_id")
         ]
         return json.dumps(rows, ensure_ascii=False, separators=(",", ":"))
 
@@ -111,9 +128,22 @@ class Grounding:
         }
         return json.dumps({"on_screen": head, "analysis": slim}, ensure_ascii=False, separators=(",", ":"))
 
-    def facts_text(self, region_id: str | None, variable_id: str | None) -> str:
-        """All text whose numbers the model may repeat (used by the number check)."""
-        return "\n".join([self.screen_block(region_id, variable_id), self.variables_block(), self.methods])
+    def facts_text(self, region_id: str | None, variable_id: str | None, visitor_text: str = "") -> str:
+        """All text whose numbers the model may repeat (used by the number check).
+
+        `visitor_text` is what the visitor typed: a hypothesis ("20 times hotter") may be echoed
+        as the scenario's setting without being flagged. It is never part of the prompt's facts.
+        """
+        return "\n".join(
+            [
+                self.screen_block(region_id, variable_id),
+                self.variables_block(),
+                self.regions_block(),
+                self.other_datasets_block(),
+                self.methods,
+                visitor_text,
+            ]
+        )
 
 
 @lru_cache(maxsize=256)

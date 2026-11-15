@@ -53,7 +53,7 @@ describe('Assistant', () => {
     const { Assistant } = await load();
     render(<MemoryRouter><Assistant context={null} /></MemoryRouter>);
     fireEvent.click(screen.getByRole('button', { name: /ask the assistant/i }));
-    fireEvent.click(screen.getByRole('button', { name: 'What is a p-value?' }));
+    fireEvent.click(screen.getByRole('button', { name: 'What if a large volcano erupted?' }));
     await waitFor(() => expect(screen.getByText('Too many questions right now.')).toBeTruthy());
   });
 });

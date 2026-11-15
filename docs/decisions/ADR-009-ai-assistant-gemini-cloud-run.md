@@ -66,3 +66,34 @@ Tool results join the facts for the number check; successful lookups are listed 
 with links. At most `ASSISTANT_MAX_TOOL_ROUNDS` (4) rounds; the last round has no tools.
 
 Cost: about 1.5–2× per question (each round resends the prompt; implicit caching softens it).
+## Amendment 2 (2026-11-15): hypothesis lab as the assistant's main job
+Direction set by Molfarion: the assistant's main job is to help visitors test "what if" ideas
+("I want to build a data centre here, what would it change?", "What if this volcano erupts?",
+"What if it got 20 times hotter here?"). Rule 2 still holds: the app has no simulation, so the
+assistant never produces a scenario outcome as a number.
+- Every hypothesis answer has four labelled plain-text parts: *Your idea as a question*
+  (a checkable claim: variable, direction, place, time, area), *What physics suggests* (causal
+  chain in words, no numbers, labelled as reasoning), *What the data can show* (which app variables
+  and places carry the fingerprint, whether the effect could stand out from the year-to-year swing,
+  past years in the record as natural experiments, the place's own trends turned around as context
+  for the idea), and *Testable here?* ("Yes, with this app." / "Partly." / "Not with this app."
+  plus the kind of data that would be needed).
+- Scale honesty: a single site (data centre, factory) is far smaller than a 2° square or a country
+  average; "too small to detect here" is reported as a valid result.
+- Extreme numbers ("20 times hotter") are explained kindly as physically undefined and reframed
+  (for example, a trend 20 times faster than measured), compared with the record in words only.
+- Grounding additions: each variable's resolution and `OTHER_DATASETS` (catalog datasets the
+  app does not analyse, which may be named as needed data, never quoted for results). Past
+  events are looked up with `get_series` (natural experiments) and a specific site with
+  `map_cell` (amendment 1 tools).
+- Number check: numbers the visitor typed (current message and earlier visitor turns) count as
+  scenario settings and are not flagged; they never enter the prompt's grounding. Regions and
+  other-dataset blocks now count as facts too.
+- Model settings: temperature 1.0 (Google's recommended default for Gemini 3 models; lower values
+  can cause looping or weaker reasoning) and thinking level LOW, both configurable
+  (`ASSISTANT_TEMPERATURE`, `ASSISTANT_THINKING`). Honesty rests on grounding, the rules and the
+  number check, not on a low temperature.
+- Prompt layout: XML-style instruction blocks, then the grounding, then the on-screen analysis and
+  a short final check. The static part (~12k tokens) still leads every request for implicit caching.
+- Before the demo the team reviews sample hypothesis answers (data centre, volcano, extreme number,
+  policy) for wording and numbers and logs them in `docs/08-si-usage-log.md`.
