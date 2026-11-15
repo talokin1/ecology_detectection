@@ -25,7 +25,8 @@
     "insights",
     "insights_audit",
     "deeper_checks",
-    "provenance"
+    "provenance",
+    "vs_world"
   ],
   "properties": {
     "schema_version": {
@@ -732,6 +733,16 @@
           "additionalProperties": false
         }
       ]
+    },
+    "vs_world": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "$ref": "#/$defs/VsWorld"
+        }
+      ]
     }
   },
   "additionalProperties": false,
@@ -1027,6 +1038,272 @@
         }
       },
       "additionalProperties": false
+    },
+    "VsWorldSeason": {
+      "type": "object",
+      "required": [
+        "season",
+        "label",
+        "months",
+        "here",
+        "world",
+        "difference",
+        "ci95",
+        "display",
+        "p",
+        "q",
+        "clear"
+      ],
+      "properties": {
+        "season": {
+          "type": "string"
+        },
+        "label": {
+          "type": "string"
+        },
+        "months": {
+          "type": "string"
+        },
+        "here": {
+          "type": "number"
+        },
+        "world": {
+          "type": "number"
+        },
+        "difference": {
+          "type": "number"
+        },
+        "ci95": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "minItems": 2,
+          "maxItems": 2
+        },
+        "display": {
+          "type": "object",
+          "required": [
+            "here",
+            "world",
+            "difference",
+            "range"
+          ],
+          "properties": {
+            "here": {
+              "type": "string"
+            },
+            "world": {
+              "type": "string"
+            },
+            "difference": {
+              "type": "string"
+            },
+            "range": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        },
+        "p": {
+          "type": "number"
+        },
+        "q": {
+          "type": "number"
+        },
+        "clear": {
+          "type": "boolean",
+          "description": "The difference passes BH FDR across the four seasons."
+        }
+      },
+      "additionalProperties": false
+    },
+    "VsWorld": {
+      "type": "object",
+      "required": [
+        "reference",
+        "reference_note",
+        "rate_units",
+        "here",
+        "world",
+        "difference",
+        "headline",
+        "sentence",
+        "seasons",
+        "annual",
+        "percent_per_decade"
+      ],
+      "properties": {
+        "reference": {
+          "type": "string",
+          "description": "e.g. 'world average', 'world land average'."
+        },
+        "reference_note": {
+          "type": "string"
+        },
+        "rate_units": {
+          "type": "string"
+        },
+        "here": {
+          "type": "object",
+          "required": [
+            "sen_per_decade",
+            "display"
+          ],
+          "properties": {
+            "sen_per_decade": {
+              "type": "number"
+            },
+            "display": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        },
+        "world": {
+          "type": "object",
+          "required": [
+            "sen_per_decade",
+            "ci95",
+            "display",
+            "level"
+          ],
+          "properties": {
+            "sen_per_decade": {
+              "type": "number"
+            },
+            "ci95": {
+              "type": "array",
+              "items": {
+                "type": "number"
+              },
+              "minItems": 2,
+              "maxItems": 2
+            },
+            "display": {
+              "type": "string"
+            },
+            "level": {
+              "$ref": "common.schema.json#/$defs/Level"
+            }
+          },
+          "additionalProperties": false
+        },
+        "difference": {
+          "type": "object",
+          "required": [
+            "sen_per_decade",
+            "ci95",
+            "display",
+            "range",
+            "level",
+            "level_word",
+            "full_record_level",
+            "p"
+          ],
+          "properties": {
+            "sen_per_decade": {
+              "type": "number"
+            },
+            "ci95": {
+              "type": "array",
+              "items": {
+                "type": "number"
+              },
+              "minItems": 2,
+              "maxItems": 2
+            },
+            "display": {
+              "type": "string"
+            },
+            "range": {
+              "type": "string"
+            },
+            "level": {
+              "$ref": "common.schema.json#/$defs/Level"
+            },
+            "level_word": {
+              "type": "string"
+            },
+            "full_record_level": {
+              "$ref": "common.schema.json#/$defs/Level"
+            },
+            "p": {
+              "type": "number"
+            }
+          },
+          "additionalProperties": false,
+          "description": "Trend of (region minus world), month by month; same verdict rule as the headline."
+        },
+        "headline": {
+          "type": "string"
+        },
+        "sentence": {
+          "type": "string"
+        },
+        "seasons": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/VsWorldSeason"
+          }
+        },
+        "annual": {
+          "type": "object",
+          "required": [
+            "years",
+            "here",
+            "world"
+          ],
+          "properties": {
+            "years": {
+              "type": "array",
+              "items": {
+                "type": "integer"
+              }
+            },
+            "here": {
+              "type": "array",
+              "items": {
+                "$ref": "common.schema.json#/$defs/NumOrNull"
+              }
+            },
+            "world": {
+              "type": "array",
+              "items": {
+                "$ref": "common.schema.json#/$defs/NumOrNull"
+              }
+            }
+          },
+          "additionalProperties": false,
+          "description": "Yearly means of the anomalies, each against its own calendar-month normal."
+        },
+        "percent_per_decade": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "object",
+              "required": [
+                "here",
+                "world"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "here": {
+                  "type": "number"
+                },
+                "world": {
+                  "type": "number"
+                }
+              },
+              "description": "Ratio-scale variables: each trend as a percent of that series' own mean, per decade."
+            }
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "description": "The region compared with the world average of the same variable."
     }
   }
 }

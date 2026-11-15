@@ -20,7 +20,11 @@ values all use whole years.
 Outputs (frontend/public/data/):
   index.json                       cases, regions (with outlines), variables
   catalog.json                     all catalog variables with plain-language text and status
-  map/<variable>.json              2-degree global trend grid + FDR significance
+  map/<variable>.json              2-degree global trend grid + FDR significance (whole year)
+  map/<variable>__<season>.json    the same for one season (djf, mam, jja, son)
+  map/<variable>[__<season>]__rel.json   each square minus the world average of the same year
+  series/<variable>[__<season>].bin      yearly means of every square, for the "your own area" tool
+  series/index.json                what those binaries hold (years, step size)
   analysis/<region>__<variable>.json
   compare/<regionA>__<regionB>__<variable>.json
   stats/<region>.json              full climate_stats output for that region (reproducibility)
@@ -92,6 +96,15 @@ MONTH_NAMES = ["January", "February", "March", "April", "May", "June", "July", "
                "September", "October", "November", "December"]
 SEASONS = [("DJF", "Winter", [12, 1, 2]), ("MAM", "Spring", [3, 4, 5]),
            ("JJA", "Summer", [6, 7, 8]), ("SON", "Autumn", [9, 10, 11])]
+# Map views by season. Named by months, not by season words, because the map is global.
+MAP_SEASONS = [("djf", "December to February", [12, 1, 2]), ("mam", "March to May", [3, 4, 5]),
+               ("jja", "June to August", [6, 7, 8]), ("son", "September to November", [9, 10, 11])]
+SEASON_MONTHS = {"DJF": "Dec–Feb", "MAM": "Mar–May", "JJA": "Jun–Aug", "SON": "Sep–Nov"}
+REFERENCE_NAME = {"all": "world average", "land": "world land average", "ocean": "world sea average"}
+WORLD_WORD = {"strong": "strong evidence", "moderate": "evidence", "weak": "a hint", "none": "no clear trend",
+              "insufficient": "not enough data"}
+DIFF_WORD = {"strong": "Clear difference", "moderate": "Difference", "weak": "A hint of a difference",
+             "none": "No clear difference", "insufficient": "Not enough data"}
 LEVEL_RANK = {"insufficient": -1, "none": 0, "weak": 1, "moderate": 2, "strong": 3}
 MINUS = "−"
 
@@ -106,10 +119,18 @@ MINUS = "−"
 #              snow-season method first). The map uses yearly means and is not affected.
 # Not offered: CERES cloud amount. Its 60S-60N mean steps down in 2006 and again in 2022
 # (about -1.5 points each), the signature of changes in the observing system, not of climate.
+#   world_ref  False = no "compared with the world" view, because the world average of this field is
+#              not a trustworthy yardstick (stats-validator review, 2026-11-15; ADR-011):
+#              MERRA-2 precipitation: its world mean falls only because its ocean rain falls (about
+#              -2% per decade), while its gauge-corrected land rain and the IMERG satellite record do
+#              not, the signature of observing-system changes; sea ice and snow: a mean over all sea
+#              or all land is mostly squares that never have any, and the Arctic and Antarctic cancel;
+#              the two AIRS fields: their world averages have not been reviewed yet (AIRS samples
+#              clear and partly cloudy scenes, and its world vapour trend disagrees with MERRA-2).
 #   extreme    which tail of monthly anomalies is counted as an "extreme month" (None = not counted)
 def _v(catalog_id, name, long_name, parameter, grid, units, rate_units, *, palette, words, adj, up, down,
        noun, noun_down, subject, units_long, map_title, raw_label, decimals, percent, topic, mask="all",
-       scale=1.0, start=1981, extreme=None, source="NASA POWER (MERRA-2)", map_only=False,
+       scale=1.0, start=1981, extreme=None, source="NASA POWER (MERRA-2)", map_only=False, world_ref=True,
        zero_is_missing=False, season_verbs=None, offset=0.0, grid_regions=False, caution=None,
        in_sentence=None, twin=None):
     rd, td, sd = decimals
@@ -123,6 +144,7 @@ def _v(catalog_id, name, long_name, parameter, grid, units, rate_units, *, palet
         "rate_decimals": rd, "total_decimals": td, "series_decimals": sd, "percent": percent,
         "topic": topic, "land_only": mask == "land", "mask": mask, "scale": scale, "start": start,
         "grid": grid, "grid_var": parameter, "extreme": extreme, "source": source, "map_only": map_only,
+        "world_ref": world_ref,
         "zero_is_missing": zero_is_missing, "season_verbs": season_verbs,
         # offset: added after scale (K -> °C); grid_regions: every region's series comes from the
         # 2° grid (no per-region cache files); caution: extra caveat on every card of this variable
@@ -154,7 +176,7 @@ VARIABLES = {
         up="getting wetter", down="getting drier", noun="wetting", noun_down="drying", subject="it",
         units_long="rain and snow, in millimetres of water per day",
         map_title="Where is it getting wetter or drier?", raw_label="Monthly precipitation (mm/day)",
-        decimals=(2, 2, 2), percent=True, topic="water",
+        decimals=(2, 2, 2), percent=True, topic="water", world_ref=False,
         extreme=_ex("dry_months", "lower", "Very dry months", "drier"),
         season_verbs={"wetting": ("getting wetter", "get wetter fastest"),
                       "drying": ("drying out", "dry out fastest")}),
@@ -210,7 +232,7 @@ VARIABLES = {
         noun="gain in snow cover", noun_down="loss of snow cover", subject="snow cover",
         units_long="in percent of the land covered by snow", map_title="Where is snow cover shrinking or growing?",
         raw_label="Monthly snow cover (% of land)", decimals=(1, 1, 1), percent=False, topic="snow_ice",
-        mask="land", scale=100.0, map_only=True),
+        mask="land", scale=100.0, map_only=True, world_ref=False),
     "snow_depth": _v(
         "snow_depth_power", "Snow depth", "Depth of snow on the ground", "SNODP",
         "merra2_SNODP_2deg.nc", "cm", "cm per decade", palette="BrBG",
@@ -219,7 +241,7 @@ VARIABLES = {
         noun="deepening of the snow", noun_down="thinning of the snow", subject="the snow",
         units_long="in centimetres, averaged over the whole year and the whole area",
         map_title="Where is the snow getting thinner or deeper?", raw_label="Monthly snow depth (cm)",
-        decimals=(2, 1, 2), percent=False, topic="snow_ice", mask="land", map_only=True),
+        decimals=(2, 1, 2), percent=False, topic="snow_ice", mask="land", map_only=True, world_ref=False),
     "sea_ice": _v(
         "sea_ice_fraction_power", "Sea ice", "Share of the sea covered by ice", "FRSEAICE",
         "merra2_FRSEAICE_2deg.nc", "%", "percentage points per decade", palette="BrBG",
@@ -227,7 +249,8 @@ VARIABLES = {
         up="gaining sea ice", down="losing sea ice", noun="gain in sea ice", noun_down="loss of sea ice",
         subject="sea ice", units_long="in percent of the sea surface covered by ice",
         map_title="Where is sea ice shrinking or growing?", raw_label="Monthly sea-ice cover (%)",
-        decimals=(1, 1, 1), percent=False, topic="snow_ice", mask="ocean", scale=100.0, map_only=True),
+        decimals=(1, 1, 1), percent=False, topic="snow_ice", mask="ocean", scale=100.0, map_only=True,
+        world_ref=False),
     "sunlight": _v(
         "solar_radiation_power", "Sunlight", "Sunlight reaching the ground", "ALLSKY_SFC_SW_DWN",
         "syn1deg_ALLSKY_SFC_SW_DWN_2deg.nc", "MJ/m²/day", "MJ/m²/day per decade", palette="PuOr",
@@ -271,6 +294,7 @@ VARIABLES = {
         map_title="Where does the satellite see the air getting warmer or cooler?",
         raw_label="Monthly mean temperature (°C)", decimals=(2, 1, 2), percent=False, topic="temperature",
         start=2003, offset=-273.15, grid_regions=True, source="NASA AIRS (Aqua satellite)", twin="t2m",
+        world_ref=False,
         in_sentence="surface air temperature measured from space (AIRS)",
         caution=("Over hot deserts AIRS and MERRA-2 agree poorly (infrared retrievals over bright desert "
                  "surfaces are hard), so read desert results with care; elsewhere the two usually agree."),
@@ -285,7 +309,7 @@ VARIABLES = {
         units_long="all the water vapour above a square metre of ground, in kilograms, as seen by a satellite",
         map_title="Where does the satellite see the air holding more or less water?",
         raw_label="Monthly water vapour (kg/m²)", decimals=(2, 2, 2), percent=True, topic="water",
-        start=2003, grid_regions=True, source="NASA AIRS (Aqua satellite)", twin="vapour",
+        start=2003, grid_regions=True, source="NASA AIRS (Aqua satellite)", twin="vapour", world_ref=False,
         in_sentence="water vapour in the air measured from space (AIRS)",
         extreme=_ex("humid_months", "upper", "Very humid months", "more humid"),
         caution=("AIRS sees mostly clear and partly cloudy skies, and its global water-vapour trend is much "
@@ -471,17 +495,55 @@ class Grid:
             out[k] = np.where(ok, block.mean(axis=0), np.nan)
         return out
 
+    def period_means(self, months=None) -> tuple[np.ndarray, np.ndarray]:
+        """(years, (n, lat, lon)): one mean per year of the given calendar months (all 12 when None).
+        December counts towards the next year's season, exactly as in `seasonal_series`; a year
+        that does not have all its months inside Y0..Y1 is left out (so the first winter is)."""
+        if months is None:
+            return np.arange(Y0, Y1 + 1), self.annual_means()
+        yrs, mon = self.time.year.to_numpy(), self.time.month.to_numpy()
+        inside = (yrs >= Y0) & (yrs <= Y1)
+        wraps = 12 in months and 1 in months
+        season_year = np.where((mon == 12) & wraps, yrs + 1, yrs)
+        out_y, out = [], []
+        for y in range(Y0, Y1 + 1):
+            sel = inside & (season_year == y) & np.isin(mon, months)
+            if sel.sum() != len(months):
+                continue
+            block = self.values[sel]
+            ok = np.isfinite(block).all(axis=0)
+            out_y.append(y)
+            out.append(np.where(ok, block.mean(axis=0), np.nan))
+        return np.array(out_y), np.array(out)
 
-def map_layer(grid: Grid, var: str) -> tuple[dict, dict]:
-    """Per-cell Sen slope and Yue-Wang MK on annual means, then BH FDR across cells."""
-    years = np.arange(Y0, Y1 + 1)
+
+def map_layer(grid: Grid, var: str, season: str | None = None, relative: bool = False) -> tuple[dict, dict]:
+    """Per-cell Sen slope and Yue-Wang MK on one mean per year, then BH FDR across cells.
+
+    season    None = mean of the 12 months; else one of MAP_SEASONS (mean of its three months)
+    relative  test each square's yearly values MINUS the world average of the same year (the
+              area-weighted mean of every square with a complete record): where does the change
+              run ahead of, or behind, the world?"""
+    spec = VARIABLES[var]
+    s_label, months = next(((lb, ms) for code, lb, ms in MAP_SEASONS if code == season), (None, None))
+    years, series = grid.period_means(months)                                   # (n, lat, lon)
     n = years.size
-    series = grid.annual_means()                                                 # (n, lat, lon)
     Y = series.reshape(n, -1).T                                                 # (cells, n)
 
     valid = np.isfinite(Y).all(axis=1)
+    reference = None
+    if relative:
+        wgt = np.cos(np.deg2rad(grid.LAT.ravel())) * valid
+        world = (np.where(valid[:, None], Y, 0.0) * wgt[:, None]).sum(axis=0) / wgt.sum()
+        wr = annual_trend(years, world)
+        reference = {"name": REFERENCE_NAME[spec["mask"]],
+                     "sen_per_decade": round(wr["sen_slope_per_decade"], spec["rate_decimals"] + 2),
+                     "display": fmt(wr["sen_slope_per_decade"], spec["rate_decimals"])}
     valid[valid] = np.std(Y[valid], axis=1) > 0
     valid[valid] = (Y[valid] != 0).sum(axis=1) >= MAP_MIN_NONZERO_YEARS
+    if relative:
+        Y = Y - world[None, :]
+        valid[valid] = np.std(Y[valid], axis=1) > 0
     slope = np.full(Y.shape[0], np.nan)
     pval = np.full(Y.shape[0], np.nan)
     i, j = np.triu_indices(n, 1)
@@ -511,7 +573,6 @@ def map_layer(grid: Grid, var: str) -> tuple[dict, dict]:
     ok = np.isfinite(pval)
     sig[ok], _ = ts.fdr_bh(pval[ok], q=FDR_MAP_Q)
 
-    spec = VARIABLES[var]
     finite = np.abs(slope[np.isfinite(slope)])
     raw_lim = float(np.percentile(finite, 98))
     nice = [0.005, 0.01, 0.02, 0.03, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.4, 0.5, 0.6, 0.8, 1.0, 1.2, 1.5, 2.0,
@@ -522,10 +583,25 @@ def map_layer(grid: Grid, var: str) -> tuple[dict, dict]:
     edges = [-limit + 2 * limit * i / bins for i in range(bins + 1)]
     dlat = float(grid.lat[1] - grid.lat[0])
     dlon = float(grid.lon[1] - grid.lon[0])
+    what = f"the {s_label} mean of each year" if season else "yearly means"
+    title = f"{s_label} trend" if season else "Trend"
+    prov_block = provenance_from(grid.provenance, spec, "map")
+    if season:
+        prov_block["processing"][-2] = (f"mean of {s_label} in each year {int(years[0])}–{int(years[-1])} "
+                                        "(December counts towards the next year) in each 2° square")
+    if relative:
+        title += f" minus the {reference['name']} ({reference['display']})"
+        prov_block["processing"].insert(-1, f"minus the {reference['name']} of the same year (area-weighted "
+                                            "mean of every square with a complete record)")
     layer = {
         "schema_version": SCHEMA_VERSION,
         "variable_id": var,
-        "period": {"start": f"{Y0}-01", "end": f"{Y1}-12"},
+        "season": season or "year",
+        "relative": relative,
+        "reference": reference,
+        "period": ({"start": f"{Y0}-01", "end": f"{Y1}-12"} if not season else
+                   {"start": (f"{int(years[0]) - 1}-12" if months[0] == 12 else f"{int(years[0])}-{months[0]:02d}"),
+                    "end": f"{int(years[-1])}-{months[-1]:02d}"}),
         "grid": {"lat0": float(grid.lat[0]), "lon0": float(grid.lon[0]), "dlat": dlat, "dlon": dlon,
                  "nlat": int(grid.lat.size), "nlon": int(grid.lon.size),
                  "order": "row-major from south to north, west to east"},
@@ -536,21 +612,26 @@ def map_layer(grid: Grid, var: str) -> tuple[dict, dict]:
         "bins": bins,
         "value_decimals": d,
         "legend": {
-            "title": f"Trend · {spec['rate_units']}",
+            "title": f"{title} · {spec['rate_units']}",
             "edges_text": [fmt(e, d) for e in edges],
             "ticks": [{"value": v, "text": "0" if v == 0 else fmt(v, d - 1)}
                       for v in (-limit, -limit / 2, 0, limit / 2, limit)],
             "min_text": f"≤ {fmt(-limit, d - 1)}", "max_text": f"≥ {fmt(limit, d - 1)}",
         },
         "units_label": spec["rate_units"],
-        "words": spec["words"],
+        "words": {"neg": "below the world trend", "pos": "above the world trend"} if relative else spec["words"],
         "fdr_q": FDR_MAP_Q,
         "mask": spec["mask"],
-        "caption": (f"{spec['source']} {spec['parameter']} · {Y0}–{Y1} · Sen's slope of yearly means in "
-                    f"each {dlat:g}° square. Strong colour: passes the map-wide test for false alarms "
+        "caption": (f"{spec['source']} {spec['parameter']} · {int(years[0])}–{int(years[-1])} · Sen's slope of "
+                    f"{what} in each {dlat:g}° square"
+                    + (f", after subtracting the {reference['name']} of the same year "
+                       f"(its own trend: {reference['display']} {spec['rate_units']})" if relative else "")
+                    + (f". Differences are in {spec['total_unit']}, not in percent of the local average"
+                       if relative and spec["percent"] else "")
+                    + ". Strong colour: passes the map-wide test for false alarms "
                     f"(Mann-Kendall with memory correction, q = {FDR_MAP_Q}). This map enlarges areas near "
                     "the poles."),
-        "provenance": provenance_from(grid.provenance, spec, "map"),
+        "provenance": prov_block,
     }
     cells = {"slope": slope.reshape(grid.LAT.shape), "sig": sig.reshape(grid.LAT.shape),
              "LAT": grid.LAT, "LON": grid.LON}
@@ -735,16 +816,30 @@ def monthly_level(dates, raw) -> str:
     return weaker(level_from_cis(*cis), level_from_p(res["ols"]["p"]))
 
 
+def yearly_values_trend(ys, vals) -> dict:
+    """The app's rule for one value per year: Sen's slope with Mann-Kendall (Yue-Wang) ranges, a
+    regression t-test with the lag-1 effective sample size, and the weaker of the two levels.
+    Used for the yearly stability check of every verdict and, through its browser port
+    (frontend/src/lib/stats.ts, checked against this function), for areas a visitor draws."""
+    ys = np.asarray(ys)
+    vals = np.asarray(vals, dtype=float)
+    r = annual_trend(ys, vals)
+    t = ys.astype(float)
+    mk = ts.mann_kendall(t, vals, method="yue_wang")
+    sens = {a: ts.sens_slope(t, vals, alpha=a, var_s=mk["var_s"]) for a in (0.10, 0.05, 0.01)}
+    cis = [[c * 10 for c in sens[a]["ci"]] for a in (0.10, 0.05, 0.01)]
+    return {"level": weaker(level_from_cis(*cis), level_from_p(r["ols"]["p"])),
+            "per_decade": sens[0.05]["slope"] * 10, "ci90": cis[0], "ci95": cis[1], "ci99": cis[2],
+            "p_mk": mk["p"], "p_ols": r["ols"]["p"], "ols_per_decade": r["ols"]["slope_per_decade"],
+            "n": int(vals.size)}
+
+
 def yearly_level(dates, raw) -> str:
     anom, _ = ts.deseasonalize(dates, raw)
     years = dates.astype("datetime64[Y]").astype(int) + 1970
     ys = np.arange(Y0, Y1 + 1)
     vals = np.array([anom[years == y].mean() for y in ys])
-    r = annual_trend(ys, vals)
-    t = ys.astype(float)
-    mk = ts.mann_kendall(t, vals, method="yue_wang")
-    cis = [[c * 10 for c in ts.sens_slope(t, vals, alpha=a, var_s=mk["var_s"])["ci"]] for a in (0.10, 0.05, 0.01)]
-    return weaker(level_from_cis(*cis), level_from_p(r["ols"]["p"]))
+    return yearly_values_trend(ys, vals)["level"]
 
 
 def robustness(dates, raw, level: str) -> dict:
@@ -773,13 +868,155 @@ def robustness(dates, raw, level: str) -> dict:
                      + ". We report the most cautious.")}
 
 
+def write_series(grid: Grid, var: str) -> dict:
+    """Yearly (and seasonal) means of every 2° square, for the app's "your own area" tool.
+
+    One small binary per view: float32 mean of each square (NaN = no complete record), float32
+    step size of each square, then int16 differences from the mean, year by year, in those steps.
+    The browser rebuilds value = mean + step * count. A step is 1/32000 of the square's own largest
+    difference, so the rounding (half a step, plus float32 rounding of the mean, which is the same
+    in every year) is negligible next to that square's year-to-year changes."""
+    out = {}
+    for code, months in [("year", None)] + [(c, ms) for c, _, ms in MAP_SEASONS]:
+        years, series = grid.period_means(months)
+        flat = series.reshape(years.size, -1)
+        ok = np.isfinite(flat).all(axis=0)
+        mean = np.full(flat.shape[1], np.nan)
+        mean[ok] = flat[:, ok].mean(axis=0)
+        mean32 = mean.astype("<f4")
+        anom = np.zeros_like(flat)
+        anom[:, ok] = flat[:, ok] - mean32[ok][None].astype(float)
+        peak = np.abs(anom).max(axis=0)
+        step = np.where(peak > 0, peak / 32000, 1.0).astype("<f4")
+        counts = np.round(anom / step[None].astype(float)).astype("<i2")
+        name = f"{var}.bin" if code == "year" else f"{var}__{code}.bin"
+        path = OUT / "series" / name
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(mean32.tobytes() + step.tobytes() + counts.tobytes())
+        out[code] = {"file": name, "first_year": int(years[0]), "last_year": int(years[-1]),
+                     "scale": float(step[ok].max()) if ok.any() else 1.0, "squares_with_data": int(ok.sum())}
+    return out
+
+
+def world_reference(grid: Grid, var: str) -> dict:
+    """The reference every region is compared with: the area-weighted monthly mean of every 2°
+    square that has a complete record Y0..Y1 (land squares for land-only fields), and its trend."""
+    spec = VARIABLES[var]
+    sel = (grid.time.year >= Y0) & (grid.time.year <= Y1)
+    block = grid.values[sel]
+    ok = np.isfinite(block).all(axis=0)
+    area = np.cos(np.deg2rad(grid.LAT))
+    w = area * ok
+    raw = (np.where(ok[None], block, 0.0) * w[None]).sum(axis=(1, 2)) / w.sum()
+    dates = month_index(Y0, Y1).values.astype("datetime64[M]").astype("datetime64[D]")
+    res = ts.analyze_series(dates, raw)
+    level = robustness(dates, raw, monthly_level(dates, raw))["level"]
+    share = float(w.sum() / area.sum())
+    name = REFERENCE_NAME[spec["mask"]]
+    note = (f"The {name} is the area-weighted mean of every 2° map square with a complete record "
+            + ("(the whole globe)." if share > 0.995 else f"({share:.0%} of the Earth's surface)."))
+    if var == "t2m":
+        note += " It includes the oceans, which warm more slowly than land, so most land areas sit above it."
+    else:
+        note += (" A world average from this kind of dataset can drift a little when the mix of satellites "
+                 "feeding it changes, so read the comparison as “relative to this dataset’s world average”.")
+    return {"raw": raw, "name": name, "note": note, "sen_per_decade": res["sen_slope_per_decade"],
+            "ci95": res["sen_ci95_per_decade"], "level": level}
+
+
+def vs_world_block(var: str, region: dict, dates, raw, per_dec: float, own_level: str, world: dict) -> dict:
+    """Is this region changing faster or slower than the world? The verdict rule of the headline
+    (weaker of two tests, most cautious of four calculations) applied to region minus world."""
+    spec = VARIABLES[var]
+    rd, sd_ = spec["rate_decimals"], spec["series_decimals"]
+    ref, wd = world["name"], world["sen_per_decade"]
+    diff = raw - world["raw"]
+    res = ts.analyze_series(dates, diff)
+    full = monthly_level(dates, diff)
+    level = robustness(dates, diff, full)["level"]
+    d, c95 = res["sen_slope_per_decade"], res["sen_ci95_per_decade"]
+    clear = LEVEL_RANK[level] >= 2
+    own, wld = LEVEL_RANK[own_level] >= 2, LEVEL_RANK[world["level"]] >= 2
+    # the gap is tested, so "ahead" comes from the gap itself: it grows in the region's own direction
+    ahead = d * per_dec > 0
+    verb = spec["words"]["pos" if per_dec > 0 else "neg"]
+    verb = verb.capitalize() if verb.endswith("ing") and own else "Changing"
+    if level == "weak":
+        headline = f"Maybe different from the {ref}, not proven"
+    elif not clear:
+        headline = f"Not clearly different from the {ref}"
+    elif per_dec * wd < 0 and own and wld:
+        headline = f"Going the other way than the {ref}"
+    elif per_dec * wd <= 0 or not (own or wld):
+        # the gap widens, but we cannot say which of the two is moving
+        headline = f"Moving apart from the {ref}"
+    elif spec["percent"]:
+        # ratio-scale fields: "faster" in units can be "slower" in percent, so no speed word
+        headline = f"A {'larger' if ahead else 'smaller'} change than the {ref}"
+    else:
+        headline = f"{verb} {'faster' if ahead else 'more slowly'} than the {ref}"
+    tail = {"strong": "A gap that grows this steadily would be very rare if the two were really moving together.",
+            "moderate": "A gap like this would be unusual if the two were moving together.",
+            "weak": "That is a hint, not proof.", "none": "That is within normal year-to-year swings.",
+            "insufficient": "The record is too short to judge."}[level]
+    sentence = (f"{sentence_name(region)[0].upper() + sentence_name(region)[1:]}: {fmt(per_dec, rd)} "
+                f"{spec['rate_units']}. The {ref}: {fmt(wd, rd)} ({WORLD_WORD[world['level']]}). The gap, "
+                f"tested month by month: {fmt(d, rd)} ({range_text(c95[0], c95[1], rd)}). {tail}")
+    percent = None
+    if spec["percent"]:
+        percent = {"here": round(100 * per_dec / float(np.mean(raw)), 2),
+                   "world": round(100 * wd / float(np.mean(world["raw"])), 2)}
+        sentence += (f" As a share of its own average: {fmt(percent['here'], 1)}% per decade here, "
+                     f"{fmt(percent['world'], 1)}% for the {ref}.")
+
+    anom_h, _ = ts.deseasonalize(dates, raw)
+    anom_w, _ = ts.deseasonalize(dates, world["raw"])
+    rows, pvals = [], []
+    for code, label, ms in SEASONS:
+        sy, vh = seasonal_series(dates, anom_h, ms)
+        _, vw = seasonal_series(dates, anom_w, ms)
+        rh, rw, rg = annual_trend(sy, vh), annual_trend(sy, vw), annual_trend(sy, vh - vw)
+        g95 = rg["sen_ci95_per_decade"]
+        rows.append({"season": code, "label": label, "months": SEASON_MONTHS[code],
+                     "here": round(rh["sen_slope_per_decade"], rd + 1),
+                     "world": round(rw["sen_slope_per_decade"], rd + 1),
+                     "difference": round(rg["sen_slope_per_decade"], rd + 1),
+                     "ci95": [round(c, rd + 2) for c in g95],
+                     "display": {"here": fmt(rh["sen_slope_per_decade"], rd),
+                                 "world": fmt(rw["sen_slope_per_decade"], rd),
+                                 "difference": fmt(rg["sen_slope_per_decade"], rd),
+                                 "range": range_text(g95[0], g95[1], rd)},
+                     "p": round(rg["mk"]["p"], 4)})
+        pvals.append(rg["mk"]["p"])
+    _, qv = ts.fdr_bh(np.array(pvals), q=FDR_INSIGHT_Q)
+    for row, q in zip(rows, qv):
+        row["q"] = round(float(q), 4)
+        row["clear"] = bool(q <= FDR_INSIGHT_Q)
+    years = dates.astype("datetime64[Y]").astype(int) + 1970
+    yrs = np.arange(Y0, Y1 + 1)
+    return {
+        "reference": ref, "reference_note": world["note"], "rate_units": spec["rate_units"],
+        "here": {"sen_per_decade": round(per_dec, rd + 2), "display": fmt(per_dec, rd)},
+        "world": {"sen_per_decade": round(wd, rd + 2), "ci95": [round(c, rd + 2) for c in world["ci95"]],
+                  "display": fmt(wd, rd), "level": world["level"]},
+        "difference": {"sen_per_decade": round(d, rd + 2), "ci95": [round(c, rd + 2) for c in c95],
+                       "display": fmt(d, rd), "range": range_text(c95[0], c95[1], rd), "level": level,
+                       "level_word": DIFF_WORD[level], "full_record_level": full, "p": round(res["mk"]["p"], 6)},
+        "headline": headline, "sentence": sentence, "percent_per_decade": percent,
+        "seasons": rows,
+        "annual": {"years": yrs.tolist(),
+                   "here": rnd([anom_h[years == y].mean() for y in yrs], sd_ + 1),
+                   "world": rnd([anom_w[years == y].mean() for y in yrs], sd_ + 1)},
+    }
+
+
 def region_what(region: dict) -> str:
     """How a region's series was made: 'country' / 'grid' (2° squares) or 'region' (cached series)."""
     w = region.get("weights")
     return "grid" if w == "grid" else "country" if w is not None else "region"
 
 
-def analyse(var, region, cells, raw, prov):
+def analyse(var, region, cells, raw, prov, world=None):
     """Full analysis of one monthly series (already in app units, complete for Y0..Y1)."""
     spec = VARIABLES[var]
     name_s = sentence_name(region)
@@ -1027,6 +1264,7 @@ def analyse(var, region, cells, raw, prov):
         "spatial": {"share_opposite_significant": round(share_opp, 3),
                     "share_same_significant": round(share_same, 3), "warn": share_opp >= 0.15},
         "neighbour": None,
+        "vs_world": vs_world_block(var, region, dates, raw, per_dec, level, world) if world else None,
         "insights": [],
         "insights_audit": {"tested": len(family), "passed": int(sig.sum()), "shown": 0, "q": FDR_INSIGHT_Q, "text": ""},
         "deeper_checks": None,
@@ -1785,9 +2023,9 @@ def usable(raw: np.ndarray) -> str | None:
 
 def _analyse_task(task):
     global Y0, Y1
-    var, y0, y1, region, cells, raw, prov = task
+    var, y0, y1, region, cells, raw, prov, world = task
     Y0, Y1 = y0, y1
-    return (region["id"], var), analyse(var, region, cells, raw, prov)
+    return (region["id"], var), analyse(var, region, cells, raw, prov, world)
 
 
 # --------------------------------------------------------------------------- main
@@ -1811,7 +2049,7 @@ def main(runs: int, bootstrap: int, workers: int) -> None:
     regions = {**stories, **countries, **worlds}
     print(f"regions: {len(stories)} story, {len(countries)} countries, {len(worlds)} world regions")
 
-    periods, results, skipped = {}, {}, []
+    periods, results, skipped, series_files = {}, {}, [], {}
     written_maps, written_frames = set(), set()
     with ProcessPoolExecutor(max_workers=workers) as pool:
         for var, spec in VARIABLES.items():
@@ -1820,8 +2058,17 @@ def main(runs: int, bootstrap: int, workers: int) -> None:
             Y1 = last_complete_year(grid.time[np.isfinite(grid.values).any(axis=(1, 2))])
             periods[var] = (Y0, Y1)
             layer, cells = map_layer(grid, var)
-            write_json(OUT / "map" / f"{var}.json", layer)
-            written_maps.add(f"{var}.json")
+            views = {f"{var}.json": layer}
+            for code, _, _ in MAP_SEASONS:
+                views[f"{var}__{code}.json"] = map_layer(grid, var, season=code)[0]
+            if spec["world_ref"]:
+                for code in [None] + [c for c, _, _ in MAP_SEASONS]:
+                    views[f"{var}{'__' + code if code else ''}__rel.json"] = map_layer(
+                        grid, var, season=code, relative=True)[0]
+            for name, lyr in views.items():
+                write_json(OUT / "map" / name, lyr)
+                written_maps.add(name)
+            series_files[var] = write_series(grid, var)
             write_json(OUT / "frames" / f"{var}.json", frames_layer(grid, var))
             written_frames.add(f"{var}.json")
             print(f"map {var}: {Y0}–{Y1}, limit {layer['limit']}, "
@@ -1829,6 +2076,10 @@ def main(runs: int, bootstrap: int, workers: int) -> None:
             if spec["map_only"]:
                 continue
             slim_cells = {"slope": cells["slope"], "sig": cells["sig"], "LAT": cells["LAT"]}
+            world = world_reference(grid, var) if spec["world_ref"] else None
+            if world:
+                print(f"  {world['name']}: {fmt(world['sen_per_decade'], spec['rate_decimals'] + 1)} "
+                      f"{spec['rate_units']}, {world['level']}")
             tasks = []
             for r in regions.values():
                 if "mask" not in r:
@@ -1852,7 +2103,7 @@ def main(runs: int, bootstrap: int, workers: int) -> None:
                     prov = {**prov, "_caution": " ".join(str(x) for x in notes)}
                 slim = {"id": r["id"], "name": r["name"], "kind": r["kind"], "mask": r["mask"],
                         "weights": True if r["weights"] is not None else ("grid" if spec["grid_regions"] else None)}
-                tasks.append((var, Y0, Y1, slim, slim_cells, raw, prov))
+                tasks.append((var, Y0, Y1, slim, slim_cells, raw, prov, world))
             for key, a in pool.map(_analyse_task, tasks, chunksize=4):
                 results[key] = a
             print(f"  {var}: {len(tasks)} regional analyses")
@@ -1941,6 +2192,7 @@ def main(runs: int, bootstrap: int, workers: int) -> None:
                        "anomaly_units": v["anomaly_units"], "map_title": v["map_title"], "palette": v["palette"],
                        "words": v["words"], "topic": v["topic"], "land_only": v["land_only"],
                        "source": v["source"], "parameter": v["parameter"], "map_only": v["map_only"],
+                       "world_reference": v["world_ref"],
                        "period": f"{periods[k][0]}–{periods[k][1]}"} for k, v in VARIABLES.items()],
         "verdicts": {f"{rid}__{var}": {
             "level": a["verdict"]["level"], "level_word": LEVEL_WORD[a["verdict"]["level"]],
@@ -1951,6 +2203,19 @@ def main(runs: int, bootstrap: int, workers: int) -> None:
             for (rid, var), a in results.items()},
     }
     write_json(OUT / "index.json", index)
+    write_json(OUT / "series" / "index.json", {
+        "schema_version": SCHEMA_VERSION,
+        "grid": {"lat0": float(first.lat[0]), "lon0": float(first.lon[0]),
+                 "dlat": float(first.lat[1] - first.lat[0]), "dlon": float(first.lon[1] - first.lon[0]),
+                 "nlat": int(first.lat.size), "nlon": int(first.lon.size),
+                 "order": "row-major from south to north, west to east"},
+        "layout": ("float32 mean of every square (NaN = no complete record), float32 step size of every "
+                   "square, then int16 differences from the mean for each year in turn, counted in that "
+                   "square's steps; little-endian. `scale` is the largest step in the file"),
+        "variables": series_files,
+    })
+    remove_stale(OUT / "series", {"index.json"} | {v["file"] for views in series_files.values()
+                                                    for v in views.values()})
     write_json(OUT / "catalog.json", catalog(VARIABLES))
     write_json(OUT / "validation.json", validation_table(runs))
     print(f"done: {len(written_maps)} maps, {len(written_an)} analyses, {len(written_cmp)} comparisons")

@@ -222,7 +222,8 @@
         "units_long",
         "anomaly_units",
         "map_title",
-        "map_only"
+        "map_only",
+        "world_reference"
       ],
       "properties": {
         "id": {
@@ -276,6 +277,10 @@
         "map_only": {
           "type": "boolean",
           "description": "Shown on the map only (ocean variable): no regional analyses."
+        },
+        "world_reference": {
+          "type": "boolean",
+          "description": "false = no 'compared with the world' view: the world average of this field is not a sound yardstick."
         }
       },
       "additionalProperties": false

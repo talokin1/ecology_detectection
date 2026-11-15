@@ -19,7 +19,8 @@ ROOT = Path(__file__).resolve().parents[1]
 SCHEMA = ROOT / "schema"
 RULES = [("index.json", "index"), ("catalog.json", "catalog"), ("validation.json", "validation"),
          ("map/*.json", "map"), ("frames/*.json", "frames"), ("analysis/*.json", "analysis"), ("compare/*.json", "compare"),
-         ("stats/*.json", "climate-output")]
+         ("stats/*.json", "climate-output"), ("series/index.json", "series-index")]
+SEASON_VIEWS = [""] + [f"__{s}" for s in ("djf", "mam", "jja", "son")]
 
 
 def main(data: Path) -> int:
@@ -46,6 +47,32 @@ def main(data: Path) -> int:
         for rid in [c["region_id"]] + ([c["compare_region_id"]] if "compare_region_id" in c else []):
             if not (data / "analysis" / f"{rid}__{c['variable_id']}.json").exists():
                 print(f"BROKEN case {c['id']}: no analysis for {rid}__{c['variable_id']}")
+                bad += 1
+    # every variable has its map views (ten, or five without a world reference),
+    # and every yearly-series binary has the promised size
+    for v in index["variables"]:
+        for view in SEASON_VIEWS:
+            for rel in ("", "__rel"):
+                there = (data / "map" / f"{v['id']}{view}{rel}.json").exists()
+                wanted = not rel or v["world_reference"]
+                if there != wanted:
+                    print(f"{'MISSING' if wanted else 'UNEXPECTED'} map/{v['id']}{view}{rel}.json")
+                    bad += 1
+    for f in sorted((data / "analysis").glob("*.json")):  # no world comparison where there is no reference
+        var = f.stem.split("__")[1]
+        ref = next(v["world_reference"] for v in index["variables"] if v["id"] == var)
+        if (json.loads(f.read_text(encoding="utf-8"))["vs_world"] is not None) != ref:
+            print(f"BROKEN analysis/{f.name}: vs_world does not match world_reference of {var}")
+            bad += 1
+    series = json.loads((data / "series" / "index.json").read_text(encoding="utf-8"))
+    cells = series["grid"]["nlat"] * series["grid"]["nlon"]
+    for var, views in series["variables"].items():
+        for view in views.values():
+            f = data / "series" / view["file"]
+            want = cells * 8 + (view["last_year"] - view["first_year"] + 1) * cells * 2
+            checked += 1
+            if not f.exists() or f.stat().st_size != want:
+                print(f"BROKEN series/{view['file']}: expected {want} bytes")
                 bad += 1
     print(f"checked {checked} files, {bad} problem(s)")
     return 1 if bad else 0

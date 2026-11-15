@@ -7,7 +7,7 @@ import { S } from '../strings/en';
 
 const A = S.about;
 
-/** What the tool is, how to use it, data sources, credits and SI disclosure (plan B4). */
+/** What the tool is, how to use it, data sources, and credits (plan B4; the SI disclosure lives on the submission page). */
 export function AboutPage() {
   const index = useData(api.index, 'index');
   const [params] = useSearchParams();
@@ -43,11 +43,6 @@ export function AboutPage() {
         </ul>
         <p className="help">{A.software}</p>
         <p><Link to="/methods">{S.case.dataMethods} →</Link></p>
-      </section>
-
-      <section id="si" className="msec">
-        <h2>{A.si}</h2>
-        <p>{A.siText}</p>
       </section>
 
       <section id="code" className="msec">

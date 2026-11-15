@@ -1,0 +1,221 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "series-index.schema.json",
+  "title": "SeriesIndex",
+  "description": "Describes series/*.bin: one mean per year of every 2-degree square, used by the 'your own area' tool. Each file is float32[nlat*nlon] means (NaN = no complete record), float32[nlat*nlon] step sizes, then int16[years*nlat*nlon] differences from the mean, year by year, counted in the square's own steps.",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "grid",
+    "layout",
+    "variables"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string"
+    },
+    "grid": {
+      "type": "object",
+      "required": [
+        "lat0",
+        "lon0",
+        "dlat",
+        "dlon",
+        "nlat",
+        "nlon",
+        "order"
+      ],
+      "properties": {
+        "lat0": {
+          "type": "number",
+          "description": "Centre latitude of the first (southern) row."
+        },
+        "lon0": {
+          "type": "number",
+          "description": "Centre longitude of the first (western) column."
+        },
+        "dlat": {
+          "type": "number"
+        },
+        "dlon": {
+          "type": "number"
+        },
+        "nlat": {
+          "type": "integer"
+        },
+        "nlon": {
+          "type": "integer"
+        },
+        "order": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "layout": {
+      "type": "string"
+    },
+    "variables": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "required": [
+          "year",
+          "djf",
+          "mam",
+          "jja",
+          "son"
+        ],
+        "properties": {
+          "year": {
+            "type": "object",
+            "required": [
+              "file",
+              "first_year",
+              "last_year",
+              "scale",
+              "squares_with_data"
+            ],
+            "properties": {
+              "file": {
+                "type": "string"
+              },
+              "first_year": {
+                "type": "integer"
+              },
+              "last_year": {
+                "type": "integer"
+              },
+              "scale": {
+                "type": "number",
+                "description": "Largest step size in the file, in the variable's units."
+              },
+              "squares_with_data": {
+                "type": "integer"
+              }
+            },
+            "additionalProperties": false
+          },
+          "djf": {
+            "type": "object",
+            "required": [
+              "file",
+              "first_year",
+              "last_year",
+              "scale",
+              "squares_with_data"
+            ],
+            "properties": {
+              "file": {
+                "type": "string"
+              },
+              "first_year": {
+                "type": "integer"
+              },
+              "last_year": {
+                "type": "integer"
+              },
+              "scale": {
+                "type": "number",
+                "description": "Size of one int16 step, in the variable's units."
+              },
+              "squares_with_data": {
+                "type": "integer"
+              }
+            },
+            "additionalProperties": false
+          },
+          "mam": {
+            "type": "object",
+            "required": [
+              "file",
+              "first_year",
+              "last_year",
+              "scale",
+              "squares_with_data"
+            ],
+            "properties": {
+              "file": {
+                "type": "string"
+              },
+              "first_year": {
+                "type": "integer"
+              },
+              "last_year": {
+                "type": "integer"
+              },
+              "scale": {
+                "type": "number",
+                "description": "Size of one int16 step, in the variable's units."
+              },
+              "squares_with_data": {
+                "type": "integer"
+              }
+            },
+            "additionalProperties": false
+          },
+          "jja": {
+            "type": "object",
+            "required": [
+              "file",
+              "first_year",
+              "last_year",
+              "scale",
+              "squares_with_data"
+            ],
+            "properties": {
+              "file": {
+                "type": "string"
+              },
+              "first_year": {
+                "type": "integer"
+              },
+              "last_year": {
+                "type": "integer"
+              },
+              "scale": {
+                "type": "number",
+                "description": "Size of one int16 step, in the variable's units."
+              },
+              "squares_with_data": {
+                "type": "integer"
+              }
+            },
+            "additionalProperties": false
+          },
+          "son": {
+            "type": "object",
+            "required": [
+              "file",
+              "first_year",
+              "last_year",
+              "scale",
+              "squares_with_data"
+            ],
+            "properties": {
+              "file": {
+                "type": "string"
+              },
+              "first_year": {
+                "type": "integer"
+              },
+              "last_year": {
+                "type": "integer"
+              },
+              "scale": {
+                "type": "number",
+                "description": "Size of one int16 step, in the variable's units."
+              },
+              "squares_with_data": {
+                "type": "integer"
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

@@ -242,6 +242,28 @@ export function MethodsPage() {
         <p>{S.compare.explain}</p>
       </section>
 
+      <section id="views" className="msec">
+        <h2>Seasons and “compared with the world” on the map</h2>
+        <p>The map can show the whole year or one three-month season (December to February, March to May, June to August, September to November). A season gives one value per year, the mean of its three months; December counts towards the following year, so the first winter of the record is left out. The test in each square is the same as for the whole year.</p>
+        <p>“Compared with the world” answers a different question: not “is it changing here?” but “is it changing faster or slower here than on the planet as a whole?”. For each year we subtract the world average of that year (the area-weighted mean of every square with a complete record; land squares only for land variables) from the square’s value, and test what is left. A blue square on such a temperature map can still be warming: it is warming more slowly than the world. The legend says which view you are looking at, and shows the world’s own trend. For quantities such as water vapour or sunlight the comparison is in the variable’s units, not in percent: a dry place can show a smaller change in units and the same change in percent, so region pages give both.</p>
+        <p>Six variables have no “compared with the world” view. For four of them the world average is not a reliable yardstick. Precipitation from the MERRA-2 reanalysis: its world average falls, but only over the oceans (about 2% per decade), while its land rainfall, which is corrected with rain gauges, and the satellite record (IMERG) do not fall. That pattern points to changes in the satellites feeding the model, not to the climate. Snow cover, snow depth and sea ice: an average over all land or all sea is mostly places that never have any, and the Arctic and the Antarctic pull in opposite directions. The two satellite (AIRS) variables: their world averages have not been checked yet.</p>
+      </section>
+
+      <section id="vs-world" className="msec">
+        <h2>A place compared with the world</h2>
+        <p>Every country and region page says whether the place is changing faster or slower than the world average. We take the month-by-month difference “place minus world” and run the full verdict on it: both tests, and the most cautious of the four calculations (see “Two independent tests”). Only if that difference has a clear trend of its own do we say “faster” or “slower”. Two rates that look different can still be within normal swings of each other.</p>
+        <p>For air temperature the world average includes the oceans, which warm more slowly than land. So most land areas sit above it; that is expected, not a local anomaly.</p>
+      </section>
+
+      <section id="area" className="msec">
+        <h2>Your own area</h2>
+        <p>“Draw an area” lets you mark any box on the map, on land or at sea, and test it. We average the 2° squares inside the box: each counts by the share of it inside the box and by its true size on the globe, and squares without a complete record are left out (the panel says so). That gives one value per year, for the whole year or for the season the map is showing.</p>
+        <p>The numbers are computed in your browser, with the same tests as everywhere else: Sen’s slope, the Mann-Kendall test with a memory correction, and a regression with an effective sample size; the verdict is the weaker of the two. The browser code is a port of our Python reference and is checked against it on every build. It is the quick version: one value per year instead of monthly data, and no stability checks. So for a country, trust its own page over a box drawn around it.</p>
+        <p>How far to trust the quick version: we ran it on thousands of made-up records with no trend at all. With no year-to-year memory it said “evidence” or “strong” 3 to 4 times in 100; with moderate memory about 7 in 100; with strong memory 8 to 12 in 100 for 45 years of data, and more for shorter records. So it errs towards finding too much, not too little, where one year resembles the next (soil wetness, sea ice).</p>
+        <p>You can also draw a second area. Then we test the year-by-year difference between the two, which is the honest way to ask “do these two places really change differently?”.</p>
+        <p><strong>A warning about drawing boxes.</strong> If you first look at the map and then draw a box around the bluest patch, the test inside that box is no longer fair: you chose it because it looked unusual. Treat such a result as a lead to follow, not as proof. A fair test fixes the box first, for a reason that does not come from this map. The panel repeats this warning under every result that looks clear.</p>
+      </section>
+
       <section id="limitations" className="msec">
         <h2>What this cannot tell you</h2>
         <ul className="bullets">

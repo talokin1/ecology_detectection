@@ -3,3 +3,5 @@
 data/cache/** -text
 data/catalog/sources/** -text
 *.nc binary
+# Yearly grids for the "your own area" tool (ADR-011): raw float32/int16, never text.
+frontend/public/data/series/*.bin binary
